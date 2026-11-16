@@ -742,7 +742,8 @@
     PP.DRILLS.forEach(function (d) {
       h += '<div class="card item" style="--c:' + d.color + '"><div class="gfx disp" style="font-size:24px;color:#1b1033">' + (save.train.best[d.id] || 0) + '</div><div class="tx"><h3>' + d.name + '</h3><p>' + d.desc + '</p></div><button class="btn small lime" data-dr="' + d.id + '">Entrenar</button></div>';
     });
-    $('drillList').innerHTML = h;
+    $('drillList').innerHTML = h + '<div class="card item" style="--c:#FFD23A"><div class="gfx disp" style="font-size:30px;color:#1b1033">?</div><div class="tx"><h3>La mente también se entrena</h3><p>Por qué decidir rápido gana puntos, con datos de estudios de pádel y tenis.</p></div><button class="btn small" id="mindBtn">Leer</button></div>';
+    on($('mindBtn'), showMind);
   }
   $('drillList').addEventListener('click', function (e) { var b = e.target.closest('[data-dr]'); if (!b) return; A.unlock(); A.play('click'); startDrill(b.dataset.dr); });
   function trClean() {
@@ -789,7 +790,7 @@
       S.ring({ x: b.x, z: b.z }, 0, TR.char.accent);
       TR.opts = p.opts.map(function (t, i) { return { t: t, ok: i === 0 }; }).sort(function () { return Math.random() - 0.5; });
       $('opts').innerHTML = TR.opts.map(function (o, i) { return '<button class="btn ghost" data-o="' + i + '">' + o.t + '</button>'; }).join('');
-      $('tq').innerHTML = p.q + '<div class="bar"><i id="tqBar" style="width:100%"></i></div>';
+      $('tq').innerHTML = p.q + '<div class="bar"><i id="tqBar" style="width:100%"></i></div><button class="btn small ghost" data-why="1">¿Por qué tan poco tiempo?</button>';
       TR.left = 10; TR.phase = 'ask'; A.play('pop');
     } else if (TR.id === 'antic') {
       opp.place(rnd(-3, 3), HOME_OP); me.place(0, HOME_ME);
@@ -845,6 +846,7 @@
   function trainFrame(dt, t) {
     var b = TR.ball, ev = [];
     extras.forEach(function (c) { c.update(dt, t); });
+    if (TR.hold) return;
     if (TR.wait > 0) { TR.wait -= dt; if (TR.wait <= 0) trRound(); if (!TR) return; }
     if (TR.phase === 'ask') { TR.left -= dt; var bar = $('tqBar'); if (bar) bar.style.width = Math.max(0, TR.left * 10) + '%'; if (TR.left <= 0) trAnswer(-1); }
     else if (TR.phase === 'lights') {
@@ -864,6 +866,15 @@
     }
     if (TR.canGuess) { TR.gt += dt; if (TR.gt > 5) trGuess(null); }
   }
+  // Fichas con el porqué del entrenamiento mental. Mientras están abiertas el reloj del ejercicio se detiene.
+  function showMind() {
+    if (TR) TR.hold = true;
+    var h = '<h2>La mente también se entrena</h2><p>Por qué hay que decidir rápido, con datos de estudios.</p>';
+    PP.MIND.forEach(function (m) { h += '<div class="card" style="text-align:left;width:100%;box-sizing:border-box;margin:0"><h3 style="font-size:20px;color:#FFD23A">' + m.t + '</h3><p style="color:#fff">' + m.b + '</p><p style="font-size:12px">Fuente: ' + m.s + '</p></div>'; });
+    h += '<button class="btn lime big" id="mindOk">' + (TR ? 'Seguir entrenando' : 'Entendido') + '</button>';
+    modal(h, function () { on($('mindOk'), function () { closeModal(); if (TR) TR.hold = false; }); });
+  }
+  $('tq').addEventListener('click', function (e) { if (e.target.closest('[data-why]')) { A.unlock(); A.play('click'); showMind(); } });
   function trainFinish(id, pct) {
     trClean(); $('hud').hidden = true;
     pct = clamp(Math.round(pct), 0, 100);
