@@ -351,7 +351,7 @@
   function startLevel(idx) {
     tickLives();
     var lv = typeof idx === 'object' ? idx : PP.LEVELS[idx], c = curChar();
-    if (!lv.train && !save.pass && save.lives <= 0) { showNoLives(); return; }
+    if (!lv.train && !lv.show && !save.pass && save.lives <= 0) { showNoLives(); return; }
     trClean(); S.ballHide = false; $('hud').classList.remove('tr');
     if (curWorld !== lv.world) { S.setWorld(lv.world); curWorld = lv.world; }
     if (me) me.remove(); if (opp) opp.remove();
@@ -364,7 +364,7 @@
     G = { lv: lv, idx: idx, type: lv.type, me: 0, opp: 0, toWin: lv.toWin || 0, phase: 'intro', t: 0, rt: 0, rally: 0, combo: 0, bestCombo: 0, bestRally: 0,
       perfects: 0, hits: 0, x3: 0, supers: 0, meter: 0, armed: false, shield: 0, slow: 0, ball: newBall(), plan: null, queued: null, oppPlan: null,
       hitStop: 0, slowmo: 0, timers: [], ballsLeft: lv.balls || 0, targetsHit: 0, misses: 0, targets: [], over: false, serveT: 0, cool: 0, pointDone: false,
-      paused: false, oppShots: 0, tutHits: 0, freeze: false, char: c, score: 0, continued: false };
+      paused: false, fire: false, fireHits: 0, gift: false, oppShots: 0, tutHits: 0, freeze: false, char: c, score: 0, continued: false };
     for (var i = 0; i < 3; i++) S.setTarget(i, null);
     if (G.type === 'targets') for (var j = 0; j < 3; j++) placeTarget(j);
     S.mode = 'play'; S.setBall(G.ball, false); S.ring(null);
@@ -375,7 +375,7 @@
     hud(); setHint('');
     pop(lv.type === 'boss' ? '¡' + lv.boss.name + '!' : (G.type === 'targets' ? '¡Puntería!' : G.type === 'rally' ? '¡Peloteo!' : 'VS ' + lv.rival), 'big ' + (lv.type === 'boss' ? 'pink' : 'gold'));
     A.play(lv.type === 'boss' ? 'warn' : 'ready');
-    after(1.3, beginPoint);
+    after(0.9, beginPoint);
   }
   function after(sec, fn) { G.timers.push({ t: G.rt + sec, fn: fn }); }
   function setHint(t) { $('hint').textContent = t; }
@@ -470,7 +470,7 @@
       if (d > 1.9) { stretch = true; if (q === 'perfect' || q === 'good') q = 'ok'; }
     } else me.swing(manual && high && !aim.lob ? 'smash' : (manual && aim.lob ? 'lob' : 'drive'), manual && b.x < me.x);
     var tx = aim.x * 4.1, tz = -(3.2 + aim.depth * 5.6), pot = stat('pot');
-    var T = ({ perfect: 0.95, good: 1.2, ok: 1.5, bad: 1.6 })[q] * (1 - (pot - 5) * 0.022), sup = false, fault = false;
+    var T = ({ perfect: 0.82, good: 1.02, ok: 1.3, bad: 1.45 })[q] * (1 - (pot - 5) * 0.022) * Math.max(0.82, 1 - G.rally * 0.02) * (G.fire ? 0.9 : 1), sup = false, fault = false;
     if (serve) { tz = -clamp(4 + aim.depth * 2.4, 4, 6.4); T = Math.max(T, 1.1); label = 'SAQUE'; }
     else if (aim.lob) { T = 2.0; tz = -8.2; label = '¡GLOBO!'; }
     else if (high) { T *= 0.72; label = q === 'perfect' ? '¡POR 3!' : (Math.abs(aim.x) > 0.45 ? '¡VÍBORA!' : '¡BANDEJA!'); }
@@ -498,11 +498,11 @@
     if (q === 'perfect') { G.perfects++; mission('perf', 1); A.play(high || sup ? 'smash' : 'perfect', Math.min(G.combo, 9)); S.burst(hp, c.accent, 46, 9, 0.7); S.burst(hp, '#ffffff', 16, 5, 0.4); S.shock(hp, c.accent); S.shake(sup ? 0.9 : 0.45); S.punch(sup ? 1 : 0.5); G.hitStop = sup ? 0.14 : 0.07; A.vibrate(sup ? 60 : 25); flash(sup ? 0.5 : 0.12); }
     else if (q === 'good') { A.play('hit'); S.burst(hp, '#22E1FF', 18, 6, 0.5); S.shake(0.18); G.hitStop = 0.03; A.vibrate(12); }
     else { A.play('weak'); S.burst(hp, '#ffffff', 6, 3, 0.3); }
-    S.setBallStyle(sup ? c.accent : (q === 'perfect' ? c.accent : '#D8FF3A'), sup ? 2.2 : (q === 'perfect' ? 1 : 0));
+    S.setBallStyle(sup ? c.accent : (G.fire ? '#FF7A3D' : (q === 'perfect' ? c.accent : '#D8FF3A')), sup ? 2.2 : (G.fire ? 1.7 : (q === 'perfect' ? 1 : 0)));
     pop(label, q === 'perfect' ? 'gold' : 'good', { x: hp.x, y: hp.y + 1.5, z: hp.z });
     pop({ perfect: '¡PERFECTO!', good: 'Bien', ok: stretch ? 'Justo' : 'Flojo', bad: 'Mal' }[q], q, { x: hp.x, y: hp.y + 0.6, z: hp.z });
-    if (q === 'perfect' || q === 'good') { G.combo++; G.bestCombo = Math.max(G.bestCombo, G.combo); mission('combo', G.combo, true); bump('combo'); }
-    else G.combo = 0;
+    if (q === 'perfect' || q === 'good') { G.combo++; G.bestCombo = Math.max(G.bestCombo, G.combo); mission('combo', G.combo, true); bump('combo'); if (G.fire) G.fireHits++; if (G.combo >= 4 && !G.fire) fireOn(); }
+    else G.combo = 0; fireOff();
     if (!serve) { G.hits++; G.rally++; G.bestRally = Math.max(G.bestRally, G.rally); mission('rally', G.rally, true); }
     G.score += (q === 'perfect' ? 150 : q === 'good' ? 80 : 30) * Math.max(1, G.combo) * (sup && c.id === 'tornado' ? 2 : 1);
     if (!sup) G.meter = Math.min(METER_MAX, G.meter + (q === 'perfect' ? 2 : q === 'good' ? 1 : 0.3) * (1 + (stat('res') - 5) * 0.08));
@@ -522,7 +522,7 @@
     opp.speed = 3.6 + d * 0.11 + (boss ? 0.6 : 0);
     var avail = p.t - G.t - Math.max(0.1, 0.3 - d * 0.005), dist = Math.hypot(sx - opp.x, sz - opp.z);
     var reach = dist <= opp.speed * avail + 1.15, far = dist > opp.speed * avail + 0.3;
-    var perr = Math.max(0.02, 0.14 - d * 0.0035) + G.rally * 0.022 + ({ perfect: Math.max(0.02, 0.09 - d * 0.002), good: 0.02, ok: -0.08, bad: -0.08 })[q] + (far ? 0.18 : 0) + (stat('pot') - 5) * 0.01;
+    var perr = Math.max(0.02, 0.14 - d * 0.0035) + G.rally * 0.022 + ({ perfect: Math.max(0.02, 0.09 - d * 0.002), good: 0.02, ok: -0.08, bad: -0.08 })[q] + (far ? 0.18 : 0) + (G.fire ? 0.1 : 0) + (stat('pot') - 5) * 0.01;
     if (G.rally === 0) { reach = true; perr *= 0.4; opp.speed = Math.max(opp.speed, 8); }
     if (boss) perr *= 0.72;
     if (G.type === 'rally') { reach = true; perr = 0; opp.speed = 12; }
@@ -540,11 +540,13 @@
       if (Math.random() < 0.5) launch(b, b.x * 0.5, -0.9, 0.8, 'opp'); else launch(b, rnd(-3, 3), 11.8, 1.0, 'opp');
       A.play('weak'); S.burst(hp, '#ffffff', 6, 3, 0.3); S.setBallStyle('#D8FF3A', 0); G.phase = 'toMe'; G.plan = null; opp.goTo(0, HOME_OP); return;
     }
-    var T = Math.max(0.76, 1.5 - d * 0.018) - (boss ? 0.06 : 0), spread = Math.min(4, 1.5 + d * 0.065);
+    var T = (Math.max(0.74, 1.3 - d * 0.014) - (boss ? 0.06 : 0)) * Math.max(0.84, 1 - G.rally * 0.02), spread = Math.min(4, 1.5 + d * 0.065);
     var smart = Math.random() < 0.3 + d * 0.017, tx = smart ? -Math.sign(me.x || (Math.random() - 0.5)) * rnd(1.2, spread) : rnd(-spread, spread);
     var tz = 4.6 + Math.random() * (1.4 + Math.min(2.8, d * 0.07)), lobP = boss ? G.lv.boss.lob : Math.max(0.05, 0.13 - d * 0.002), fire = false;
     if (G.type === 'rally') { T = Math.max(0.95, 1.5 - G.hits * 0.022); tx = rnd(-3, 3) * Math.min(1, 0.4 + G.hits * 0.04); lobP = 0.1; }
-    if (save.tut < 1) { T = 1.7; tx = rnd(-1.5, 1.5); tz = 5.5; lobP = 0; }
+    if (save.tut < 1 && G.tutHits < 2) { T = 1.55; tx = rnd(-1.5, 1.5); tz = 5.5; lobP = 0; }
+    // Regalo de bienvenida: en los primeros niveles el rival deja un globo corto para que el jugador pruebe el remate
+    if (!G.gift && G.oppShots === 2 && (G.lv.show || G.idx < 3) && !boss0()) { G.gift = true; lobP = 0; T = 2.0; tz = 5.0; tx = clamp(me.x + 0.6, -3, 3); pop('¡Globo corto! ¡Rematala!', 'gold', { x: hp.x, y: hp.y + 1.8, z: hp.z }); A.play('ready'); }
     if (Math.random() < lobP) { T = 2.05; tz = rnd(6.6, 7.8); }
     else if (boss && G.oppShots % 4 === 0) { fire = true; T *= 0.8; A.play('warn'); pop('¡CUIDADO!', 'bad', { x: hp.x, y: hp.y + 1.6, z: hp.z }); }
     launch(b, tx, tz, T, 'opp');
@@ -602,11 +604,11 @@
     var b = G.ball, x3 = b.x3;
     if (G.type === 'rally') {
       if (who === 'me') { G.hits += 2; pop(x3 ? '¡POR 3! +2' : '¡Punto! +2', 'big gold'); A.play('point'); S.excite = 1; if (x3) { G.x3++; mission('x3', 1); } }
-      else { G.misses++; G.combo = 0; pop(loseMsg, 'big bad'); A.play('lose'); S.shake(0.3); me.setMood('sad'); }
+      else { G.misses++; G.combo = 0; fireOff(); pop(loseMsg, 'big bad'); A.play('lose'); S.shake(0.3); me.setMood('sad'); }
       hud();
       if (G.hits >= G.lv.need) after(0.9, function () { endLevel(true); });
       else if (G.misses >= G.lv.misses) after(1.1, function () { endLevel(false); });
-      else after(1.1, beginPoint);
+      else after(0.8, beginPoint);
       return;
     }
     if (who === 'me') {
@@ -616,13 +618,43 @@
       S.fountain({ x: me.x, y: 1, z: me.z }, G.char.accent, 40, 7);
       G.slowmo = Math.max(G.slowmo, G.me >= G.toWin ? 0.9 : 0.25);
     } else {
-      G.opp++; bump('pOp'); me.setMood('sad'); opp.setMood('happy'); G.combo = 0; A.play('lose'); S.shake(0.35);
+      G.opp++; bump('pOp'); me.setMood('sad'); opp.setMood('happy'); G.combo = 0; fireOff(); A.play('lose'); S.shake(0.35);
       pop(loseMsg, 'big bad');
     }
     hud();
     if (G.me >= G.toWin) after(1.5, function () { endLevel(true); });
     else if (G.opp >= G.toWin) after(1.4, function () { endLevel(false); });
-    else after(1.5, beginPoint);
+    else after(1.0, beginPoint);
+  }
+
+  /* ---------- En llamas, final de exhibición y avances ---------- */
+  function boss0() { return G.type === 'boss' && !G.lv.show; }
+  function fireOn() {
+    G.fire = true; me.aura = 1; S.excite = 1; pop('¡EN LLAMAS!', 'big pink'); A.play('super'); flash(0.3); S.shake(0.4);
+    $('lines').style.opacity = 0.7; S.fountain({ x: me.x, y: 0.4, z: me.z }, '#FF7A3D', 60, 9);
+  }
+  function fireOff() { if (!G || !G.fire) return; G.fire = false; $('lines').style.opacity = 0; if (!G.armed && !G.shield && G.slow <= 0) me.aura = 0; }
+  // Primera vez que se abre el juego: un punto de exhibición en la final del World Tour, con el especial cargado
+  function startShow() {
+    save.intro = true; persist();
+    startLevel({ show: true, type: 'boss', world: 3, toWin: 2, rival: 'El Número 1', boss: PP.BOSSES[3], sprite: 'assets/sprites/boss4.png', goal: 'Final del World Tour · partido de exhibición', diff: 3, n: 0 });
+    G.meter = METER_MAX; hud();
+  }
+  function worldStrip() {
+    var h = '<div class="wstrip">';
+    PP.WORLDS.forEach(function (w, i) { h += '<div class="wcard" style="--wc:' + w.ui + ';background-image:linear-gradient(rgba(10,5,30,.1),rgba(10,5,30,.75)),url(' + w.bg + ')"><img src="' + PP.BOSSES[i].img + '" alt=""><b>' + (i + 1) + '. ' + w.name + '</b><span>Jefe: ' + PP.BOSSES[i].name + '</span></div>'; });
+    return h + '</div>';
+  }
+  function showTeaser(win) {
+    modal('<h2>' + (win ? '¡Así se siente ganar la final!' : '¡Así se juega una final!') + '</h2><p style="color:#fff;font-size:17px">Ese estadio es el último nivel. Para volver tenés que ganarte el lugar: 4 mundos, 40 niveles y 4 jefes que no regalan nada.</p>' +
+      worldStrip() + '<button class="btn lime big pulse" id="tzGo">Empezar mi carrera</button>', function () {
+      on($('tzGo'), function () { closeModal(); startLevel(0); });
+    });
+  }
+  function nextBossHtml(idx) {
+    var nb = Math.floor(idx / 10) * 10 + 9; if (idx >= nb || idx >= PP.LEVELS.length - 1) return '';
+    var bs = PP.LEVELS[nb].boss, left = nb - idx;
+    return '<div class="nextboss"><img src="' + bs.img + '" alt=""><p>' + (left === 1 ? 'El próximo nivel es contra ' : 'Faltan ' + (left - 1) + ' niveles para enfrentar a ') + '<b>' + bs.name + '</b>.<br>«' + bs.line + '»</p></div>';
   }
 
   /* ---------- Especial ---------- */
@@ -638,6 +670,10 @@
   /* ---------- Fin de nivel ---------- */
   function endLevel(win) {
     if (!G || G.over) return; G.over = true; G.phase = 'over'; S.ring(null); setHint('');
+    if (G.lv.show) {
+      if (win) { me.setMood('happy'); opp.setMood('sad'); S.confetti(240); A.play('win'); for (var fw = 0; fw < 8; fw++) setTimeout(S.firework, fw * 220); } else { opp.setMood('happy'); A.play('point'); }
+      setTimeout(function () { leaveMatch(); showTeaser(win); }, 1900); return;
+    }
     if (G.lv.train) { var pc = G.hits / G.lv.need * 100 - G.misses * 8; (win ? me : opp).setMood('happy'); setTimeout(function () { leaveMatch(); trainFinish('ghost', pc); }, 1000); return; }
     var lv = G.lv, idx = G.idx, stars = 0;
     save.best.rally = Math.max(save.best.rally, G.bestRally); save.best.combo = Math.max(save.best.combo, G.bestCombo);
@@ -647,7 +683,7 @@
       else stars = G.opp === 0 ? 3 : (G.opp <= Math.floor(lv.toWin / 2) ? 2 : 1);
       if (G.continued) stars = Math.min(stars, 1);
       var first = !save.stars[idx], gained = Math.max(0, stars - (save.stars[idx] || 0));
-      var coins = (50 + idx * 12 + stars * 25 + G.perfects * 3) * (save.pass ? 2 : 1), xp = 40 + idx * 6 + stars * 10, gems = (lv.type === 'boss' && first) ? 15 : 0;
+      var coins = (50 + idx * 12 + stars * 25 + G.perfects * 3 + G.fireHits * 4) * (save.pass ? 2 : 1), xp = 40 + idx * 6 + stars * 10, gems = (lv.type === 'boss' && first) ? 15 : 0;
       save.stars[idx] = Math.max(save.stars[idx] || 0, stars);
       if (idx >= save.level && idx < PP.LEVELS.length - 1) save.level = idx + 1;
       save.coins += coins; save.gems += gems; var rankUp = addXp(xp); save.chest = Math.min(3, save.chest + 1);
@@ -670,6 +706,7 @@
         '<p>Perfectos: <b style="color:#fff">' + G.perfects + '</b> · Mejor combo: <b style="color:#fff">x' + G.bestCombo + '</b> · Peloteo más largo: <b style="color:#fff">' + G.bestRally + '</b></p>' +
         (r.rankUp ? '<p class="disp" style="font-size:24px;color:#FFD23A">¡Subiste a ' + PP.RANKS[save.rank] + '!</p>' : '') +
         (r.stars < 3 ? '<p>Te falta' + (3 - r.stars > 1 ? 'n ' : ' ') + (3 - r.stars) + ' estrella' + (3 - r.stars > 1 ? 's' : '') + '. ¿Vas por las 3?</p>' : '') +
+        nextBossHtml(idx) +
         '<div class="row"><button class="btn ghost" id="rMap">Mapa</button><button class="btn ghost" id="rAgain">Repetir</button>' +
         (idx < PP.LEVELS.length - 1 ? '<button class="btn lime big pulse" id="rNext">Siguiente</button>' : '') + '</div>';
     } else {
@@ -1047,7 +1084,7 @@
     me = S.makeSpriteChar(c.sprite, { accent: c.accent, scale: 1 }); me.place(-1.5, 6);
     opp = S.makeSpriteChar(PP.LEVELS[Math.min(save.level, 39)].sprite, { accent: '#ffffff', scale: 1 }); opp.place(1.5, -6);
     ensureMissions(); go('home'); setInterval(function () { if (!G) refreshTop(); }, 1000);
-    if (location.search.indexOf('nodaily') < 0) showDaily();
+    if (!save.intro && location.search.indexOf('nodaily') < 0) startShow(); else if (location.search.indexOf('nodaily') < 0) showDaily();
     requestAnimationFrame(frame);
   }
   // Ganchos de prueba e integración (Padel Coach puede usar window.Pelotita)
