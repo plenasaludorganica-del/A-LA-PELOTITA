@@ -24,6 +24,7 @@
       special: { name: 'Smash eléctrico', desc: 'Tu próximo golpe es un remate que nadie devuelve.' },
       look: { shirt: '#F4EBDD', chest: '#F4EBDD', shorts: '#FFFFFF', hair: '#4A2A16', skin: '#F0B98A', hat: 'band' } }
   ];
+  PP.CHARS.forEach(function (c) { c.sprite = 'assets/sprites/' + c.id + '.png'; });
   PP.STAT_NAMES = { pot: 'Potencia', pre: 'Precisión', ref: 'Reflejos', def: 'Defensa', res: 'Resistencia' };
   PP.STAT_HELP = {
     pot: 'Golpes más rápidos', pre: 'Perfectos más fáciles', ref: 'Más tiempo para pegar',
@@ -92,6 +93,7 @@
         { shirt: '#D81E2C', chest: '#FFD23A', shorts: '#15121A', hair: '#111118', skin: '#C98A5E', hat: 'hair' }
       ][w];
     }
+    lv.sprite = 'assets/sprites/' + (type === 'boss' ? 'boss' + (w + 1) : 'r' + (1 + (i * 3 + w) % 4)) + '.png';
     PP.LEVELS.push(lv);
   }
 
@@ -111,6 +113,35 @@
     { id: 'stars', text: 'Juntá {n} estrellas', n: [3, 6, 9], reward: { coins: 250 } },
     { id: 'super', text: 'Usá tu especial {n} veces', n: [2, 3, 5], reward: { coins: 180 } },
     { id: 'combo', text: 'Llegá a un combo x{n}', n: [5, 8, 12], reward: { gems: 3 } }
+  ];
+
+  // Gimnasio mental: jugadas para leer. La primera opción es siempre la correcta (se mezclan al mostrarlas).
+  // Posiciones [x, z]: tu lado es z > 0, la red está en z = 0.
+  PP.DRILLS = [
+    { id: 'read', name: 'Leé la jugada', desc: 'Se congela el punto. Elegí el golpe correcto antes de que se acabe el tiempo.', color: '#FFB020' },
+    { id: 'antic', name: 'Anticipación', desc: 'La pelota desaparece en el aire. Tocá donde creés que va a picar.', color: '#22E1FF' },
+    { id: 'lights', name: 'Tablero de luces', desc: 'Tocá las luces verdes apenas aparecen. Las rojas no se tocan.', color: '#7CFF4D' },
+    { id: 'ghost', name: 'Pelota fantasma', desc: 'Peloteo con la pelota que parpadea, como entrenar con lentes estroboscópicos.', color: '#FF4FA3' }
+  ];
+  PP.PLAYS = [
+    { q: 'Los dos rivales están pegados a la red y vos atrás. Te llega una pelota cómoda.', me: [2, 8], mate: [-2, 8], r1: [-2, -2.6], r2: [2, -2.6], ball: [2.7, 1, 7.6],
+      opts: ['Globo profundo', 'Remate', 'Tiro fuerte al cuerpo'], why: 'El globo los saca de la red y te da tiempo para subir.', shot: [-2, -8.6, 2.0] },
+    { q: 'Estás en la red y te tiran un globo profundo.', me: [2, 3.4], mate: [-2, 3], r1: [-2, -8], r2: [2, -8], ball: [2.5, 3.1, 5.2],
+      opts: ['Bandeja', 'Remate a definir', 'Dejarla picar y esperar'], why: 'La bandeja no busca ganar el punto: busca que no pierdas la red.', shot: [-3, -8, 1.3] },
+    { q: 'Estás en la red y el globo te queda corto y flotando.', me: [1.6, 3], mate: [-2, 3], r1: [-2, -8], r2: [2, -8], ball: [2.1, 3, 2.8],
+      opts: ['Remate', 'Bandeja suave', 'Devolver otro globo'], why: 'Un globo corto es un regalo: se ataca con remate o víbora.', shot: [1.5, -5, 0.6] },
+    { q: 'El globo te pasa muy alto y profundo. No llegás cómodo.', me: [2, 3.2], mate: [-2, 3], r1: [-2, -8], r2: [2, -8], ball: [2.2, 4.2, 7.6],
+      opts: ['Dejarla y jugar de la pared', 'Saltar y rematar igual', 'Bandeja de espaldas'], why: 'Forzar un remate incómodo regala el punto. La pared te da otra oportunidad.', shot: [-2, -8.4, 2.0], move: [2, 8] },
+    { q: 'Rivales en la red, vos atrás. La pelota te llega baja y lenta.', me: [1.6, 7.4], mate: [-2, 8], r1: [-2, -2.6], r2: [2, -2.6], ball: [2.2, 0.6, 7],
+      opts: ['Chiquita a los pies y subir', 'Globo corto', 'Pegar fuerte a la reja'], why: 'La chiquita los obliga a volear desde abajo y te abre la subida a la red.', shot: [-1.6, -2.8, 1.1], move: [1.6, 3.5] },
+    { q: 'Tu pareja sube a la red después de un buen globo.', me: [2, 8], mate: [-2, 3], r1: [-2, -8], r2: [2, -8], ball: [-1, 2.2, -7.6],
+      opts: ['Subir con tu pareja', 'Quedarte atrás por las dudas', 'Ir al medio de la cancha'], why: 'La pareja se mueve junta, como atada con una soga. Si uno sube, suben los dos.', move: [2, 3] },
+    { q: 'Estás en la red con una volea fácil y los rivales están separados.', me: [1.2, 2.9], mate: [-2, 3], r1: [-3.8, -7.5], r2: [3.8, -7.5], ball: [1.7, 1.4, 2.6],
+      opts: ['Al medio, entre los dos', 'A la reja lateral', 'Dejada pegada a la red'], why: 'Al medio hay más cancha, menos riesgo, y los rivales dudan quién va.', shot: [0, -7, 0.8] },
+    { q: 'Estás en la red y la pelota te llega por debajo de la cinta.', me: [1.5, 2.8], mate: [-2, 3], r1: [-2, -8], r2: [2, -8], ball: [2, 0.55, 2.5],
+      opts: ['Volea profunda de control', 'Volea fuerte a definir', 'Remate'], why: 'Por debajo de la red no se define: se juega profundo y se espera la próxima.', shot: [-2, -8, 1.2] },
+    { q: 'Tu pareja corre hacia atrás a defender un globo.', me: [2, 3], mate: [-2, 7.5], r1: [-2, -6], r2: [2, -6], ball: [-2.2, 3.4, 6.5],
+      opts: ['Bajar y cubrir con tu pareja', 'Quedarte solo en la red', 'Cruzarte a su lado'], why: 'Si te quedás solo en la red dejás media cancha libre para el contraataque.', move: [2, 7.2] }
   ];
 
   // Tienda: en esta demo los pagos son simulados. Los SKU son los que usaría la pasarela real.

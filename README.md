@@ -32,6 +32,22 @@ Después abrir `http://localhost:8080`. También funciona publicado en GitHub Pa
   cofre cada 3 victorias, vidas que se recargan con el tiempo.
 - Tienda con monedas, gemas y Pase Pelotita. **Los pagos son simulados** (ver abajo).
 
+## Gimnasio mental
+
+Modo de entrenamiento táctico y visual, con un "IQ de pádel" que sube con la mejor marca de cada ejercicio:
+
+- **Leé la jugada:** se congela un punto de dobles y hay que elegir el golpe correcto (globo, bandeja, chiquita, al medio).
+  Las jugadas están en `PP.PLAYS` dentro de `js/data.js`; para sumar una alcanza con agregar un objeto.
+- **Anticipación:** la pelota desaparece en el aire y hay que tocar dónde va a picar.
+- **Tablero de luces:** tocar las verdes, no tocar las rojas, mirando el centro.
+- **Pelota fantasma:** peloteo con la pelota que parpadea.
+
+## Personajes
+
+Los jugadores, jefes y rivales son pixel art animado por cuadros. Cada uno tiene un atlas de 8 poses en
+`assets/sprites/` (espera, corrida ×2, festejo, armado, golpe, remate, derrota).
+`tools/slice-sprites.py` arma el atlas a partir de planchas PNG con fondo transparente.
+
 ## Estructura
 
 | Archivo | Qué tiene |

@@ -55,7 +55,18 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 .spacer { flex: 1; }
 #top { flex-wrap: nowrap; }
 @media (max-width: 420px) { .chip { padding: 6px 9px; gap: 4px; font-size: 15px; } .chip.plus::after { width: 17px; height: 17px; font-size: 14px; } }
-#rank { flex-direction: column; align-items: stretch; gap: 3px; border-radius: 14px; padding: 6px 12px; min-width: 130px; align-self: flex-start; margin-top: 62px; font-size: 13px; }
+#rank { flex-direction: column; align-items: stretch; gap: 3px; border-radius: 14px; padding: 6px 12px; min-width: 130px; font-size: 13px; position: absolute; left: var(--gutter-l); top: calc(env(safe-area-inset-top, 0px) + 58px); }
+#tq { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 100px); left: 50%; transform: translateX(-50%); width: min(92%, 520px); box-sizing: border-box; background: var(--panel); border: 2px solid var(--panel-line); border-radius: 18px; padding: 10px 14px; font-size: 16px; text-align: center; }
+#tq:empty { display: none; } #tq .bar { margin-top: 8px; height: 8px; } #tq .bar i { transition: none; background: linear-gradient(90deg, var(--pink), var(--amber)); }
+#tq b { color: var(--lime); } #tq b.no { color: var(--red); }
+#opts { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); transform: translateX(-50%); width: min(92%, 520px); display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
+#opts:empty { display: none; } #opts .btn { width: 100%; font-size: 18px; text-transform: none; min-height: 56px; }
+#opts .btn[disabled] { filter: none; } #opts .btn.ok { background: var(--lime); color: #1b1033; } #opts .btn.no { background: var(--red); color: #fff; } #opts .btn.dim { opacity: .45; }
+#hud.tr #superBtn, #hud.tr #combo, #hud.tr #goal { display: none; }
+#lights { z-index: 6; } #lights .fix { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px; border-radius: 50%; background: radial-gradient(circle at 32% 30%, #F6FFB0, var(--lime) 45%, #9CC400); box-shadow: 0 0 30px var(--lime); }
+.light { position: absolute; width: 76px; height: 76px; margin: -38px; border-radius: 50%; border: 4px solid #fff; background: #7CFF4D; box-shadow: 0 0 34px #7CFF4D; animation: lt 1.2s linear forwards; cursor: pointer; padding: 0; }
+.light.red { background: var(--red); box-shadow: 0 0 34px var(--red); } @keyframes lt { from { transform: scale(1.15); } to { transform: scale(.5); opacity: .55; } }
+.iq { font-family: var(--display); font-size: 64px; color: var(--lime); line-height: 1; text-shadow: 0 0 24px var(--lime); }
 #rank b { font-family: var(--display); font-weight: 400; font-size: 15px; color: var(--amber); }
 .bar { height: 6px; background: rgba(255, 255, 255, .16); border-radius: 4px; overflow: hidden; }
 .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--lime)); width: 0; transition: width .5s; }
@@ -74,7 +85,7 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 .logo .o:nth-of-type(2) { animation-delay: .25s; }
 @keyframes boing { 0%, 100% { transform: translateY(0) scale(1.05, .95); } 45% { transform: translateY(-.26em) scale(.96, 1.05); } }
 .logo small { display: block; font-size: .26em; letter-spacing: .28em; color: var(--cyan); text-shadow: 0 2px 0 rgba(0, 0, 0, .5); margin-top: .5em; transform: rotate(3deg); }
-#hero { height: min(34vh, 300px); filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .5)); animation: float 3s ease-in-out infinite; image-rendering: pixelated; margin-bottom: -6px; }
+#hero { height: min(26vh, 260px); filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .5)); animation: float 3s ease-in-out infinite; image-rendering: pixelated; margin-bottom: -6px; }
 @keyframes float { 50% { transform: translateY(-10px) rotate(1.5deg); } }
 .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .tagline { color: var(--ink-soft); font-size: 15px; text-align: center; max-width: 34ch; margin: 0; }
@@ -167,7 +178,7 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 #superBtn.full { animation: pulse .6s ease-in-out infinite; box-shadow: 0 0 34px var(--ac, var(--cyan)); } #superBtn.full span { background: var(--ac, var(--cyan)); color: #1b1033; font-size: 19px; }
 #hint { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 30px); transform: translateX(-50%); background: rgba(0, 0, 0, .55); border: 2px solid rgba(255, 255, 255, .3); border-radius: 16px; padding: 10px 16px; font-size: 16px; text-align: center; max-width: min(70%, 380px); }
 #hint:empty { display: none; }
-#extra { position: absolute; left: var(--gutter-l); top: calc(env(safe-area-inset-top, 0px) + 14px); font-size: 18px; display: flex; gap: 4px; align-items: center; background: var(--panel); border-radius: 999px; padding: 6px 12px; }
+#extra { position: absolute; left: var(--gutter-l); top: calc(env(safe-area-inset-top, 0px) + 104px); font-size: 18px; display: flex; gap: 4px; align-items: center; background: var(--panel); border-radius: 999px; padding: 6px 12px; }
 #extra:empty { display: none; }
 #pops { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 7; }
 .pop { position: absolute; transform: translate(-50%, -50%); font-family: var(--display); font-size: 26px; white-space: nowrap; text-shadow: 0 3px 0 rgba(0, 0, 0, .55), 0 0 16px currentColor; animation: popup .9s ease-out forwards; }
@@ -211,9 +222,12 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
     <div id="goal"></div>
     <button class="chip" id="pauseBtn" aria-label="Pausa"><svg class="ic"><use href="#i-pause"/></svg></button>
     <div id="combo"><span id="comboN">x2</span><small>COMBO</small></div>
+    <div id="tq"></div>
+    <div id="opts"></div>
     <div id="hint"></div>
     <button id="superBtn" aria-label="Especial"><span id="superTx">ESPECIAL</span></button>
   </div>
+  <div id="lights" class="layer" hidden><div class="fix"></div></div>
   <div id="pops"></div>
   <div id="flash"></div>
 
@@ -230,10 +244,11 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
     <h1 class="logo"><span class="br">[</span>A LA<br>PEL<span class="o"></span>TITA<span class="br">]</span><small>PÁDEL ARCADE</small></h1>
     <img id="hero" alt="">
     <button class="btn big lime pulse" id="playBtn">Jugar</button>
+    <button class="btn cyan" id="bTrain" style="font-size:22px">Gimnasio mental · IQ <span id="vIq">70</span></button>
     <div class="row">
       <button class="btn ghost" id="bMap">Circuito</button>
       <button class="btn pink" id="bChars">Jugadores</button>
-      <button class="btn cyan" id="bMissions">Misiones</button>
+      <button class="btn ghost" id="bMissions">Misiones</button>
       <button class="btn" id="bShop">Tienda</button>
     </div>
     <p class="tagline">Deslizá para pegarle. Apuntá con la dirección. Cuando el aro se cierra, ¡es PERFECTO!</p>
@@ -252,6 +267,12 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
   <section id="shop" class="layer screen sheet" hidden>
     <header><button class="btn small ghost" data-go="home" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button><h2>Tienda</h2></header>
     <div class="scroll"><p class="note">Versión demo: los pagos todavía no están conectados. Al tocar un precio se simula la compra y te lo acredita.</p><div id="shopList"></div></div>
+  </section>
+
+  <section id="train" class="layer screen sheet" hidden>
+    <header><button class="btn small ghost" data-go="home" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button><h2>Gimnasio mental</h2></header>
+    <div class="scroll"><div class="card" id="iqCard"></div><div id="drillList"></div>
+      <p class="note">Estos ejercicios enseñan táctica y lectura de juego. No reemplazan el entrenamiento en cancha.</p></div>
   </section>
 
   <section id="missions" class="layer screen sheet" hidden>

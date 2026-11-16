@@ -282,6 +282,77 @@
     return ch;
   };
 
+  /* ---------- Personajes en pixel art (atlas 4x2 de poses) ---------- */
+  // Cuadros: 0 espera, 1 corre A, 2 corre B, 3 festejo, 4 armado, 5 golpe, 6 remate, 7 derrota
+  S.makeSpriteChar = function (url, opts) {
+    opts = opts || {};
+    var accent = opts.accent || '#FFB020', g = new T.Group();
+    var sh = new T.Mesh(new T.CircleGeometry(0.62, 20), basic(0x000000, 0.32)); sh.rotation.x = -Math.PI / 2; sh.position.y = 0.012; g.add(sh);
+    var tex = new T.TextureLoader().load(url);
+    tex.colorSpace = T.SRGBColorSpace; tex.generateMipmaps = false; tex.minFilter = T.LinearFilter; tex.magFilter = T.LinearFilter; tex.repeat.set(0.25, 0.5);
+    var mat = new T.SpriteMaterial({ map: tex, alphaTest: 0.5 });
+    var sp = new T.Sprite(mat); sp.center.set(0.5, 0.01); g.add(sp);
+    var HH = 3.5 * (opts.scale || 1), WW = HH * 224 / 288;
+    var ghosts = [];
+    for (var i = 0; i < 3; i++) {
+      var gm = new T.SpriteMaterial({ map: tex, color: accent, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending });
+      var gs = new T.Sprite(gm); gs.center.set(0.5, 0.01); gs.scale.set(WW, HH, 1); scene.add(gs); ghosts.push({ s: gs, t: 0 });
+    }
+    var aura = glowSprite(accent, 3.6, 0); aura.position.y = 1.2; g.add(aura);
+    scene.add(g);
+    var cur = -1, curFlip = false;
+    function frame(f, flip) {
+      if (f === cur && flip === curFlip) return; cur = f; curFlip = flip;
+      var c = f % 4, r = Math.floor(f / 4);
+      tex.repeat.x = flip ? -0.25 : 0.25; tex.offset.set(flip ? (c + 1) * 0.25 : c * 0.25, 1 - (r + 1) * 0.5);
+    }
+    frame(0, false);
+    var ch = {
+      g: g, x: 0, z: 0, tx: 0, tz: 0, speed: 6, facing: opts.facing || 0, mood: 'idle', sprite: true,
+      swingT: -1, swingDur: 0.34, swingType: 'drive', swingFlip: false, run: 0, moving: 0, aura: 0, vx: 0, moodT: 0, dust: 0, ghostT: 0, land: 0,
+      place: function (x, z) { this.x = this.tx = x; this.z = this.tz = z; g.position.set(x, 0, z); },
+      goTo: function (x, z) { this.tx = x; this.tz = z; },
+      swing: function (type, flip) { this.swingType = type || 'drive'; this.swingT = 0; this.swingFlip = !!flip; this.swingDur = type === 'smash' ? 0.46 : 0.36; },
+      setMood: function (m) { this.mood = m; this.moodT = 0; },
+      remove: function () {
+        scene.remove(g); ghosts.forEach(function (o) { scene.remove(o.s); o.s.material.dispose(); });
+        tex.dispose(); mat.dispose(); sh.geometry.dispose(); sh.material.dispose(); aura.material.dispose();
+      },
+      update: function (dt, t) {
+        var dx = this.tx - this.x, dz = this.tz - this.z, d = Math.sqrt(dx * dx + dz * dz), mv = 0, st = 0;
+        if (d > 0.02) {
+          st = Math.min(d, this.speed * dt); this.x += dx / d * st; this.z += dz / d * st;
+          this.run += st * 2.6; mv = Math.min(1, d * 2); this.vx = dx / d * this.speed * mv;
+        } else this.vx *= 0.8;
+        this.moving += (mv - this.moving) * Math.min(1, dt * 12);
+        g.position.set(this.x, 0, this.z);
+        var m = this.moving, f = 0, flip = false, jump = 0, sx = 1, sy = 1, rot = -this.vx * 0.022;
+        this.moodT += dt;
+        if (m > 0.25) {
+          f = Math.floor(this.run) % 2 ? 1 : 2; jump = Math.abs(Math.sin(this.run * Math.PI)) * 0.16 * m; 
+          this.dust -= dt; if (this.dust <= 0 && dt > 0) { this.dust = 0.12; S.burst({ x: this.x, y: 0.12, z: this.z }, '#ffffff', 2, 1.6, 0.35); }
+        } else { sy = 1 + Math.sin(t * 5 + this.x) * 0.025; sx = 1 - Math.sin(t * 5 + this.x) * 0.015; }
+        if (this.mood === 'happy') { f = 3; jump = Math.abs(Math.sin(this.moodT * 8)) * 0.7; rot = Math.sin(this.moodT * 8) * 0.12; var q = Math.abs(Math.cos(this.moodT * 8)); sy = 0.92 + q * 0.14; sx = 1.06 - q * 0.1; }
+        else if (this.mood === 'sad') { f = 7; rot = Math.sin(this.moodT * 2) * 0.04; sy = 0.97; }
+        if (this.swingT >= 0) {
+          this.swingT += dt; var p = Math.min(1, this.swingT / this.swingDur); flip = this.swingFlip;
+          if (this.swingType === 'smash') { f = p < 0.22 ? 4 : 6; jump = Math.sin(p * Math.PI) * 1.0; sy = 1 + Math.sin(p * Math.PI) * 0.12; rot = (flip ? 1 : -1) * (p - 0.4) * 0.3; }
+          else { f = p < 0.26 ? 4 : 5; var k = Math.sin(Math.min(1, (p - 0.26) / 0.5) * Math.PI); if (p >= 0.26) { sx = 1 + k * 0.14; sy = 1 - k * 0.06; rot = (flip ? 1 : -1) * k * 0.16; jump = k * 0.12; } else rot = (flip ? -1 : 1) * 0.12; }
+          if (p >= 1) { this.swingT = -1; this.land = 0.12; }
+          this.ghostT -= dt; if (this.ghostT <= 0 && p > 0.2 && p < 0.8) { this.ghostT = 0.05; var go = ghosts.shift(); ghosts.push(go); go.t = 1; go.s.position.set(this.x, jump, this.z); go.s.material.rotation = rot; go.s.scale.set(WW * sx, HH * sy, 1); }
+        }
+        if (this.land > 0) { this.land -= dt; sy *= 0.93; sx *= 1.06; }
+        frame(f, flip);
+        sp.position.y = jump; sp.scale.set(WW * sx, HH * sy, 1); mat.rotation = rot;
+        sh.scale.setScalar(1 - Math.min(0.5, jump * 0.45));
+        for (var i = 0; i < ghosts.length; i++) { var o = ghosts[i]; if (o.t > 0) { o.t -= dt * 5; o.s.material.opacity = Math.max(0, o.t) * 0.45; } }
+        aura.material.opacity += (this.aura - aura.material.opacity) * Math.min(1, dt * 6);
+        aura.scale.setScalar(3.6 + Math.sin(t * 8) * 0.5);
+      }
+    };
+    return ch;
+  };
+
   /* ---------- Pelota y estela ---------- */
   var ball, ballGlow, ballShadow, trail = [], hist = [];
   function buildBall() {
@@ -293,7 +364,7 @@
   }
   S.setBall = function (p, visible) {
     S.ball.visible = visible;
-    ball.visible = ballGlow.visible = ballShadow.visible = visible;
+    ball.visible = ballGlow.visible = visible && !S.ballHide; ballShadow.visible = visible && !S.ballHide;
     if (!visible) { hist.length = 0; return; }
     ball.position.set(p.x, p.y, p.z); ballGlow.position.copy(ball.position);
     ballShadow.position.set(p.x, 0.015, p.z);
@@ -305,7 +376,7 @@
     var pw = S.ball.power;
     for (var i = 0; i < trail.length; i++) {
       var s = trail[i], k = i * 3;
-      if (!S.ball.visible || k + 2 >= hist.length) { s.material.opacity = 0; continue; }
+      if (!S.ball.visible || S.ballHide || k + 2 >= hist.length) { s.material.opacity = 0; continue; }
       s.position.set(hist[k], hist[k + 1], hist[k + 2]);
       var f = 1 - i / trail.length; s.material.color.copy(S.ball.color);
       s.material.opacity = f * (0.25 + pw * 0.3); s.scale.setScalar((0.35 + pw * 0.45) * (0.4 + f));
@@ -426,6 +497,13 @@
   /* ---------- Cámara ---------- */
   S.shake = function (a) { shake = Math.max(shake, a); };
   S.punch = function (a) { punch = Math.max(punch, a); };
+  var ray = new T.Raycaster(), groundPlane = new T.Plane(new T.Vector3(0, 1, 0), 0), ndc = new T.Vector2(), hitV = new T.Vector3();
+  // Punto del piso bajo un toque de pantalla
+  S.pickGround = function (cx, cy) {
+    var r = renderer.domElement.getBoundingClientRect();
+    ndc.set((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, camera);
+    return ray.ray.intersectPlane(groundPlane, hitV) ? { x: hitV.x, z: hitV.z } : null;
+  };
   S.project = function (p) {
     tmp.set(p.x, p.y, p.z).project(camera);
     return { x: (tmp.x * 0.5 + 0.5) * W, y: (-tmp.y * 0.5 + 0.5) * H, behind: tmp.z > 1 };
