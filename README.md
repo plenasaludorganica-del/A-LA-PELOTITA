@@ -16,12 +16,15 @@ Después abrir `http://localhost:8080`. También funciona publicado en GitHub Pa
 
 ## Cómo se juega
 
-- **Deslizar** (o hacer un gesto con el mouse) para pegarle. La dirección del gesto apunta el tiro.
-- El **aro** en el piso se cierra sobre el punto de golpe: pegar justo cuando se cierra da un **PERFECTO**.
-- Gesto corto hacia arriba = dejada. Gesto largo = tiro profundo. **Gesto hacia abajo = globo.**
-- Si la pelota viene alta, el golpe es bandeja, víbora o remate. Un remate perfecto **la saca por 3**.
+- **Mover:** apoyar el pulgar en la mitad izquierda de la pantalla y arrastrar (aparece una palanca). En compu, WASD o flechas.
+  El jugador se mueve por toda su mitad: fondo, costados y red.
+- **Pegar y apuntar:** deslizar en la mitad derecha (o con el mouse). La dirección del gesto apunta el tiro.
+  Gesto corto = dejada, largo = profundo, **hacia abajo = globo**. En compu también J K L (izquierda, centro, derecha), I globo, U O dejadas.
+- La pelota tiene que estar al alcance. A la derecha del jugador sale drive, a la izquierda revés, antes del pique volea,
+  y si viene alta bandeja, víbora o remate. Un remate perfecto **la saca por 3**.
+- El **aro** en el piso marca dónde conviene esperar la pelota. Pegarle bien parado da un **PERFECTO**.
 - Los perfectos y buenos cargan el **especial** (botón redondo o barra espaciadora).
-- Teclado: flechas o A/W/D para pegar, flecha abajo o S para globo, Q/E dejadas, espacio especial, P pausa.
+- En pausa se puede cambiar a **movimiento automático** (el jugador corre solo y solo hay que pegar a tiempo).
 
 ## Qué trae
 
