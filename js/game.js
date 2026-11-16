@@ -366,7 +366,8 @@
     if (G.type === 'targets') for (var j = 0; j < 3; j++) placeTarget(j);
     S.mode = 'play'; S.setBall(G.ball, false); S.ring(null);
     screens.forEach(function (s) { $(s).hidden = true; }); $('top').hidden = true; $('hud').hidden = false;
-    $('nMe').textContent = c.name; $('nOp').textContent = lv.rival; $('goal').textContent = lv.goal;
+    $('nMe').textContent = lv.type === 'targets' ? 'Blancos' : lv.type === 'rally' ? 'Golpes' : c.name;
+    $('nOp').textContent = lv.type === 'targets' || lv.type === 'rally' ? 'Meta' : lv.rival; $('goal').textContent = lv.goal;
     $('superBtn').style.setProperty('--ac', c.accent);
     hud(); setHint('');
     pop(lv.type === 'boss' ? '¡' + lv.boss.name + '!' : (G.type === 'targets' ? '¡Puntería!' : G.type === 'rally' ? '¡Peloteo!' : 'VS ' + lv.rival), 'big ' + (lv.type === 'boss' ? 'pink' : 'gold'));
@@ -425,7 +426,7 @@
 
   /* ---------- Golpes del jugador ---------- */
   function quality(dtm) {
-    var a = Math.abs(dtm), wp = 0.075 + stat('ref') * 0.005 + stat('pre') * 0.004;
+    var a = Math.abs(dtm), wp = 0.052 + stat('ref') * 0.004 + stat('pre') * 0.003;
     if (G.slow > 0) return 'perfect';
     if (a <= wp) return 'perfect'; if (a <= 0.21 + stat('ref') * 0.006) return 'good'; if (a <= 0.38) return 'ok'; return 'bad';
   }
@@ -465,7 +466,7 @@
       $('lines').style.opacity = 1; after(0.9, function () { $('lines').style.opacity = 0; });
     }
     if (G.type === 'targets' && !fault) {
-      var snap = (q === 'perfect' ? 2.6 : q === 'good' ? 1.9 : 1.0) + stat('pre') * 0.08, bi = -1, bd = snap;
+      var snap = (q === 'perfect' ? 1.7 : q === 'good' ? 1.15 : 0.6) + stat('pre') * 0.05, bi = -1, bd = snap;
       G.targets.forEach(function (t, i) { var dd = Math.hypot(t.x - tx, t.z - tz); if (dd < bd) { bd = dd; bi = i; } });
       if (bi >= 0) { tx = G.targets[bi].x; tz = G.targets[bi].z; } else { tx += rnd(-0.8, 0.8); }
     }
@@ -499,10 +500,11 @@
     var b = G.ball, d = G.lv.diff, boss = G.type === 'boss', p = predict(b, 'opp');
     G.oppPlan = null; if (!p) return;
     var sx = clamp(p.x + 0.55, -4.4, 4.4), sz = clamp(p.z - 0.1, -9.5, -1.4);
-    opp.speed = 2.7 + d * 0.075 + (boss ? 0.5 : 0);
-    var avail = p.t - G.t - Math.max(0.12, 0.34 - d * 0.004), dist = Math.hypot(sx - opp.x, sz - opp.z);
+    opp.speed = 3.6 + d * 0.11 + (boss ? 0.6 : 0);
+    var avail = p.t - G.t - Math.max(0.1, 0.3 - d * 0.005), dist = Math.hypot(sx - opp.x, sz - opp.z);
     var reach = dist <= opp.speed * avail + 1.15, far = dist > opp.speed * avail + 0.3;
-    var perr = Math.max(0.05, 0.25 - d * 0.005) + G.rally * 0.028 + ({ perfect: 0.15, good: 0.04, ok: -0.1, bad: -0.1 })[q] + (far ? 0.2 : 0) + (stat('pot') - 5) * 0.012;
+    var perr = Math.max(0.02, 0.14 - d * 0.0035) + G.rally * 0.022 + ({ perfect: Math.max(0.02, 0.09 - d * 0.002), good: 0.02, ok: -0.08, bad: -0.08 })[q] + (far ? 0.18 : 0) + (stat('pot') - 5) * 0.01;
+    if (G.rally === 0) { reach = true; perr *= 0.4; opp.speed = Math.max(opp.speed, 8); }
     if (boss) perr *= 0.72;
     if (G.type === 'rally') { reach = true; perr = 0; opp.speed = 12; }
     if (save.tut < 1 && G.rally < 3) { reach = true; perr = 0; opp.speed = 9; }
@@ -519,9 +521,9 @@
       if (Math.random() < 0.5) launch(b, b.x * 0.5, -0.9, 0.8, 'opp'); else launch(b, rnd(-3, 3), 11.8, 1.0, 'opp');
       A.play('weak'); S.burst(hp, '#ffffff', 6, 3, 0.3); S.setBallStyle('#D8FF3A', 0); G.phase = 'toMe'; G.plan = null; opp.goTo(0, HOME_OP); return;
     }
-    var T = Math.max(0.92, 1.55 - d * 0.014) - (boss ? 0.08 : 0), spread = Math.min(4, 1.5 + d * 0.065);
-    var smart = Math.random() < 0.3 + d * 0.015, tx = smart ? -Math.sign(me.x || (Math.random() - 0.5)) * rnd(1.2, spread) : rnd(-spread, spread);
-    var tz = 4.6 + Math.random() * (1.4 + Math.min(2.8, d * 0.07)), lobP = boss ? G.lv.boss.lob : 0.13, fire = false;
+    var T = Math.max(0.76, 1.5 - d * 0.018) - (boss ? 0.06 : 0), spread = Math.min(4, 1.5 + d * 0.065);
+    var smart = Math.random() < 0.3 + d * 0.017, tx = smart ? -Math.sign(me.x || (Math.random() - 0.5)) * rnd(1.2, spread) : rnd(-spread, spread);
+    var tz = 4.6 + Math.random() * (1.4 + Math.min(2.8, d * 0.07)), lobP = boss ? G.lv.boss.lob : Math.max(0.05, 0.13 - d * 0.002), fire = false;
     if (G.type === 'rally') { T = Math.max(0.95, 1.5 - G.hits * 0.022); tx = rnd(-3, 3) * Math.min(1, 0.4 + G.hits * 0.04); lobP = 0.1; }
     if (save.tut < 1) { T = 1.7; tx = rnd(-1.5, 1.5); tz = 5.5; lobP = 0; }
     if (Math.random() < lobP) { T = 2.05; tz = rnd(6.6, 7.8); }

@@ -55,7 +55,7 @@
     { name: 'Don Globo', img: 'assets/chars/boss1.png', line: 'Te la paso por arriba, pibe.', lob: 0.5 },
     { name: 'La Víbora', img: 'assets/chars/boss2.png', line: 'Mi víbora no perdona.', lob: 0.1 },
     { name: 'Neón Kid', img: 'assets/chars/boss3.png', line: 'Demasiado rápido para vos.', lob: 0.1 },
-    { name: 'El Número 1', img: 'assets/chars/boss4.png', line: 'Nadie me ganó. Nadie.', lob: 0.2 }
+    { name: 'El Número 1', img: 'assets/chars/boss4.png', line: 'Nadie me ganó. Nadie.', lob: 0.08 }
   ];
   var OUTFITS = ['#FF3D8B', '#22E1FF', '#7CFF4D', '#FFE83A', '#FF7A3D', '#B26BFF', '#FF5252', '#3DFFC8', '#FFFFFF'];
   var HAIRS = ['#2A1A12', '#6B3A1E', '#E8C06A', '#B5482A', '#111118', '#8A8A99'];
