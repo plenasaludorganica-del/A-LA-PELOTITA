@@ -85,3 +85,9 @@ drop policy if exists b_ins on bets;  create policy b_ins on bets for insert wit
   auth.uid() = user_id and exists (select 1 from tournaments t where t.id = tournament_id and now() < t.start_at - interval '5 minutes'));
 drop policy if exists b_upd on bets;  create policy b_upd on bets for update using (
   auth.uid() = user_id and exists (select 1 from tournaments t where t.id = tournament_id and now() < t.start_at - interval '5 minutes'));
+
+-- Permisos de la API: las reglas de arriba deciden qué fila puede tocar cada uno.
+grant usage on schema public to anon, authenticated;
+grant select on profiles, sponsors, tournaments, tournament_players, bets to anon, authenticated;
+grant insert, update on profiles, tournament_players, bets to authenticated;
+grant insert on sponsors, tournaments to authenticated;

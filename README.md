@@ -77,12 +77,15 @@ Para activarlo entre jugadores:
 1. Crear un proyecto gratuito en supabase.com.
 2. En SQL Editor pegar y ejecutar `supabase/schema.sql`.
 3. En Authentication → Sign In / Providers → Email, desactivar "Confirm email" (o dejarlo y avisar que llega un mail).
-4. Copiar de Project Settings → API la **Project URL** y la clave **anon public** a `js/config.js`.
+4. Copiar de Project Settings → API la **Project URL** y la clave pública (**anon public** o **publishable**) a `js/config.js`.
+   Nunca la clave `service_role` ni la `secret`.
 5. Para aprobar un sponsor: Table Editor → `sponsors` → poner `approved` en `true`.
 
 La clave anon es pública por diseño; lo que protege los datos son las reglas del archivo SQL
 (cada uno edita solo lo suyo, los pronósticos se bloquean 5 minutos antes, los puntajes solo durante el torneo).
-**El modo servidor todavía no se probó contra un proyecto real.** Los puntajes los informa el propio juego,
+El modo servidor está probado contra un Supabase local (base de datos, login y API reales): cuentas, ranking,
+sponsors, torneos, pronósticos, plazos y permisos entre dos usuarios. **Falta pegar la URL y la clave de un proyecto
+en la nube y probarlo entre dos celulares.** Los puntajes los informa el propio juego,
 así que alguien con conocimientos técnicos podría inflar el suyo; alcanza para un piloto, no para premios.
 
 ## Estado y próximos pasos
@@ -91,7 +94,7 @@ Hecho: juego por niveles, personajes animados, control fácil y pro, Gimnasio me
 
 Pendiente, en orden sugerido:
 
-1. Conectar Supabase y probar cuentas, ranking y torneos entre dos celulares.
+1. Crear el proyecto en supabase.com, cargar `js/config.js` y probar entre dos celulares (el código ya está probado en local).
 2. Recuperar contraseña y pantalla para aprobar sponsors sin entrar a Supabase.
 3. Guardar el progreso del juego en la cuenta (hoy queda en el dispositivo).
 4. Cobros reales: pasarela de pago para gemas y Pase.

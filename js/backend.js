@@ -96,7 +96,8 @@
   /* ================= Supabase ================= */
   var SKEY = 'pelotita.session', sess = null;
   function rest(method, path, body, prefer, retried) {
-    var h = { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + (sess ? sess.access_token : CFG.supabaseKey), 'Content-Type': 'application/json' };
+    var h = { apikey: CFG.supabaseKey, 'Content-Type': 'application/json' };
+    if (sess) h.Authorization = 'Bearer ' + sess.access_token;
     if (prefer) h.Prefer = prefer;
     return fetch(CFG.supabaseUrl + path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined }).then(function (r) {
       if (r.status === 401 && sess && sess.refresh_token && !retried) return refresh().then(function () { return rest(method, path, body, prefer, true); });
@@ -134,7 +135,7 @@
       return profile(sess.user.id).then(function (p) { DB.user = p ? Object.assign({ email: sess.user.email }, p) : null; return DB.user; }, function () { return null; });
     },
     signUp: function (f) {
-      return fetch(CFG.supabaseUrl + '/auth/v1/signup', { method: 'POST', headers: { apikey: CFG.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.email, password: f.password, data: { name: f.name } }) })
+      return fetch(CFG.supabaseUrl + '/auth/v1/signup', { method: 'POST', headers: { apikey: CFG.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.email, password: f.password, data: { name: f.name, cat: f.cat, side: f.side } }) })
         .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(human(j.msg || j.message || j.error_description || 'No se pudo crear la cuenta.')); return j; }); })
         .then(function (j) {
           if (!j.access_token) throw new Error('Te mandamos un mail para confirmar la cuenta. Confirmalo y después entrá con tu contraseña.');
@@ -149,7 +150,7 @@
         .then(function (p) {
           if (p) { DB.user = Object.assign({ email: f.email }, p); return DB.user; }
           var meta = sess.user.user_metadata || {};
-          return rest('POST', '/rest/v1/profiles', { id: sess.user.id, name: meta.name || f.email.split('@')[0], cat: '8va', side: 'Drive' }, 'resolution=merge-duplicates,return=representation').then(function (rows) { DB.user = Object.assign({ email: f.email }, rows[0]); return DB.user; });
+          return rest('POST', '/rest/v1/profiles', { id: sess.user.id, name: meta.name || f.email.split('@')[0], cat: meta.cat || '8va', side: meta.side || 'Drive' }, 'resolution=merge-duplicates,return=representation').then(function (rows) { DB.user = Object.assign({ email: f.email }, rows[0]); return DB.user; });
         });
     },
     signOut: function () { setSess(null); DB.user = null; return ok(); },
@@ -176,7 +177,10 @@
       return rest('GET', '/rest/v1/tournament_players?tournament_id=eq.' + id + '&user_id=eq.' + DB.user.id + '&select=score').then(function (rows) {
         if (!rows || !rows[0]) throw new Error('No estás inscripto.');
         if (score <= rows[0].score) return rows[0].score;
-        return rest('PATCH', '/rest/v1/tournament_players?tournament_id=eq.' + id + '&user_id=eq.' + DB.user.id, { score: score }).then(function () { return score; });
+        return rest('PATCH', '/rest/v1/tournament_players?tournament_id=eq.' + id + '&user_id=eq.' + DB.user.id, { score: score }, 'return=representation').then(function (r) {
+          if (!r || !r[0]) throw new Error('El torneo no está en juego.');   // la regla del servidor no dejó tocar la fila
+          return r[0].score;
+        });
       });
     }
   };
