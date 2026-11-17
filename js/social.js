@@ -29,6 +29,11 @@
     $('soBody').addEventListener('click', onClick);
   };
   function checkHash() {
+    if (location.hash === '#pro-pago') {   // vuelta de Mercado Pago: el alta puede tardar unos segundos en llegar
+      history.replaceState(null, '', location.pathname); So.open('pro'); U.go('social');
+      var tries = 0, again = function () { DB.refreshMe().then(function () { if (DB.isVip()) { So.render(); U.toast('¡Ya sos PRO!'); } else if (++tries < 6) setTimeout(again, 4000); else U.toast('Si pagaste, tu alta llega en unos minutos. Tocá "Ya pagué: actualizar".'); }, noop); };
+      again(); return;
+    }
     var m = /^#torneo-([A-Z0-9]{6})$/.exec(location.hash || ''); if (!m) return;
     tab = 'tour'; U.go('social'); openTour(m[1]);
   }
@@ -157,7 +162,7 @@
   };
 
   /* ---------- Jugadas PRO: 50 jugadas para copiar, videos de hasta 20 s, me gusta ---------- */
-  var proCh = 0, proView = 'list', proList = [], CFG = PP.CONFIG || {};
+  var proCh = 0, proView = 'list', proList = [], CFG = PP.CONFIG || {}, proPrice = 0;
   So.open = function (t) { tab = t; cur = null; proCh = 0; proView = 'list'; };
   function fecha(d) { return new Date(d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }); }
   function chip(lvl) { var l = PP.CH_LEVELS[lvl]; return '<span class="chipst" style="--c:' + l[1] + '">' + l[0] + '</span>'; }
@@ -167,8 +172,9 @@
     if (!u) return '<div class="card" style="border-color:#FFD23A"><h3 class="disp" style="color:#FFD23A;font-size:22px">Jugadas PRO</h3><p style="color:#fff">50 jugadas para copiar, de la más fácil a la más difícil. Mirá las indicaciones gratis. Con la suscripción Pro subís tu video, ves los de los demás y votás.</p><button class="btn lime" data-act="goacc">Crear mi cuenta</button></div>';
     if (!DB.isVip()) {
       h = '<div class="card" style="border-color:#FFD23A;box-shadow:0 0 18px rgba(255,210,58,.45)"><h3 class="disp" style="color:#FFD23A;font-size:22px">Hacete PRO</h3><p style="color:#fff">Con la suscripción Pro:</p><p>· Subís hasta ' + DB.VIDEOS_PER_MONTH + ' videos por mes copiando las jugadas<br>· Ves los videos de todos<br>· Votás con me gusta y aparecés en el ranking de cada jugada</p>' +
-        (CFG.proPrice ? '<p style="color:#fff;font-size:18px"><b>' + esc(CFG.proPrice) + '</b></p>' : '') +
-        (CFG.proLink ? '<a class="btn lime" href="' + esc(CFG.proLink) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Quiero ser PRO</a>' : '<p>Pedile tu alta Pro a la organización con el mail de tu cuenta: <b style="color:#fff">' + esc(u.email || '') + '</b></p>') +
+        (proPrice ? '<p style="color:#fff;font-size:20px"><b>$ ' + proPrice.toLocaleString('es-AR') + '</b> por 30 días · pagás con Mercado Pago</p><button class="btn lime" data-act="propay">Quiero ser PRO</button>'
+          : (CFG.proPrice ? '<p style="color:#fff;font-size:18px"><b>' + esc(CFG.proPrice) + '</b></p>' : '') +
+            (CFG.proLink ? '<a class="btn lime" href="' + esc(CFG.proLink) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Quiero ser PRO</a>' : '<p>Pedile tu alta Pro a la organización con el mail de tu cuenta: <b style="color:#fff">' + esc(u.email || '') + '</b></p>')) +
         ' <button class="btn small ghost" data-act="provip">Ya pagué: actualizar</button></div>';
       return h;
     }
@@ -191,7 +197,9 @@
       });
       $('soBody').innerHTML = h + demoNote(); paintCount();
     };
-    if (DB.isVip()) DB.videoCounts().then(paint, function () { paint(null); }); else paint(null);
+    if (DB.isVip()) DB.videoCounts().then(paint, function () { paint(null); });
+    else if (DB.user && CFG.proCheckout) DB.proPrice().then(function (n) { proPrice = n; paint(null); });
+    else paint(null);
   }
   function videoCard(v, mode) {
     var c = PP.CHALLENGES[v.challenge - 1] || [1, 'Jugada', ''], st = { pending: ['EN REVISIÓN', '#FFB020'], approved: ['PUBLICADO', '#7CFF4D'], rejected: ['NO APROBADO', '#FF8A8A'] }[v.status];
@@ -273,6 +281,7 @@
     else if (a === 'prorev') { proView = 'rev'; So.render(); }
     else if (a === 'progive') giveVip();
     else if (a === 'provip') DB.refreshMe().then(function () { So.render(); U.toast(DB.isVip() ? '¡Ya sos PRO!' : 'Tu alta Pro todavía no está activa.'); }, err);
+    else if (a === 'propay') { b.disabled = true; b.textContent = 'Abriendo Mercado Pago…'; DB.proCheckout().then(function (url) { location.href = url; }, function (e) { b.disabled = false; b.textContent = 'Quiero ser PRO'; err(e); }); }
     else if (a === 'vup') pickVideo();
     else if (a === 'vplay') playVideo(id, b);
     else if (a === 'vlike' && v) { b.disabled = true; DB.like(id, !v.liked).then(function () { v.liked = !v.liked; v.likes += v.liked ? 1 : -1; b.disabled = false; b.className = 'btn small ' + (v.liked ? 'lime' : 'ghost'); b.textContent = '♥ ' + v.likes; }, function (e) { b.disabled = false; err(e); }); }

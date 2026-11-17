@@ -97,6 +97,9 @@
   ['videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe'].forEach(function (k) {
     Local[k] = function () { return k === 'refreshMe' ? ok(DB.user) : fail(NOSRV); };
   });
+  Local.proPrice = function () { return ok(0); }; Local.proCheckout = function () { return fail(NOSRV); };
+  [].forEach(function () {
+  });
   function find(d, id) { return (d.tours || []).filter(function (x) { return x.id === id; })[0]; }
   function pub(u) { return { id: u.id, email: u.email, name: u.name, cat: u.cat, side: u.side, stars: u.stars || 0, level: u.level || 1, iq: u.iq || 70, picks: u.picks || 0 }; }
 
@@ -184,6 +187,19 @@
       });
     },
     deleteVideo: function (v) { return rest('DELETE', '/rest/v1/videos?id=eq.' + v.id).then(function () { return raw('DELETE', '/storage/v1/object/jugadas/' + v.path).catch(function () {}); }); },
+    // Precio de la suscripción (en pesos) guardado en el servidor; 0 = cobro no habilitado
+    proPrice: function () { return rest('GET', '/rest/v1/app_settings?key=eq.pro_price_ars&select=value').then(function (r) { var n = r && r[0] ? parseFloat(r[0].value) : 0; return n > 0 ? n : 0; }, function () { return 0; }); },
+    // Pide al servidor el enlace de pago de Mercado Pago para este usuario
+    proCheckout: function () {
+      if (!CFG.proCheckout) return fail('El cobro todavía no está habilitado.');
+      var go = function (retried) {
+        return fetch(CFG.proCheckout, { method: 'POST', headers: { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + sess.access_token, 'Content-Type': 'application/json' }, body: '{}' }).then(function (r) {
+          if (r.status === 401 && !retried) return refresh().then(function () { return go(true); });
+          return r.json().then(function (j) { if (!r.ok || !j.url) throw new Error((j && (j.error || j.message)) || 'No pudimos abrir el pago. Probá de nuevo.'); return j.url; });
+        });
+      };
+      return go(false);
+    },
     setVip: function (mail, days) { return rest('POST', '/rest/v1/rpc/set_vip', { mail: mail, dias: days }); },
     init: function () {
       try { sess = JSON.parse(localStorage.getItem(SKEY)); } catch (e) { sess = null; }
@@ -242,7 +258,7 @@
   };
 
   var impl = DB.online ? Supa : Local;
-  ['videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore'].forEach(function (k) {
+  ['proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore'].forEach(function (k) {
     DB[k] = function () { try { return impl[k].apply(impl, arguments); } catch (e) { return Promise.reject(e); } };
   });
   DB.signUp = function (f) {

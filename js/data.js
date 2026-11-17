@@ -119,7 +119,8 @@
   // Posiciones [x, z]: tu lado es z > 0, la red está en z = 0.
   PP.DRILLS = [
     { id: 'read', name: 'Leé la jugada', desc: 'Se congela el punto. Elegí el golpe correcto antes de que se acabe el tiempo.', color: '#FFB020' },
-    { id: 'antic', name: 'Anticipación', desc: 'La pelota desaparece en el aire. Tocá donde creés que va a picar.', color: '#22E1FF' },
+    // Oculto por ahora: no funcionaba bien. Para volver a mostrarlo, quitar "hidden: true".
+    { id: 'antic', hidden: true, name: 'Anticipación', desc: 'La pelota desaparece en el aire. Tocá donde creés que va a picar.', color: '#22E1FF' },
     { id: 'lights', name: 'Tablero de luces', desc: 'Tocá las luces verdes apenas aparecen. Las rojas no se tocan.', color: '#7CFF4D' },
     { id: 'ghost', name: 'Pelota fantasma', desc: 'Peloteo con la pelota que parpadea, como entrenar con lentes estroboscópicos.', color: '#FF4FA3' }
   ];

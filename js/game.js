@@ -845,12 +845,13 @@
 
   /* ================= Gimnasio mental ================= */
   var TR = null, extras = [];
-  function iq() { var b = save.train.best, t = 0; PP.DRILLS.forEach(function (d) { t += b[d.id] || 0; }); return Math.round(70 + t / PP.DRILLS.length * 0.8); }
+  function drills() { return PP.DRILLS.filter(function (d) { return !d.hidden; }); }
+  function iq() { var b = save.train.best, t = 0, L = drills(); L.forEach(function (d) { t += b[d.id] || 0; }); return Math.round(70 + t / L.length * 0.8); }
   function renderTrain() {
     $('iqCard').innerHTML = '<div class="item"><div class="iq">' + iq() + '</div><div class="tx"><h3>Tu IQ de pádel</h3><p>Sube con tu mejor marca en cada ejercicio. ' +
       (save.train.last === today() ? 'Ya cobraste el bono de hoy.' : 'Primer entrenamiento del día: +100 monedas.') + '</p></div></div>';
     var h = '';
-    PP.DRILLS.forEach(function (d) {
+    drills().forEach(function (d) {
       h += '<div class="card item" style="--c:' + d.color + '"><div class="gfx disp" style="font-size:24px;color:#1b1033">' + (save.train.best[d.id] || 0) + '</div><div class="tx"><h3>' + d.name + '</h3><p>' + d.desc + '</p></div><button class="btn small lime" data-dr="' + d.id + '">Entrenar</button></div>';
     });
     $('drillList').innerHTML = h + '<div class="card item" style="--c:#FFD23A"><div class="gfx disp" style="font-size:30px;color:#1b1033">?</div><div class="tx"><h3>La mente también se entrena</h3><p>Por qué decidir rápido gana puntos, con datos de estudios de pádel y tenis.</p></div><button class="btn small" id="mindBtn">Leer</button></div>';
