@@ -5,6 +5,13 @@ HTML + JavaScript + Three.js (incluido en `vendor/`).
 
 ## Probarlo
 
+**Enlace público para jugar y compartir:** https://a-la-pelotita.lovable.app
+
+El juego está publicado dentro del proyecto de Lovable "A La Pelotita" (carpeta `public/juego/`). Ese sitio es una copia:
+cuando cambia el código de este repositorio hay que volver a subir los archivos a Lovable y publicar de nuevo.
+
+Para probarlo en la compu sin publicar:
+
 Servir la carpeta con cualquier servidor estático y abrir `index.html`:
 
 ```bash
