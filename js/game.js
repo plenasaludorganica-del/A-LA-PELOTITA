@@ -76,7 +76,7 @@
     curScreen = name;
     screens.forEach(function (s) { $(s).hidden = s !== name; });
     $('top').hidden = false; $('hud').hidden = true;
-    if (name === 'home') renderHome();
+    if (name === 'home') { renderHome(); if (save.level >= 3 && !save.fbAsked && !G) { save.fbAsked = true; persist(); setTimeout(showFeedback, 400); } }
     if (name === 'map') renderMap();
     if (name === 'chars') renderChars();
     if (name === 'shop') renderShop();
@@ -186,6 +186,11 @@
       h += '<div class="card item" style="--c:' + it.color + '"><div class="gfx">' + (it.give.pass ? ic('crown') : it.give.lives ? ic('heart') : ic('gem')) + '</div><div class="tx"><h3>' + it.title +
         (it.badge ? '<span class="badge">' + it.badge + '</span>' : '') + '</h3><p>' + (it.desc || describe(it.give)) + '</p></div><button class="btn small lime" data-sku="' + it.sku + '" ' + (gone ? 'disabled' : '') + '>' + (gone ? 'Listo' : it.price) + '</button></div>';
     });
+    h = '<div class="card"><h3 class="disp" style="font-size:20px;color:#FFD23A">Para qué sirve cada cosa</h3>' +
+      '<p>' + ic('coin') + ' <b style="color:#fff">Monedas:</b> se ganan jugando. Sirven para mejorar los atributos de tus jugadores y para desbloquear a Muro y a Relámpago.</p>' +
+      '<p>' + ic('gem') + ' <b style="color:#fff">Gemas:</b> son la moneda premium. Sirven para recargar las vidas sin esperar, seguir un partido que ibas perdiendo, cambiarlas por monedas y desbloquear a Rayo.</p>' +
+      '<p>' + ic('heart') + ' <b style="color:#fff">Vidas:</b> cada derrota gasta una. Se recupera una cada 15 minutos.</p>' +
+      '<p>' + ic('crown', 'color:#FFD23A') + ' <b style="color:#fff">Pase Pelotita:</b> vidas infinitas y el doble de monedas en cada nivel.</p></div>' + h;
     var cp = PP.GEM_SINKS.coinPack;
     h += '<div class="card item" style="--c:#FFB020"><div class="gfx">' + ic('coin') + '</div><div class="tx"><h3>Bolsa de monedas</h3><p>' + cp.coins + ' monedas para mejorar a tus jugadores</p></div><button class="btn small" data-sku="coins">' + ic('gem') + cp.gems + '</button></div>';
     h += '<div class="card item" style="--c:#FF3D8B"><div class="gfx">' + ic('heart') + '</div><div class="tx"><h3>Recargar vidas</h3><p>Volvé a la cancha ya mismo con las 5 vidas</p></div><button class="btn small" data-sku="lives">' + ic('gem') + PP.GEM_SINKS.refillLives + '</button></div>';
@@ -213,7 +218,7 @@
     PP.Store.purchase(it, function (ok) {
       if (!ok) return;
       save.bought[sku] = (save.bought[sku] || 0) + 1; give(it.give); A.play('chest'); flash(0.5);
-      toast('Compra simulada: ' + it.title); renderShop();
+      toast('Etapa piloto: ' + it.title + ' gratis'); renderShop();
     });
     return true;
   }
@@ -660,6 +665,49 @@
     return '<div class="nextboss"><img src="' + bs.img + '" alt=""><p>' + (left === 1 ? 'El próximo nivel es contra ' : 'Faltan ' + (left - 1) + ' niveles para enfrentar a ') + '<b>' + bs.name + '</b>.<br>«' + bs.line + '»</p></div>';
   }
 
+  // Opiniones del piloto: se envían al formulario "opiniones" del sitio (Netlify Forms)
+  function showFeedback() {
+    var stars = ''; for (var i = 1; i <= 5; i++) stars += '<button class="fst" data-st="' + i + '" aria-label="' + i + ' de 5">' + ic('star') + '</button>';
+    modal('<h2>Tu opinión</h2><p>Estás probando la versión piloto. Contanos qué te gustó y qué cambiarías: lo leemos todo para mejorarla.</p>' +
+      '<div class="stars" id="fbStars" style="font-size:44px">' + stars + '</div>' +
+      '<textarea class="fld" id="fbMsg" rows="5" maxlength="1500" placeholder="¿Qué te gustó? ¿Qué mejorarías? ¿Algo no se entiende?"></textarea>' +
+      '<input class="fld" id="fbName" maxlength="60" placeholder="Tu nombre (opcional)">' +
+      '<p id="fbErr" style="color:#FF8A8A"></p><div class="row"><button class="btn ghost" id="fbNo">Ahora no</button><button class="btn lime big" id="fbSend">Enviar</button></div>', function (box) {
+      var rate = 0;
+      $('fbStars').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-st]'); if (!b) return; rate = +b.dataset.st; A.play('star', rate % 3);
+        Array.prototype.forEach.call($('fbStars').children, function (el, k) { el.classList.toggle('on', k < rate); });
+      });
+      on($('fbNo'), closeModal);
+      on($('fbSend'), function () {
+        var msg = $('fbMsg').value.trim(), name = $('fbName').value.trim();
+        if (!rate && !msg) { $('fbErr').textContent = 'Elegí un puntaje o escribí un comentario.'; return; }
+        var data = { 'form-name': 'opiniones', nombre: name, puntaje: rate || '', mensaje: msg, nivel: save.level + 1, control: save.ctrl === 'pro' ? 'pro' : 'facil',
+          dispositivo: innerWidth + 'x' + innerHeight + (window.matchMedia && matchMedia('(pointer: coarse)').matches ? ' tactil' : ' mouse'), version: PP.VERSION };
+        var body = Object.keys(data).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]); }).join('&');
+        $('fbSend').disabled = true; $('fbSend').textContent = 'Enviando…';
+        var done = function (ok) {
+          if (ok) {
+            var first = !save.fbSent; save.fbSent = true; if (first) save.coins += 100; persist(); refreshTop(); A.play('win'); S.confetti(80);
+            modal('<h2>¡Gracias!</h2><p style="color:#fff;font-size:17px">Tu opinión ya nos llegó.' + (first ? ' Te dejamos 100 monedas de regalo.' : '') + '</p><button class="btn lime big" id="fbOk">Seguir jugando</button>', function () { on($('fbOk'), closeModal); });
+          } else {
+            var txt = 'Opinión sobre A la Pelotita' + (name ? ' (' + name + ')' : '') + '\nPuntaje: ' + (rate || '-') + '/5\n' + msg + '\nNivel ' + data.nivel + ', control ' + data.control;
+            modal('<h2>No se pudo enviar</h2><p>Desde esta dirección el envío no está disponible. Copiá tu opinión y mandásela a quien te pasó el juego.</p><textarea class="fld" id="fbCopy" rows="6" readonly></textarea><div class="row"><button class="btn ghost" id="fbOk">Cerrar</button><button class="btn lime" id="fbCp">Copiar</button></div>', function () {
+              $('fbCopy').value = txt; on($('fbOk'), closeModal);
+              on($('fbCp'), function () {
+                var sel = function () { $('fbCopy').focus(); $('fbCopy').select(); };
+                try { navigator.clipboard.writeText(txt).then(function () { toast('Copiado'); }, sel); } catch (e) { sel(); }
+              });
+            });
+          }
+        };
+        try {
+          fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body }).then(function (r) { done(r.ok); }, function () { done(false); });
+        } catch (e) { done(false); }
+      });
+    });
+  }
+
   // Pantalla de ayuda con los tres pasos y la elección de control
   function showHelp(next) {
     var step = function (n, t, d) { return '<div class="card item" style="--c:#22E1FF;text-align:left;width:100%;box-sizing:border-box;margin:0"><div class="gfx disp" style="font-size:30px;color:#1b1033">' + n + '</div><div class="tx"><h3>' + t + '</h3><p>' + d + '</p></div></div>'; };
@@ -830,7 +878,18 @@
       var other = PP.CHARS.filter(function (x) { return x.id !== c.id; })[0];
       extras = [S.makeSpriteChar(other.sprite, { accent: other.accent }), S.makeSpriteChar('assets/sprites/r3.png', { accent: '#ffffff' })];
       extras[0].place(-2, HOME_ME); extras[1].place(2, HOME_OP); opp.place(-2, HOME_OP); me.place(2, HOME_ME);
-      TR.plays = PP.PLAYS.slice().sort(function () { return Math.random() - 0.5; }).slice(0, TR.rounds);
+      // Mazo: no se repite ninguna jugada hasta haberlas visto todas
+      var dk = (save.train.deck || []).filter(function (n) { return n < PP.PLAYS.length; });
+      if (dk.length < TR.rounds) {
+        var rest = []; for (var pi = 0; pi < PP.PLAYS.length; pi++) if (dk.indexOf(pi) < 0) rest.push(pi);
+        for (var si = rest.length - 1; si > 0; si--) { var sj = Math.floor(Math.random() * (si + 1)), tmpv = rest[si]; rest[si] = rest[sj]; rest[sj] = tmpv; }
+        dk = dk.concat(rest);
+      }
+      TR.plays = dk.slice(0, TR.rounds).map(function (n) {
+        var o = PP.PLAYS[n], fx = Math.random() < 0.5 ? -1 : 1, m = function (a) { return a ? [a[0] * fx].concat(a.slice(1)) : a; };
+        return { q: o.q, opts: o.opts, why: o.why, me: m(o.me), mate: m(o.mate), r1: m(o.r1), r2: m(o.r2), ball: m(o.ball), shot: m(o.shot), move: m(o.move) };
+      });
+      save.train.deck = dk.slice(TR.rounds); persist();
     }
     if (id === 'lights') { TR.rounds = 1; $('lights').hidden = false; }
     S.mode = 'play'; S.showMachine(false); for (var i = 0; i < 3; i++) S.setTarget(i, null);
@@ -1089,6 +1148,7 @@
   on($('superBtn'), useSuper); on($('pauseBtn'), pause);
   on($('playBtn'), function () { preLevel(Math.min(save.level, PP.LEVELS.length - 1)); });
   on($('bHelp'), function () { showHelp(); });
+  on($('bOpina'), function () { showFeedback(); });
   on($('bTrain'), function () { go('train'); });
   on($('bChars'), function () { detailChar = null; go('chars'); }); on($('bMissions'), function () { go('missions'); }); on($('bShop'), function () { go('shop'); });
   on($('cLives'), function () { if (save.lives < MAX_LIVES && !save.pass) showNoLives(); else toast('Tenés todas las vidas'); });

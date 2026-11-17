@@ -155,6 +155,9 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 .day { background: rgba(0, 0, 0, .3); border-radius: 14px; padding: 8px 4px; font-size: 13px; border: 2px solid transparent; }
 .day.done { opacity: .45; } .day.today { border-color: var(--lime); box-shadow: 0 0 16px var(--lime); background: rgba(216, 255, 58, .16); }
 .day b { display: block; font-size: 17px; color: #fff; }
+.fld { width: 100%; box-sizing: border-box; border-radius: 14px; border: 2px solid var(--panel-line); background: rgba(0, 0, 0, .35); color: #fff; font: inherit; font-weight: 800; padding: 10px 12px; -webkit-user-select: text; user-select: text; touch-action: auto; resize: none; }
+.fld::placeholder { color: var(--ink-soft); opacity: .8; } .fld:focus-visible { outline: 3px solid var(--cyan); }
+.fst { background: none; border: 0; padding: 2px; color: #43397a; cursor: pointer; font-size: inherit; line-height: 1; } .fst.on { color: #FFD23A; filter: drop-shadow(0 0 10px #FFB020); }
 .wstrip { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
 .wcard { border-radius: 16px; border: 3px solid var(--wc); box-shadow: 0 0 14px var(--wc); background-size: cover; background-position: center; padding: 6px; display: flex; flex-direction: column; align-items: center; font-size: 12px; text-shadow: 0 2px 0 rgba(0, 0, 0, .8); }
 .wcard img { height: 84px; image-rendering: pixelated; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .6)); } .wcard b { font-family: var(--display); font-weight: 400; font-size: 15px; color: #fff; }
@@ -238,6 +241,9 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
     <button id="superBtn" aria-label="Especial"><span id="superTx">ESPECIAL</span></button>
   </div>
   <div id="lights" class="layer" hidden><div class="fix"></div></div>
+  <form name="opiniones" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
+    <input name="nombre"><input name="puntaje"><textarea name="mensaje"></textarea><input name="nivel"><input name="control"><input name="dispositivo"><input name="version"><input name="bot-field">
+  </form>
   <div id="hand" hidden><i></i></div>
   <div id="stick" hidden><div id="knob"></div></div>
   <div id="pops"></div>
@@ -263,7 +269,7 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
       <button class="btn ghost" id="bMissions">Misiones</button>
       <button class="btn" id="bShop">Tienda</button>
     </div>
-    <button class="btn small ghost" id="bHelp">¿Cómo se juega?</button>
+    <div class="row"><button class="btn small ghost" id="bHelp">¿Cómo se juega?</button><button class="btn small ghost" id="bOpina">Dejá tu opinión</button></div>
   </section>
 
   <section id="map" class="layer screen sheet" hidden>
@@ -278,7 +284,7 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 
   <section id="shop" class="layer screen sheet" hidden>
     <header><button class="btn small ghost" data-go="home" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button><h2>Tienda</h2></header>
-    <div class="scroll"><p class="note">Versión demo: los pagos todavía no están conectados. Al tocar un precio se simula la compra y te lo acredita.</p><div id="shopList"></div></div>
+    <div class="scroll"><p class="note">Etapa piloto: hoy todo es gratis. Tocá cualquier precio y te lo acredita sin cobrar. Los precios son los que tendría la versión paga.</p><div id="shopList"></div></div>
   </section>
 
   <section id="train" class="layer screen sheet" hidden>
