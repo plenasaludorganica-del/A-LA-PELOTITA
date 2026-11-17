@@ -74,7 +74,7 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 /* Pantallas */
 .screen { display: flex; flex-direction: column; align-items: center; z-index: 4; }
 .screen[hidden] { display: none; }
-#home { justify-content: flex-end; gap: 14px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 26px);
+#home { justify-content: flex-end; gap: 10px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 26px);
   background: linear-gradient(180deg, rgba(18, 10, 51, .0) 30%, rgba(18, 10, 51, .78) 78%); }
 .logo { font-family: var(--display); text-align: center; line-height: .88; font-size: clamp(44px, 13vw, 92px); color: #fff;
   text-shadow: 0 5px 0 #6a1b9a, 0 9px 0 rgba(0, 0, 0, .35), 0 0 40px rgba(255, 61, 139, .7); transform: rotate(-3deg); margin-top: auto; }
@@ -85,7 +85,7 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 .logo .o:nth-of-type(2) { animation-delay: .25s; }
 @keyframes boing { 0%, 100% { transform: translateY(0) scale(1.05, .95); } 45% { transform: translateY(-.26em) scale(.96, 1.05); } }
 .logo small { display: block; font-size: .26em; letter-spacing: .28em; color: var(--cyan); text-shadow: 0 2px 0 rgba(0, 0, 0, .5); margin-top: .5em; transform: rotate(3deg); }
-#hero { height: min(26vh, 260px); filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .5)); animation: float 3s ease-in-out infinite; image-rendering: pixelated; margin-bottom: -6px; }
+#hero { height: min(20vh, 210px); filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .5)); animation: float 3s ease-in-out infinite; image-rendering: pixelated; margin-bottom: -6px; }
 @keyframes float { 50% { transform: translateY(-10px) rotate(1.5deg); } }
 .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .tagline { color: var(--ink-soft); font-size: 15px; text-align: center; max-width: 34ch; margin: 0; }
@@ -158,6 +158,26 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 .fld { width: 100%; box-sizing: border-box; border-radius: 14px; border: 2px solid var(--panel-line); background: rgba(0, 0, 0, .35); color: #fff; font: inherit; font-weight: 800; padding: 10px 12px; -webkit-user-select: text; user-select: text; touch-action: auto; resize: none; }
 .fld::placeholder { color: var(--ink-soft); opacity: .8; } .fld:focus-visible { outline: 3px solid var(--cyan); }
 .fst { background: none; border: 0; padding: 2px; color: #43397a; cursor: pointer; font-size: inherit; line-height: 1; } .fst.on { color: #FFD23A; filter: drop-shadow(0 0 10px #FFB020); }
+.tabs { width: 100%; max-width: 560px; display: flex; gap: 6px; margin-bottom: 10px; }
+.tab { flex: 1; min-height: 44px; border: 0; border-radius: 14px; background: rgba(255, 255, 255, .1); color: var(--ink-soft); font-family: var(--display); font-size: 16px; cursor: pointer; padding: 4px; }
+.tab.on { background: var(--pink); color: #fff; box-shadow: 0 0 18px var(--pink); }
+.rk { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 2px solid var(--panel-line); border-left: 5px solid var(--mc, var(--panel-line)); border-radius: 18px; padding: 10px 12px; margin-bottom: 8px; }
+.rk.me { border-color: var(--lime); box-shadow: 0 0 16px rgba(216, 255, 58, .5); }
+.rk .pos { font-family: var(--display); font-weight: 400; font-size: 22px; width: 28px; text-align: center; color: var(--mc, var(--ink-soft)); flex: none; }
+.rk .tx { flex: 1; min-width: 0; } .rk h3 { font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .rk p { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.rk .val { text-align: right; flex: none; } .rk .val b { display: block; font-family: var(--display); font-weight: 400; font-size: 24px; color: var(--lime); line-height: 1; font-variant-numeric: tabular-nums; } .rk .val small { font-size: 11px; color: var(--ink-soft); }
+.av { width: 44px; height: 44px; border-radius: 50%; display: inline-grid; place-items: center; font-family: var(--display); font-size: 17px; color: #fff; flex: none; border: 2px solid rgba(255, 255, 255, .6); }
+.av.big { width: 84px; height: 84px; font-size: 34px; margin-bottom: 8px; }
+.tcard { display: block; width: 100%; text-align: left; color: #fff; font: inherit; cursor: pointer; } .tcard h3 { font-size: 22px; margin-top: 6px; }
+.chipst { display: inline-block; font-size: 12px; border-radius: 999px; padding: 3px 10px; background: var(--c); color: #1b1033; font-weight: 900; }
+.lb { display: block; width: 100%; text-align: left; font-size: 13px; color: var(--ink-soft); } .lb .fld { margin-top: 4px; }
+select.fld { appearance: auto; } select.fld option { color: #111; }
+.poster { width: 100%; box-sizing: border-box; border-radius: 22px; padding: 22px 16px; text-align: center; color: #fff; border: 4px solid #FFD23A;
+  background: radial-gradient(circle at 20% 0%, #FF3D8B 0, transparent 55%), radial-gradient(circle at 90% 100%, #22E1FF 0, transparent 50%), linear-gradient(160deg, #5B2BE0, #1b0d4a); box-shadow: 0 0 34px rgba(255, 210, 58, .6); }
+.poster .pk { font-size: 12px; letter-spacing: .22em; color: #FFD23A; } .poster h3 { font-family: var(--display); font-size: 34px; line-height: 1; margin: 8px 0; text-shadow: 0 4px 0 rgba(0, 0, 0, .4); overflow-wrap: anywhere; }
+.poster p { margin: 4px 0; color: #fff; } .poster .pd { font-family: var(--display); font-size: 20px; color: var(--lime); }
+.poster .pc { display: inline-block; background: #fff; color: #1b1033; border-radius: 16px; padding: 6px 18px; margin: 10px 0; } .poster .pc small { display: block; font-size: 10px; letter-spacing: .2em; } .poster .pc b { font-family: var(--display); font-weight: 400; font-size: 34px; letter-spacing: .12em; }
+.poster .pf { font-size: 14px; } .poster .pl { display: block; margin-top: 8px; font-family: var(--display); font-size: 18px; color: #FFD23A; }
 .wstrip { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
 .wcard { border-radius: 16px; border: 3px solid var(--wc); box-shadow: 0 0 14px var(--wc); background-size: cover; background-position: center; padding: 6px; display: flex; flex-direction: column; align-items: center; font-size: 12px; text-shadow: 0 2px 0 rgba(0, 0, 0, .8); }
 .wcard img { height: 84px; image-rendering: pixelated; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .6)); } .wcard b { font-family: var(--display); font-weight: 400; font-size: 15px; color: #fff; }
@@ -262,12 +282,13 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
     <h1 class="logo"><span class="br">[</span>A LA<br>PEL<span class="o"></span>TITA<span class="br">]</span><small>PÁDEL ARCADE</small></h1>
     <img id="hero" alt="">
     <button class="btn big lime pulse" id="playBtn">Jugar</button>
-    <button class="btn cyan" id="bTrain" style="font-size:22px">Gimnasio mental · IQ <span id="vIq">70</span></button>
+    <button class="btn pink" id="bSocial" style="font-size:19px">Comunidad · Ranking y torneos</button>
+    <button class="btn cyan" id="bTrain" style="font-size:19px">Gimnasio mental · IQ <span id="vIq">70</span></button>
     <div class="row">
-      <button class="btn ghost" id="bMap">Circuito</button>
-      <button class="btn pink" id="bChars">Jugadores</button>
-      <button class="btn ghost" id="bMissions">Misiones</button>
-      <button class="btn" id="bShop">Tienda</button>
+      <button class="btn small ghost" id="bMap">Circuito</button>
+      <button class="btn small ghost" id="bChars">Jugadores</button>
+      <button class="btn small ghost" id="bMissions">Misiones</button>
+      <button class="btn small" id="bShop">Tienda</button>
     </div>
     <div class="row"><button class="btn small ghost" id="bHelp">¿Cómo se juega?</button><button class="btn small ghost" id="bOpina">Dejá tu opinión</button></div>
   </section>
@@ -293,6 +314,12 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
       <p class="note">Estos ejercicios enseñan táctica y lectura de juego. No reemplazan el entrenamiento en cancha.</p></div>
   </section>
 
+  <section id="social" class="layer screen sheet" hidden>
+    <header><button class="btn small ghost" data-go="home" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button><h2>Comunidad</h2></header>
+    <div class="tabs" id="soTabs"></div>
+    <div class="scroll" id="soBody"></div>
+  </section>
+
   <section id="missions" class="layer screen sheet" hidden>
     <header><button class="btn small ghost" data-go="home" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button><h2>Misiones de hoy</h2></header>
     <div class="scroll"><div id="missionList"></div><div class="card" id="chestCard"></div></div>
@@ -303,7 +330,10 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 </div>
 
 <script src="vendor/three.min.js"></script>
+<script src="js/config.js"></script>
 <script src="js/data.js"></script>
+<script src="js/backend.js"></script>
+<script src="js/social.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/scene.js"></script>
 <script src="js/game.js"></script>

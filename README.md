@@ -58,6 +58,46 @@ Los jugadores, jefes y rivales son pixel art animado por cuadros. Cada uno tiene
 `assets/sprites/` (espera, corrida ×2, festejo, armado, golpe, remate, derrota).
 `tools/slice-sprites.py` arma el atlas a partir de planchas PNG con fondo transparente.
 
+## Comunidad
+
+Pantalla con cuatro pestañas: **Ranking** (estrellas, IQ de pádel, pronósticos acertados), **Torneos**, **Sponsors** y **Cuenta**.
+
+- **Cuenta:** registro con mail, contraseña, nombre, categoría y lado.
+- **Torneos:** cualquier usuario crea uno (peloteo por puntos o Leé la jugada, individual o parejas, día, hora y duración).
+  Al crearlo sale un cartel para capturar, con código y enlace (`#torneo-CODIGO`). Mientras está en juego cada inscripto
+  juega las veces que quiera y cuenta su mejor turno. Gana el mayor puntaje al cierre.
+- **Pronósticos:** gratis y sin plata. Cada usuario elige un ganador hasta 5 minutos antes del inicio.
+- **Sponsors:** solo dos rubros (cancha o club, tienda de insumos de pádel). Cada pedido queda en revisión hasta aprobarlo.
+
+### Modo demo y servidor
+
+Con `js/config.js` vacío todo se guarda en el dispositivo (sirve para probar, no hay datos compartidos).
+Para activarlo entre jugadores:
+
+1. Crear un proyecto gratuito en supabase.com.
+2. En SQL Editor pegar y ejecutar `supabase/schema.sql`.
+3. En Authentication → Sign In / Providers → Email, desactivar "Confirm email" (o dejarlo y avisar que llega un mail).
+4. Copiar de Project Settings → API la **Project URL** y la clave **anon public** a `js/config.js`.
+5. Para aprobar un sponsor: Table Editor → `sponsors` → poner `approved` en `true`.
+
+La clave anon es pública por diseño; lo que protege los datos son las reglas del archivo SQL
+(cada uno edita solo lo suyo, los pronósticos se bloquean 5 minutos antes, los puntajes solo durante el torneo).
+**El modo servidor todavía no se probó contra un proyecto real.** Los puntajes los informa el propio juego,
+así que alguien con conocimientos técnicos podría inflar el suyo; alcanza para un piloto, no para premios.
+
+## Estado y próximos pasos
+
+Hecho: juego por niveles, personajes animados, control fácil y pro, Gimnasio mental, tienda piloto, opiniones, comunidad en modo demo.
+
+Pendiente, en orden sugerido:
+
+1. Conectar Supabase y probar cuentas, ranking y torneos entre dos celulares.
+2. Recuperar contraseña y pantalla para aprobar sponsors sin entrar a Supabase.
+3. Guardar el progreso del juego en la cuenta (hoy queda en el dispositivo).
+4. Cobros reales: pasarela de pago para gemas y Pase.
+5. Dobles 2 contra 2, más ejercicios mentales y más jugadas para leer.
+6. Instalable como app y registro anónimo de uso.
+
 ## Estructura
 
 | Archivo | Qué tiene |
@@ -66,6 +106,10 @@ Los jugadores, jefes y rivales son pixel art animado por cuadros. Cada uno tiene
 | `js/data.js` | Personajes, mundos, niveles, misiones y productos de la tienda. Es lo que se toca para balancear |
 | `js/scene.js` | Escena 3D: cancha, vidrios, hinchada, personajes de bloques, pelota, partículas, cámara |
 | `js/game.js` | Reglas, física de la pelota, rival, progreso guardado y navegación |
+| `js/backend.js` | Datos de la comunidad: modo demo local y cliente de Supabase |
+| `js/social.js` | Pantalla Comunidad: ranking, torneos, pronósticos, sponsors y cuenta |
+| `js/config.js` | URL y clave del servidor (vacío = modo demo) |
+| `supabase/schema.sql` | Tablas y reglas de seguridad del servidor |
 | `js/audio.js` | Sonidos y música sintetizados (sin archivos de audio) |
 | `assets/` | Arte pixel art de jugadores, jefes y fondos de cada mundo |
 | `tools/build-artifact.py` | Arma la versión que se publica como Artifact de Claude |

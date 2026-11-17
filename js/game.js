@@ -71,7 +71,7 @@
   }
 
   /* ================= UI general ================= */
-  var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train'], curScreen = 'home';
+  var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social'], curScreen = 'home';
   function go(name) {
     curScreen = name;
     screens.forEach(function (s) { $(s).hidden = s !== name; });
@@ -82,6 +82,7 @@
     if (name === 'shop') renderShop();
     if (name === 'missions') renderMissions();
     if (name === 'train') renderTrain();
+    if (name === 'social') PP.Social.render();
     refreshTop();
   }
   function refreshTop() {
@@ -356,7 +357,7 @@
   function startLevel(idx) {
     tickLives();
     var lv = typeof idx === 'object' ? idx : PP.LEVELS[idx], c = curChar();
-    if (!lv.train && !lv.show && !save.pass && save.lives <= 0) { showNoLives(); return; }
+    if (!lv.train && !lv.show && !lv.tour && !save.pass && save.lives <= 0) { showNoLives(); return; }
     trClean(); S.ballHide = false; $('hud').classList.remove('tr');
     if (curWorld !== lv.world) { S.setWorld(lv.world); curWorld = lv.world; }
     if (me) me.remove(); if (opp) opp.remove();
@@ -396,7 +397,7 @@
     if (!G) return;
     if (G.type === 'targets') { $('pMe').textContent = G.targetsHit; $('pOp').textContent = G.lv.need; $('extra').innerHTML = 'Pelotas: ' + G.ballsLeft; }
     else if (G.type === 'rally') {
-      $('pMe').textContent = G.hits; $('pOp').textContent = G.lv.need; var hs = '';
+      $('pMe').textContent = G.lv.tour ? G.score : G.hits; $('pOp').textContent = G.lv.tour ? '∞' : G.lv.need; var hs = '';
       for (var i = 0; i < G.lv.misses; i++) hs += ic('heart', i < G.lv.misses - G.misses ? '' : 'opacity:.25');
       $('extra').innerHTML = hs;
     } else { $('pMe').textContent = G.me; $('pOp').textContent = G.opp; $('extra').innerHTML = ''; }
@@ -740,6 +741,7 @@
   /* ---------- Fin de nivel ---------- */
   function endLevel(win) {
     if (!G || G.over) return; G.over = true; G.phase = 'over'; S.ring(null); setHint('');
+    if (G.lv.tour) { var tid = G.lv.tour, tsc = G.score; setTimeout(function () { leaveMatch(); PP.Social.tourDone(tid, tsc); }, 1100); return; }
     if (G.lv.show) {
       if (win) { me.setMood('happy'); opp.setMood('sad'); S.confetti(240); A.play('win'); for (var fw = 0; fw < 8; fw++) setTimeout(S.firework, fw * 220); } else { opp.setMood('happy'); A.play('point'); }
       setTimeout(function () { leaveMatch(); showTeaser(win); }, 1900); return;
@@ -757,7 +759,7 @@
       save.stars[idx] = Math.max(save.stars[idx] || 0, stars);
       if (idx >= save.level && idx < PP.LEVELS.length - 1) save.level = idx + 1;
       save.coins += coins; save.gems += gems; var rankUp = addXp(xp); save.chest = Math.min(3, save.chest + 1);
-      mission('wins', 1); mission('stars', gained); persist();
+      mission('wins', 1); mission('stars', gained); persist(); PP.Social.sync();
       me.setMood('happy'); opp.setMood('sad'); S.confetti(220); S.excite = 1; A.play('win');
       for (var i = 0; i < 6; i++) setTimeout(S.firework, i * 260);
       setTimeout(function () { showResult(true, { stars: stars, coins: coins, xp: xp, gems: gems, rankUp: rankUp }); }, 1500);
@@ -824,7 +826,7 @@
     $('lines').style.opacity = 0; $('pops').innerHTML = ''; $('hand').hidden = true; stickEnd();
   }
   function pause() {
-    if (TR) { trClean(); S.mode = 'menu'; go('train'); return; }
+    if (TR) { var wasTour = PP.tourCtx; PP.tourCtx = null; trClean(); S.mode = 'menu'; go(wasTour ? 'social' : 'train'); return; }
     if (!G || G.over) return; G.paused = true;
     modal('<h2>Pausa</h2><p>' + G.lv.goal + '</p><div class="row"><button class="btn ghost" id="pQuit">Salir</button><button class="btn lime big" id="pGo">Seguir</button></div>' + (G.lv.train ? '' : '<p style="font-size:13px">Si salís ahora perdés una vida.</p>') + '', function () {
       var mb = document.createElement('button'); mb.className = 'btn small ghost';
@@ -833,6 +835,7 @@
       on($('pGo'), function () { closeModal(); if (G) G.paused = false; });
       on($('pQuit'), function () {
         closeModal(); if (G && G.lv.train) { leaveMatch(); go('train'); return; }
+        if (G && G.lv.tour) { leaveMatch(); go('social'); return; }
         if (!save.pass) { save.lives = Math.max(0, save.lives - 1); if (!save.lifeAt) save.lifeAt = Date.now() + LIFE_MS; persist(); }
         leaveMatch(); go('map');
       });
@@ -898,7 +901,7 @@
     $('tq').textContent = d.desc; trHud(); A.play('ready'); pop(d.name, 'big gold');
   }
   function trRound() {
-    if (TR.round >= TR.rounds) { trainFinish(TR.id, TR.id === 'lights' ? TR.score / 3.6 : TR.score / TR.max * 100); return; }
+    if (TR.round >= TR.rounds) { PP.lastDrillScore = TR.score; trainFinish(TR.id, TR.id === 'lights' ? TR.score / 3.6 : TR.score / TR.max * 100); return; }
     TR.round++; S.setTarget(0, null); S.ring(null); S.ballHide = false; me.setMood('idle'); opp.setMood('idle');
     var b = TR.ball;
     if (TR.id === 'read') {
@@ -995,9 +998,11 @@
   $('tq').addEventListener('click', function (e) { if (e.target.closest('[data-why]')) { A.unlock(); A.play('click'); showMind(); } });
   function trainFinish(id, pct) {
     trClean(); $('hud').hidden = true;
+    if (PP.tourCtx) { var tc = PP.tourCtx; PP.tourCtx = null; S.mode = 'menu'; PP.Social.tourDone(tc, PP.lastDrillScore || 0); return; }
     pct = clamp(Math.round(pct), 0, 100);
     var before = iq(), prev = save.train.best[id] || 0, first = save.train.last !== today(), coins = Math.round(pct * 0.6) + (first ? 100 : 0);
     save.train.best[id] = Math.max(prev, pct); save.train.last = today(); save.coins += coins; var rankUp = addXp(20); persist();
+    PP.Social.sync();
     var gain = iq() - before, d = PP.DRILLS.filter(function (x) { return x.id === id; })[0];
     if (pct >= 60) { S.confetti(140); A.play('win'); } else A.play('point');
     modal('<p style="color:' + d.color + '">' + d.name + '</p><h2>' + (pct >= 85 ? '¡Cabeza de profesional!' : pct >= 60 ? '¡Muy bien!' : 'A seguir entrenando') + '</h2>' +
@@ -1147,6 +1152,7 @@
 
   on($('superBtn'), useSuper); on($('pauseBtn'), pause);
   on($('playBtn'), function () { preLevel(Math.min(save.level, PP.LEVELS.length - 1)); });
+  on($('bSocial'), function () { go('social'); });
   on($('bHelp'), function () { showHelp(); });
   on($('bOpina'), function () { showFeedback(); });
   on($('bTrain'), function () { go('train'); });
@@ -1167,7 +1173,9 @@
     var c = curChar();
     me = S.makeSpriteChar(c.sprite, { accent: c.accent, scale: 1 }); me.place(-1.5, 6);
     opp = S.makeSpriteChar(PP.LEVELS[Math.min(save.level, 39)].sprite, { accent: '#ffffff', scale: 1 }); opp.place(1.5, -6);
-    ensureMissions(); go('home'); setInterval(function () { if (!G) refreshTop(); }, 1000);
+    PP.ui = { modal: modal, closeModal: closeModal, toast: toast, on: on, ic: ic, go: go, flash: flash, persist: persist, iq: iq, totalStars: totalStars,
+      startLevel: startLevel, startDrill: startDrill, save: function () { return save; } };
+    ensureMissions(); go('home'); PP.Social.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
     if (!save.intro && location.search.indexOf('nodaily') < 0) showHelp(startShow); else if (location.search.indexOf('nodaily') < 0) showDaily();
     requestAnimationFrame(frame);
   }
