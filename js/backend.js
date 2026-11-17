@@ -111,6 +111,7 @@
   function human(m) {
     if (/already registered|already exists/i.test(m)) return 'Ya hay una cuenta con ese mail.';
     if (/invalid login|invalid_grant/i.test(m)) return 'Mail o contraseña incorrectos.';
+    if (/known to be weak|easy to guess|pwned/i.test(m)) return 'Esa contraseña es muy común y fácil de adivinar. Elegí otra.';
     if (/password/i.test(m) && /6|short|weak/i.test(m)) return 'La contraseña tiene que tener al menos 6 caracteres.';
     if (/not confirmed/i.test(m)) return 'Falta confirmar el mail. Revisá tu casilla.';
     if (/row-level security|violates/i.test(m)) return 'Esa acción ya no está permitida (puede haber cerrado el plazo).';

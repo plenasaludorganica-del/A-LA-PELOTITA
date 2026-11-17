@@ -69,32 +69,32 @@ Pantalla con cuatro pestañas: **Ranking** (estrellas, IQ de pádel, pronóstico
 - **Pronósticos:** gratis y sin plata. Cada usuario elige un ganador hasta 5 minutos antes del inicio.
 - **Sponsors:** solo dos rubros (cancha o club, tienda de insumos de pádel). Cada pedido queda en revisión hasta aprobarlo.
 
-### Modo demo y servidor
+### Servidor
 
-Con `js/config.js` vacío todo se guarda en el dispositivo (sirve para probar, no hay datos compartidos).
-Para activarlo entre jugadores:
+El servidor ya está conectado: es la base Supabase de un proyecto de Lovable Cloud llamado **"A la Pelotita Servidor"**
+(la dirección y la clave pública están en `js/config.js`). Cuentas, ranking, torneos y pronósticos se comparten entre jugadores.
 
-1. Crear un proyecto gratuito en supabase.com.
-2. En SQL Editor pegar y ejecutar `supabase/schema.sql`.
-3. En Authentication → Sign In / Providers → Email, desactivar "Confirm email" (o dejarlo y avisar que llega un mail).
-4. Copiar de Project Settings → API la **Project URL** y la clave pública (**anon public** o **publishable**) a `js/config.js`.
-   Nunca la clave `service_role` ni la `secret`.
-5. Para aprobar un sponsor: Table Editor → `sponsors` → poner `approved` en `true`.
+- Las tablas y reglas son las de `supabase/schema.sql`. Si cambia ese archivo hay que volver a ejecutarlo en la base
+  (en Lovable: abrir el proyecto → Cloud → Database, o pedírselo a Claude).
+- El registro entra directo, sin confirmar el mail. El servidor rechaza contraseñas muy comunes.
+- Para aprobar un sponsor: en Lovable, proyecto "A la Pelotita Servidor" → Cloud → Database → tabla `sponsors` → poner `approved` en `true`.
+- Para volver al modo demo (todo guardado en el dispositivo) alcanza con vaciar los dos valores de `js/config.js`.
+- Para usar otro proyecto de Supabase: ejecutar `supabase/schema.sql` en su SQL Editor y pegar en `js/config.js` la URL y
+  la clave pública (**anon** o **publishable**; nunca `service_role` ni `secret`).
 
 La clave anon es pública por diseño; lo que protege los datos son las reglas del archivo SQL
 (cada uno edita solo lo suyo, los pronósticos se bloquean 5 minutos antes, los puntajes solo durante el torneo).
-El modo servidor está probado contra un Supabase local (base de datos, login y API reales): cuentas, ranking,
-sponsors, torneos, pronósticos, plazos y permisos entre dos usuarios. **Falta pegar la URL y la clave de un proyecto
-en la nube y probarlo entre dos celulares.** Los puntajes los informa el propio juego,
+Está probado con dos usuarios contra el servidor real (altas, ranking, sponsors, torneo, pronósticos, plazos y permisos).
+**Falta la prueba con dos celulares de verdad.** Los puntajes los informa el propio juego,
 así que alguien con conocimientos técnicos podría inflar el suyo; alcanza para un piloto, no para premios.
 
 ## Estado y próximos pasos
 
-Hecho: juego por niveles, personajes animados, control fácil y pro, Gimnasio mental, tienda piloto, opiniones, comunidad en modo demo.
+Hecho: juego por niveles, personajes animados, control fácil y pro, Gimnasio mental, tienda piloto, opiniones, comunidad conectada al servidor.
 
 Pendiente, en orden sugerido:
 
-1. Crear el proyecto en supabase.com, cargar `js/config.js` y probar entre dos celulares (el código ya está probado en local).
+1. Probar cuentas, ranking y un torneo entre dos celulares de verdad.
 2. Recuperar contraseña y pantalla para aprobar sponsors sin entrar a Supabase.
 3. Guardar el progreso del juego en la cuenta (hoy queda en el dispositivo).
 4. Cobros reales: pasarela de pago para gemas y Pase.
@@ -111,7 +111,7 @@ Pendiente, en orden sugerido:
 | `js/game.js` | Reglas, física de la pelota, rival, progreso guardado y navegación |
 | `js/backend.js` | Datos de la comunidad: modo demo local y cliente de Supabase |
 | `js/social.js` | Pantalla Comunidad: ranking, torneos, pronósticos, sponsors y cuenta |
-| `js/config.js` | URL y clave del servidor (vacío = modo demo) |
+| `js/config.js` | URL y clave pública del servidor (vacío = modo demo) |
 | `supabase/schema.sql` | Tablas y reglas de seguridad del servidor |
 | `js/audio.js` | Sonidos y música sintetizados (sin archivos de audio) |
 | `assets/` | Arte pixel art de jugadores, jefes y fondos de cada mundo |
