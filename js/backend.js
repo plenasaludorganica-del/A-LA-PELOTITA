@@ -193,7 +193,7 @@
     proCheckout: function () {
       if (!CFG.proCheckout) return fail('El cobro todavía no está habilitado.');
       var go = function (retried) {
-        return fetch(CFG.proCheckout, { method: 'POST', headers: { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + sess.access_token, 'Content-Type': 'application/json' }, body: '{}' }).then(function (r) {
+        return fetch(CFG.proCheckout, { method: 'POST', headers: { Authorization: 'Bearer ' + sess.access_token, 'Content-Type': 'application/json' }, body: '{}' }).then(function (r) {
           if (r.status === 401 && !retried) return refresh().then(function () { return go(true); });
           return r.json().then(function (j) { if (!r.ok || !j.url) throw new Error((j && (j.error || j.message)) || 'No pudimos abrir el pago. Probá de nuevo.'); return j.url; });
         });

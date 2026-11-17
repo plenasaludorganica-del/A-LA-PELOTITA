@@ -87,8 +87,11 @@ Botón "Jugadas PRO" en el inicio y pestaña **Jugadas** en Comunidad.
   y votar con me gusta. Cada video queda en revisión hasta que la administración lo aprueba.
 - **Administración** (cuentas con `is_admin` en la tabla `profiles`): en la misma pantalla aparecen "Revisar videos"
   (aprobar o rechazar) y "Dar alta Pro" (por mail de la cuenta: 1 mes, 3 meses, 1 año o quitar).
-- **Cobro:** todavía es manual. La persona paga por fuera (transferencia, enlace de pago) y la administración le da el alta.
-  El precio y el enlace o WhatsApp de pago se escriben en `js/config.js` (`proPrice`, `proLink`).
+- **Cobro:** pago único con Mercado Pago que habilita 30 días de Pro (no es débito automático). El botón "Quiero ser PRO"
+  llama a `/api/public/pro-checkout` del proyecto de Lovable, que crea el pago; cuando Mercado Pago avisa que se aprobó,
+  el servidor suma 30 días al alta (`vip_until`) una sola vez por pago. El precio en pesos está en la tabla `app_settings`
+  (clave `pro_price_ars`); vacío = cobro deshabilitado y el cartel pide el alta manual. La administración también puede
+  dar el alta a mano. La clave de Mercado Pago está guardada como secreto en Lovable, no en este repositorio.
 - Los topes los hace cumplir el servidor (`supabase/schema.sql`): nadie puede darse el alta solo ni pasar de 12 videos por mes.
 
 ### Servidor
@@ -118,7 +121,7 @@ Pendiente, en orden sugerido:
 
 1. Probar cuentas, ranking y un torneo entre dos celulares de verdad.
    Probar también Jugadas PRO con un video grabado desde un celular.
-   Cobro automático de la suscripción Pro (hoy el alta es manual).
+   Cargar la clave de producción de Mercado Pago y el precio, y probar un pago real de punta a punta.
 2. Recuperar contraseña y pantalla para aprobar sponsors sin entrar a Supabase.
 3. Guardar el progreso del juego en la cuenta (hoy queda en el dispositivo).
 4. Cobros reales: pasarela de pago para gemas y Pase.

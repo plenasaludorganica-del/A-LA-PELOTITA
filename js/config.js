@@ -10,7 +10,7 @@
     supabaseKey: 'sb_publishable_mLT9nZBU2PMkW2waeDeN8w_wSYFhtA3',
     // Suscripción Pro: dirección de la función del servidor que crea el pago de Mercado Pago (vacío = sin cobro automático).
     // El precio en pesos se guarda en el servidor (tabla app_settings, clave pro_price_ars).
-    proCheckout: '',
+    proCheckout: 'https://a-la-pelotita.lovable.app/api/public/pro-checkout',
     // Alternativa manual: texto del precio y enlace o WhatsApp donde se paga. Vacío = "pedí tu alta".
     proPrice: '',
     proLink: ''
