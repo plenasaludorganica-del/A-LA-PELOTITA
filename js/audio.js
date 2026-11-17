@@ -75,29 +75,56 @@
     }
   };
 
-  // Música: bucle corto de bajo + arpegio, generado en vivo
-  var CH = [[0, 4, 7], [-3, 0, 4], [-7, -3, 0], [-5, -1, 2]];
+  // Música generada en vivo. Cuatro temas (uno por mundo) con tonalidad, ritmo y timbre distintos.
+  // Cada tema pasa por seis partes (base, variación, melodía, base, corte, melodía 2) y después sigue el tema siguiente,
+  // así nunca suena el mismo bucle más de unos segundos.
+  var SONGS = [
+    { ms: 150, root: 220.00, arp: 'square',   lead: 'triangle', prog: [[0, 4, 7], [-3, 0, 4], [-7, -3, 0], [-5, -1, 2]] },   // Club: La mayor
+    { ms: 172, root: 196.00, arp: 'triangle', lead: 'sine',     prog: [[0, 4, 7], [5, 9, 12], [-3, 0, 4], [-5, -1, 2]] },   // Playa: Sol mayor, más tranquila
+    { ms: 132, root: 174.61, arp: 'square',   lead: 'sawtooth', prog: [[0, 3, 7], [-4, 0, 3], [3, 7, 10], [-2, 2, 5]] },    // Neón: Fa menor, rápida
+    { ms: 160, root: 146.83, arp: 'triangle', lead: 'triangle', prog: [[0, 4, 7], [-5, -1, 2], [-3, 0, 4], [5, 9, 12]] }    // Tour: Re mayor
+  ];
+  var FORM = ['a', 'a2', 'b', 'a', 'brk', 'b2'];
+  var ARP = { a: [0, 1, 2, 1, 0, 2, 1, 2], a2: [0, 2, 1, 2, 0, 2, 1, 2], b: [0, 1, 2, 1, 2, 1, 0, 1], b2: [2, 1, 0, 1, 2, 1, 0, 2] };
+  // Melodías: 0-2 notas del acorde, 3-5 las mismas una octava arriba, -1 silencio
+  var M1 = [2, -1, -1, 1, -1, 2, -1, 3], M2 = [3, -1, 2, -1, 1, -1, 2, -1], M3 = [4, -1, -1, 3, 2, -1, 1, -1], M4 = [2, -1, 3, -1, 4, -1, 3, -1];
+  var MEL = { b: [M1, M2, M1, M3], b2: [M4, M2, M3, M1] };
+  var song = 0;
+  function semi(f, n) { return f * Math.pow(2, n / 12); }
   function tick() {
+    musicTimer = null;
     if (!ctx || !A.music || !A.on) return;
-    var bar = Math.floor(step / 8) % 4, s = step % 8, ch = CH[bar], base = 220;
-    if (s % 4 === 0) tone(base / 2 * Math.pow(2, ch[0] / 12), 0.32, 'triangle', 0.5, 0, null, musicGain);
-    var note = ch[[0, 1, 2, 1, 0, 2, 1, 2][s]] + (s > 3 ? 12 : 0);
-    tone(base * 2 * Math.pow(2, note / 12), 0.14, 'square', 0.12, 0, null, musicGain);
-    if (s % 2 === 1) noiseHat();
+    var sg = SONGS[song], sec = FORM[Math.floor(step / 32) % FORM.length], bar = Math.floor(step / 8) % 4, s = step % 8, ch = sg.prog[bar];
+    var first = step < 32, dur = sg.ms / 1000;
+    if (s % 4 === 0) tone(semi(sg.root / 2, ch[0]), dur * 2.1, 'triangle', 0.5, 0, null, musicGain);
+    if ((sec === 'b' || sec === 'b2') && s === 6) tone(semi(sg.root / 2, ch[2]), dur * 1.2, 'triangle', 0.4, 0, null, musicGain);
+    if (!first && s % 4 === 0) tone(120, 0.11, 'sine', 0.55, 0, 45, musicGain);            // bombo
+    if (sec === 'brk') { if (s === 0) ch.forEach(function (n) { tone(semi(sg.root * 2, n), dur * 3, 'triangle', 0.1, 0, null, musicGain); }); noiseHat(s % 2 ? 0.22 : 0.1); }
+    else {
+      var pat = ARP[sec], n = ch[pat[s]] + (sec === 'a' && s > 3 ? 12 : 0);
+      tone(semi(sg.root * 2, n), dur * 0.9, sg.arp, sg.arp === 'square' ? 0.07 : 0.16, 0, null, musicGain);
+      if (s % 2 === 1 && !first) noiseHat(0.2);
+      var mel = MEL[sec];
+      if (mel) { var m = mel[bar][s]; if (m >= 0) tone(semi(sg.root * 4, ch[m % 3] + (m > 2 ? 12 : 0)), dur * 2.4, sg.lead, sg.lead === 'sawtooth' ? 0.07 : 0.17, 0, null, musicGain); }
+    }
     step++;
+    if (step >= FORM.length * 32) { step = 0; song = (song + 1) % SONGS.length; }
+    musicTimer = setTimeout(tick, sg.ms);
   }
-  function noiseHat() {
+  // Arranca el tema de un mundo (0-3). Si ya está sonando ese, no corta nada.
+  A.setSong = function (i) { i = ((i | 0) % SONGS.length + SONGS.length) % SONGS.length; if (i !== song) { song = i; step = 0; } };
+  function noiseHat(vol) {
     var t = ctx.currentTime, len = Math.floor(ctx.sampleRate * 0.03);
     var buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
     for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
     var s = ctx.createBufferSource(); s.buffer = buf;
     var f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 6000;
-    var g = ctx.createGain(); g.gain.value = 0.25; s.connect(f); f.connect(g); g.connect(musicGain); s.start(t);
+    var g = ctx.createGain(); g.gain.value = vol || 0.2; s.connect(f); f.connect(g); g.connect(musicGain); s.start(t);
   }
   A.setMusic = function (v) {
     A.music = v;
-    if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
-    if (v && ctx && A.on) musicTimer = setInterval(tick, 150);
+    if (musicTimer) { clearTimeout(musicTimer); musicTimer = null; }
+    if (v && ctx && A.on) musicTimer = setTimeout(tick, 60);
   };
   A.setOn = function (v) { A.on = v; A.setMusic(A.music); };
   A.vibrate = function (ms) { try { if (A.on && navigator.vibrate) navigator.vibrate(ms); } catch (e) {} };

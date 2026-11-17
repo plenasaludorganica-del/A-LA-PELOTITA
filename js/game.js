@@ -360,6 +360,7 @@
     if (!lv.train && !lv.show && !lv.tour && !save.pass && save.lives <= 0) { showNoLives(); return; }
     trClean(); S.ballHide = false; $('hud').classList.remove('tr');
     if (curWorld !== lv.world) { S.setWorld(lv.world); curWorld = lv.world; }
+    A.setSong(lv.world);
     if (me) me.remove(); if (opp) opp.remove();
     me = S.makeSpriteChar(c.sprite, { accent: c.accent, scale: 1 });
     opp = S.makeSpriteChar(lv.sprite, { accent: lv.type === 'boss' ? '#FF3D8B' : '#ffffff', scale: lv.type === 'boss' ? 1.22 : 1 });
@@ -713,7 +714,7 @@
   function showHelp(next) {
     var step = function (n, t, d) { return '<div class="card item" style="--c:#22E1FF;text-align:left;width:100%;box-sizing:border-box;margin:0"><div class="gfx disp" style="font-size:30px;color:#1b1033">' + n + '</div><div class="tx"><h3>' + t + '</h3><p>' + d + '</p></div></div>'; };
     modal('<h2>¿Cómo se juega?</h2>' +
-      step(1, 'Deslizá para pegar', 'Pasá el dedo por la pantalla, de abajo hacia arriba. Con eso sacás y devolvés.') +
+      step(1, 'Deslizá para pegar', 'Pasá el dedo por la pantalla, de abajo hacia arriba. Derecho va al medio. Con eso sacás y devolvés.') +
       step(2, 'Esperá el aro', 'Un aro se cierra sobre la pelota. Cuando se cierra del todo es el momento: sale PERFECTO.') +
       step(3, 'Apuntá con el dedo', 'Hacia la izquierda o la derecha, la pelota va a ese lado. Hacia abajo sale un globo.') +
       '<p>Elegí cómo jugar. Se cambia cuando quieras desde la pausa.</p><div class="row"><button class="btn small" id="cEasy">Fácil</button><button class="btn small" id="cPro">Pro</button></div><p id="cDesc" style="color:#fff"></p>' +
@@ -1089,6 +1090,7 @@
   function drawSwipe(dt) {
     sctx.clearRect(0, 0, sw.width, sw.height);
     for (var i = pts.length - 1; i >= 0; i--) { pts[i].a -= dt * 3.2; if (pts[i].a <= 0) pts.splice(i, 1); }
+    drawAim();
     if (pts.length < 2) return;
     sctx.lineCap = 'round'; sctx.lineJoin = 'round';
     for (var j = 1; j < pts.length; j++) {
@@ -1124,16 +1126,42 @@
   gl.addEventListener('pointermove', function (e) {
     if (stickMove(e)) return;
     if (!down) return; pts.push({ x: e.clientX, y: e.clientY, a: 1 });
-    // Se dispara apenas el gesto es claro, sin esperar a soltar: se siente instantáneo
-    var dx = e.clientX - down.x, dy = e.clientY - down.y, ref = Math.min(innerWidth, innerHeight) * 0.3;
+    aimPrev = aimFrom(e.clientX - down.x, e.clientY - down.y);
   });
-  gl.addEventListener('pointerup', function (e) { if (stickEnd(e)) return; if (!down) return; fire(e.clientX - down.x, e.clientY - down.y); down = null; });
-  gl.addEventListener('pointercancel', function (e) { stickEnd(e); down = null; });
-  function fire(dx, dy) {
+  gl.addEventListener('pointerup', function (e) { if (stickEnd(e)) return; if (!down) return; fire(e.clientX - down.x, e.clientY - down.y); down = null; aimPrev = null; });
+  gl.addEventListener('pointercancel', function (e) { stickEnd(e); down = null; aimPrev = null; });
+  // Del gesto al tiro. Pensado para que un toque nervioso no mande la pelota a cualquier lado:
+  // - toque o gesto muy corto: al medio;
+  // - casi vertical (hasta 16 grados de desvío): al medio; recién después empieza a abrir, y llega a la punta a los 62 grados;
+  // - un gesto corto abre menos que uno largo y decidido;
+  // - la profundidad depende del largo del gesto, no del ángulo.
+  function aimFrom(dx, dy) {
     var ref = Math.min(innerWidth, innerHeight) * 0.3, len = Math.hypot(dx, dy);
-    if (len < 22) { swipe({ x: 0, depth: 0.75, lob: false }); return; }
-    var lob = dy > 0 && Math.abs(dy) > Math.abs(dx) * 1.1, ang = Math.atan2(dx, -dy);
-    swipe({ x: clamp(lob ? dx / ref : Math.sin(ang) * 1.25, -1, 1), depth: clamp(0.35 + Math.max(0, Math.cos(ang)) * 0.65, 0.3, 1), lob: lob });
+    if (len < 28) return { x: 0, depth: 0.75, lob: false };
+    if (dy > 0 && Math.abs(dy) > Math.abs(dx) * 1.1) {
+      if (len < 46) return { x: 0, depth: 0.75, lob: false };
+      var lx = Math.abs(dx) / ref;
+      return { x: lx < 0.25 ? 0 : clamp((lx - 0.25) * 1.1, 0, 0.8) * (dx < 0 ? -1 : 1), depth: 1, lob: true };
+    }
+    var deg = Math.abs(Math.atan2(dx, -dy)) * 180 / Math.PI, k = clamp((deg - 16) / 46, 0, 1);
+    k = k * k * (3 - 2 * k);
+    var conf = clamp(0.4 + (len - 28) / (ref * 0.7) * 0.6, 0.4, 1), far = len / ref;
+    var depth = save.ctrl === 'pro' ? clamp(0.3 + far * 0.5, 0.3, 1) : clamp(0.55 + far * 0.3, 0.55, 0.95);
+    return { x: k * conf * (dx < 0 ? -1 : 1), depth: depth, lob: false };
+  }
+  var aimPrev = null;
+  function fire(dx, dy) { swipe(aimFrom(dx, dy)); }
+  // Mientras se arrastra el dedo, marca en la cancha rival dónde va a caer el tiro
+  function drawAim() {
+    if (!down || !aimPrev || !G || G.paused || G.over || TR) return;
+    var a = aimPrev, tz = G.phase === 'serve' ? -clamp(4 + a.depth * 2.4, 4, 6.4) : (a.lob ? -8.2 : -(3.2 + a.depth * 5.6));
+    var c = S.project({ x: clamp(a.x * 4.1, -4.3, 4.3), y: 0.05, z: tz }); if (c.behind) return;
+    var k = sw.width / innerWidth; c.x *= k; c.y *= k;
+    sctx.save(); sctx.shadowColor = '#D8FF3A'; sctx.shadowBlur = 16; sctx.strokeStyle = 'rgba(216,255,58,.95)'; sctx.fillStyle = 'rgba(216,255,58,.28)'; sctx.lineWidth = 4;
+    sctx.beginPath(); sctx.ellipse(c.x, c.y, 30, 12, 0, 0, Math.PI * 2); sctx.fill(); sctx.stroke();
+    sctx.beginPath(); sctx.arc(c.x, c.y, 4, 0, Math.PI * 2); sctx.fillStyle = '#fff'; sctx.fill();
+    if (a.lob) { sctx.font = '700 15px sans-serif'; sctx.textAlign = 'center'; sctx.fillStyle = '#fff'; sctx.fillText('GLOBO', c.x, c.y - 20); }
+    sctx.restore();
   }
   window.addEventListener('keydown', function (e) {
     if (!G || G.paused) return;

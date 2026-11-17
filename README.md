@@ -29,7 +29,9 @@ Hay dos formas de control. Se eligen en "¿Cómo se juega?" (inicio) o en la pau
 
 - **Deslizar** de abajo hacia arriba para pegar. El golpe sale al soltar el dedo.
 - El **aro** en el piso se cierra sobre la pelota: pegar cuando se cierra da un **PERFECTO**.
-- La dirección del gesto apunta el tiro. Gesto corto = dejada, largo = profundo, **hacia abajo = globo**.
+- La dirección del gesto apunta el tiro: derecho (o un toque) va **al medio**, inclinado abre hacia ese lado, **hacia abajo = globo**.
+  Mientras se arrastra el dedo, una marca en la cancha rival muestra dónde va a caer. Gesto largo = más profundo
+  (en modo Pro, gesto corto = dejada).
 
 **Pro:** además se mueve al jugador.
 
@@ -120,7 +122,7 @@ Pendiente, en orden sugerido:
 | `js/social.js` | Pantalla Comunidad: ranking, torneos, pronósticos, sponsors y cuenta |
 | `js/config.js` | URL y clave pública del servidor (vacío = modo demo) |
 | `supabase/schema.sql` | Tablas y reglas de seguridad del servidor |
-| `js/audio.js` | Sonidos y música sintetizados (sin archivos de audio) |
+| `js/audio.js` | Sonidos y música sintetizados (sin archivos de audio). Cuatro temas, uno por mundo, que rotan solos |
 | `assets/` | Arte pixel art de jugadores, jefes y fondos de cada mundo |
 | `tools/build-artifact.py` | Arma la versión que se publica como Artifact de Claude |
 
