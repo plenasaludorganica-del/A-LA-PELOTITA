@@ -16,15 +16,22 @@ Después abrir `http://localhost:8080`. También funciona publicado en GitHub Pa
 
 ## Cómo se juega
 
-- **Mover:** apoyar el pulgar en la mitad izquierda de la pantalla y arrastrar (aparece una palanca). En compu, WASD o flechas.
-  El jugador se mueve por toda su mitad: fondo, costados y red.
-- **Pegar y apuntar:** deslizar en la mitad derecha (o con el mouse). La dirección del gesto apunta el tiro.
-  Gesto corto = dejada, largo = profundo, **hacia abajo = globo**. En compu también J K L (izquierda, centro, derecha), I globo, U O dejadas.
-- La pelota tiene que estar al alcance. A la derecha del jugador sale drive, a la izquierda revés, antes del pique volea,
-  y si viene alta bandeja, víbora o remate. Un remate perfecto **la saca por 3**.
-- El **aro** en el piso marca dónde conviene esperar la pelota. Pegarle bien parado da un **PERFECTO**.
-- Los perfectos y buenos cargan el **especial** (botón redondo o barra espaciadora).
-- En pausa se puede cambiar a **movimiento automático** (el jugador corre solo y solo hay que pegar a tiempo).
+Hay dos formas de control. Se eligen en "¿Cómo se juega?" (inicio) o en la pausa.
+
+**Fácil (por defecto):** el jugador corre solo a la pelota. Se juega con un dedo.
+
+- **Deslizar** de abajo hacia arriba para pegar. El golpe sale al soltar el dedo.
+- El **aro** en el piso se cierra sobre la pelota: pegar cuando se cierra da un **PERFECTO**.
+- La dirección del gesto apunta el tiro. Gesto corto = dejada, largo = profundo, **hacia abajo = globo**.
+
+**Pro:** además se mueve al jugador.
+
+- Pulgar izquierdo en la mitad izquierda de la pantalla: aparece una palanca. En compu, WASD o flechas.
+- Pulgar derecho (o mouse) para pegar. En compu también J K L, I globo, U O dejadas.
+- A la derecha del jugador sale drive, a la izquierda revés, antes del pique volea.
+
+En los dos modos: si la pelota viene alta sale bandeja, víbora o remate, y un remate perfecto **la saca por 3**.
+Los perfectos y buenos cargan el **especial** (botón redondo o barra espaciadora).
 
 ## Qué trae
 

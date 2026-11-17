@@ -365,6 +365,7 @@
       perfects: 0, hits: 0, x3: 0, supers: 0, meter: 0, armed: false, shield: 0, slow: 0, ball: newBall(), plan: null, queued: null, oppPlan: null,
       hitStop: 0, slowmo: 0, timers: [], ballsLeft: lv.balls || 0, targetsHit: 0, misses: 0, targets: [], over: false, serveT: 0, cool: 0, pointDone: false,
       paused: false, fire: false, fireHits: 0, gift: false, oppShots: 0, tutHits: 0, freeze: false, char: c, score: 0, continued: false };
+    G.meSpeed = me.speed;
     for (var i = 0; i < 3; i++) S.setTarget(i, null);
     if (G.type === 'targets') for (var j = 0; j < 3; j++) placeTarget(j);
     S.mode = 'play'; S.setBall(G.ball, false); S.ring(null);
@@ -418,7 +419,7 @@
       return;
     }
     G.phase = 'serve'; G.serveT = 0; G.ball.live = false;
-    setHint(save.tut < 1 ? 'Deslizá hacia arriba para sacar' : '');
+    setHint(save.tut < 1 ? 'Deslizá el dedo hacia arriba para sacar' : ''); $('hand').hidden = save.tut >= 1 || !!PP.auto;
     if (G.type !== 'targets' && G.me === G.toWin - 1 && G.opp === G.toWin - 1 && G.toWin > 0) { pop('¡PUNTO DE ORO!', 'big gold'); A.play('warn'); S.excite = 1; }
   }
 
@@ -429,13 +430,14 @@
 
   /* ---------- Golpes del jugador ---------- */
   function quality(dtm) {
-    var a = Math.abs(dtm), wp = 0.052 + stat('ref') * 0.004 + stat('pre') * 0.003;
+    var a = Math.abs(dtm) / ez(), wp = 0.052 + stat('ref') * 0.004 + stat('pre') * 0.003;
     if (G.slow > 0) return 'perfect';
     if (a <= wp) return 'perfect'; if (a <= 0.21 + stat('ref') * 0.006) return 'good'; if (a <= 0.38) return 'ok'; return 'bad';
   }
   function swipe(aim) {
     if (!G || G.paused || G.over) return;
     if (G.freeze) G.freeze = false;
+    $('hand').hidden = true;
     if (G.phase === 'serve') {
       var s = Math.abs(Math.sin(G.serveT * 2.6));
       playerShot(aim, s > 0.9 ? 'perfect' : (s > 0.6 ? 'good' : 'ok'), true); return;
@@ -443,11 +445,12 @@
     if (G.phase === 'toMe' && !isAuto()) { if (G.rt >= G.cool && G.ball.live) G.pend = { aim: aim, until: G.rt + 0.28 }; return; }
     if (G.phase !== 'toMe' || !G.plan || G.queued || G.rt < G.cool) return;
     var dtm = G.t - G.plan.t;
-    if (dtm < -0.55) { pop('¡Muy pronto!', 'bad', { x: me.x, y: 2.4, z: me.z }); A.play('early'); G.cool = G.rt + 0.25; return; }
+    if (dtm < -0.55 * ez()) { pop('¡Muy pronto!', 'bad', { x: me.x, y: 2.4, z: me.z }); A.play('early'); G.cool = G.rt + 0.25; return; }
     G.queued = { aim: aim, q: quality(dtm), at: Math.max(G.t, G.plan.t) };
     me.swing(G.plan.y > 1.75 && !aim.lob ? 'smash' : (aim.lob ? 'lob' : 'drive'), G.plan.x < me.tx - 0.1);
   }
-  function isAuto() { return !!(save.auto || PP.auto || (G && G.shield > 0)); }
+  function isAuto() { return !!(save.ctrl !== 'pro' || PP.auto || (G && G.shield > 0)); }
+  function ez() { return G && ((typeof G.idx === 'number' && G.idx < 5) || G.lv.show) ? 1.5 : 1; }
   // Control manual: ¿la pelota está al alcance del jugador? Devuelve la calidad del golpe o null
   function reachQ() {
     var b = G.ball; if (!b.live || b.last !== 'opp' || b.z < 0.2 || b.y > 3.4) return null;
@@ -457,7 +460,7 @@
     return e <= wp ? 'perfect' : e <= 1.05 ? 'good' : 'ok';
   }
   function moveHint() {
-    if (save.auto) return 'Cuando el aro se cierra, deslizá. La dirección apunta el tiro.';
+    if (save.ctrl !== 'pro') return 'Cuando el aro se cierra sobre la pelota, deslizá el dedo. La dirección apunta el tiro.';
     return window.matchMedia && matchMedia('(pointer: coarse)').matches
       ? 'Pulgar izquierdo: mové al jugador hasta el aro. Pulgar derecho: deslizá para pegar y apuntar.'
       : 'Movete con WASD o las flechas hasta el aro. Pegá deslizando el mouse, o con J K L.';
@@ -657,6 +660,25 @@
     return '<div class="nextboss"><img src="' + bs.img + '" alt=""><p>' + (left === 1 ? 'El próximo nivel es contra ' : 'Faltan ' + (left - 1) + ' niveles para enfrentar a ') + '<b>' + bs.name + '</b>.<br>«' + bs.line + '»</p></div>';
   }
 
+  // Pantalla de ayuda con los tres pasos y la elección de control
+  function showHelp(next) {
+    var step = function (n, t, d) { return '<div class="card item" style="--c:#22E1FF;text-align:left;width:100%;box-sizing:border-box;margin:0"><div class="gfx disp" style="font-size:30px;color:#1b1033">' + n + '</div><div class="tx"><h3>' + t + '</h3><p>' + d + '</p></div></div>'; };
+    modal('<h2>¿Cómo se juega?</h2>' +
+      step(1, 'Deslizá para pegar', 'Pasá el dedo por la pantalla, de abajo hacia arriba. Con eso sacás y devolvés.') +
+      step(2, 'Esperá el aro', 'Un aro se cierra sobre la pelota. Cuando se cierra del todo es el momento: sale PERFECTO.') +
+      step(3, 'Apuntá con el dedo', 'Hacia la izquierda o la derecha, la pelota va a ese lado. Hacia abajo sale un globo.') +
+      '<p>Elegí cómo jugar. Se cambia cuando quieras desde la pausa.</p><div class="row"><button class="btn small" id="cEasy">Fácil</button><button class="btn small" id="cPro">Pro</button></div><p id="cDesc" style="color:#fff"></p>' +
+      '<button class="btn lime big" id="helpOk">¡A la cancha!</button>', function () {
+      function paint() {
+        var pro = save.ctrl === 'pro'; $('cEasy').className = 'btn small ' + (pro ? 'ghost' : 'lime'); $('cPro').className = 'btn small ' + (pro ? 'lime' : 'ghost');
+        $('cDesc').textContent = pro ? 'Pro: movés al jugador con el pulgar izquierdo y pegás con el derecho. Para quien ya le agarró la mano.' : 'Fácil: el jugador corre solo a la pelota. Vos pegás y apuntás con un dedo. Recomendado para empezar.';
+      }
+      paint();
+      on($('cEasy'), function () { save.ctrl = 'easy'; persist(); paint(); }); on($('cPro'), function () { save.ctrl = 'pro'; persist(); paint(); });
+      on($('helpOk'), function () { closeModal(); if (next) next(); });
+    });
+  }
+
   /* ---------- Especial ---------- */
   function useSuper() {
     if (!G || G.over || G.paused || G.meter < METER_MAX) return;
@@ -751,15 +773,15 @@
     G = null; S.mode = 'menu'; S.ballHide = false; S.setBall({ x: 0, y: 0, z: 0 }, false); S.ring(null); S.showMachine(false);
     for (var i = 0; i < 3; i++) S.setTarget(i, null);
     if (me) { me.place(-1.5, 6); me.setMood('idle'); me.aura = 0; } if (opp) { opp.place(1.5, -6); opp.setMood('idle'); opp.g.visible = true; }
-    $('lines').style.opacity = 0; $('pops').innerHTML = '';
+    $('lines').style.opacity = 0; $('pops').innerHTML = ''; $('hand').hidden = true; stickEnd();
   }
   function pause() {
     if (TR) { trClean(); S.mode = 'menu'; go('train'); return; }
     if (!G || G.over) return; G.paused = true;
     modal('<h2>Pausa</h2><p>' + G.lv.goal + '</p><div class="row"><button class="btn ghost" id="pQuit">Salir</button><button class="btn lime big" id="pGo">Seguir</button></div>' + (G.lv.train ? '' : '<p style="font-size:13px">Si salís ahora perdés una vida.</p>') + '', function () {
       var mb = document.createElement('button'); mb.className = 'btn small ghost';
-      function lab() { mb.textContent = 'Movimiento: ' + (save.auto ? 'automático' : 'manual'); } lab(); $('modalBox').appendChild(mb);
-      on(mb, function () { save.auto = !save.auto; persist(); lab(); });
+      function lab() { mb.textContent = 'Control: ' + (save.ctrl === 'pro' ? 'Pro (movés vos)' : 'Fácil (corre solo)'); } lab(); $('modalBox').appendChild(mb);
+      on(mb, function () { save.ctrl = save.ctrl === 'pro' ? 'easy' : 'pro'; persist(); lab(); });
       on($('pGo'), function () { closeModal(); if (G) G.paused = false; });
       on($('pQuit'), function () {
         closeModal(); if (G && G.lv.train) { leaveMatch(); go('train'); return; }
@@ -964,8 +986,10 @@
         // Golpe del jugador
         if (!isAuto() && G.phase !== 'over') {
           var ix = mvIn.x + (keys.r ? 1 : 0) - (keys.l ? 1 : 0), iz = mvIn.z + (keys.d ? 1 : 0) - (keys.u ? 1 : 0), il = Math.hypot(ix, iz);
-          if (il > 0.15) { if (il > 1) { ix /= il; iz /= il; } me.goTo(clamp(me.x + ix * 1.6, -4.5, 4.5), clamp(me.z + iz * 1.6, 0.9, 9.6)); G.wasMv = true; }
-          else if (G.wasMv) { me.goTo(me.x, me.z); G.wasMv = false; }
+          if (il > 0.28) {
+            var pw = Math.min(1, (il - 0.28) / 0.6); if (il > 1) { ix /= il; iz /= il; }
+            me.speed = G.meSpeed * (0.3 + 0.7 * pw * pw); me.goTo(clamp(me.x + ix * 1.6, -4.5, 4.5), clamp(me.z + iz * 1.6, 0.9, 9.6)); G.wasMv = true;
+          } else if (G.wasMv) { me.goTo(me.x, me.z); me.speed = G.meSpeed; G.wasMv = false; }
           if (G.phase === 'toMe' && G.pend) {
             var rq = reachQ();
             if (rq) { var pa = G.pend.aim; G.pend = null; playerShot(pa, rq, false, true); }
@@ -977,7 +1001,7 @@
           if (G.lv.strobe) S.ring(null); else S.ring({ x: G.plan.x, z: G.plan.z }, left / 0.85, G.char.accent);
           if (G.shield > 0 && !G.queued) me.goTo(clamp(G.plan.x - 0.55, -4.4, 4.4), clamp(G.plan.z + 0.1, 1.4, 9.5));
           if (G.shield > 0 && !G.queued && left <= 0.02) { G.shield--; if (!G.shield) me.aura = 0; G.queued = { aim: { x: opp.x > 0 ? -0.85 : 0.85, depth: 0.85, lob: false }, q: 'perfect', at: G.t }; me.swing(G.plan.y > 1.75 ? 'smash' : 'drive'); }
-          if (isAuto() && save.tut < 1 && G.idx === 0 && !G.queued && left <= 0.03 && left > -0.1 && !G.freeze) { G.freeze = true; setHint('¡AHORA! Deslizá hacia arriba'); }
+          if (isAuto() && !PP.auto && save.tut < 1 && (G.idx === 0 || G.lv.show) && !G.queued && left <= 0.03 && left > -0.1 && !G.freeze) { G.freeze = true; setHint('¡AHORA! Deslizá el dedo hacia arriba'); $('hand').hidden = false; }
           if (PP.auto && !G.queued && (left <= G.plan.auto || G.freeze)) swipe(PP.auto.aim ? PP.auto.aim() : { x: opp.x > 0 ? -0.9 : 0.9, depth: 0.9, lob: false });
           if (G.queued && G.t >= G.queued.at) playerShot(G.queued.aim, G.queued.q, false);
           else if (isAuto() && !G.queued && left < -0.6) { G.plan = null; S.ring(null); }
@@ -1020,7 +1044,7 @@
   }
   function stickMove(e) {
     if (!stick || e.pointerId !== stick.id) return false;
-    var dx = e.clientX - stick.x, dy = e.clientY - stick.y, R = 52, l = Math.hypot(dx, dy);
+    var dx = e.clientX - stick.x, dy = e.clientY - stick.y, R = 70, l = Math.hypot(dx, dy);
     if (l > R) { dx *= R / l; dy *= R / l; }
     mvIn.x = dx / R; mvIn.z = dy / R; $('knob').style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
     return true;
@@ -1038,13 +1062,12 @@
     if (!down) return; pts.push({ x: e.clientX, y: e.clientY, a: 1 });
     // Se dispara apenas el gesto es claro, sin esperar a soltar: se siente instantáneo
     var dx = e.clientX - down.x, dy = e.clientY - down.y, ref = Math.min(innerWidth, innerHeight) * 0.3;
-    if (Math.hypot(dx, dy) > ref * 0.55) { fire(dx, dy); down = null; }
   });
   gl.addEventListener('pointerup', function (e) { if (stickEnd(e)) return; if (!down) return; fire(e.clientX - down.x, e.clientY - down.y); down = null; });
   gl.addEventListener('pointercancel', function (e) { stickEnd(e); down = null; });
   function fire(dx, dy) {
     var ref = Math.min(innerWidth, innerHeight) * 0.3, len = Math.hypot(dx, dy);
-    if (len < 14) { swipe({ x: 0, depth: 0.75, lob: false }); return; }
+    if (len < 22) { swipe({ x: 0, depth: 0.75, lob: false }); return; }
     var lob = dy > 0 && Math.abs(dy) > Math.abs(dx) * 1.1, ang = Math.atan2(dx, -dy);
     swipe({ x: clamp(lob ? dx / ref : Math.sin(ang) * 1.25, -1, 1), depth: clamp(0.35 + Math.max(0, Math.cos(ang)) * 0.65, 0.3, 1), lob: lob });
   }
@@ -1065,6 +1088,7 @@
 
   on($('superBtn'), useSuper); on($('pauseBtn'), pause);
   on($('playBtn'), function () { preLevel(Math.min(save.level, PP.LEVELS.length - 1)); });
+  on($('bHelp'), function () { showHelp(); });
   on($('bTrain'), function () { go('train'); });
   on($('bChars'), function () { detailChar = null; go('chars'); }); on($('bMissions'), function () { go('missions'); }); on($('bShop'), function () { go('shop'); });
   on($('cLives'), function () { if (save.lives < MAX_LIVES && !save.pass) showNoLives(); else toast('Tenés todas las vidas'); });
@@ -1084,7 +1108,7 @@
     me = S.makeSpriteChar(c.sprite, { accent: c.accent, scale: 1 }); me.place(-1.5, 6);
     opp = S.makeSpriteChar(PP.LEVELS[Math.min(save.level, 39)].sprite, { accent: '#ffffff', scale: 1 }); opp.place(1.5, -6);
     ensureMissions(); go('home'); setInterval(function () { if (!G) refreshTop(); }, 1000);
-    if (!save.intro && location.search.indexOf('nodaily') < 0) startShow(); else if (location.search.indexOf('nodaily') < 0) showDaily();
+    if (!save.intro && location.search.indexOf('nodaily') < 0) showHelp(startShow); else if (location.search.indexOf('nodaily') < 0) showDaily();
     requestAnimationFrame(frame);
   }
   // Ganchos de prueba e integración (Padel Coach puede usar window.Pelotita)
