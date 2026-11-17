@@ -159,7 +159,7 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 .fld::placeholder { color: var(--ink-soft); opacity: .8; } .fld:focus-visible { outline: 3px solid var(--cyan); }
 .fst { background: none; border: 0; padding: 2px; color: #43397a; cursor: pointer; font-size: inherit; line-height: 1; } .fst.on { color: #FFD23A; filter: drop-shadow(0 0 10px #FFB020); }
 .tabs { width: 100%; max-width: 560px; display: flex; gap: 6px; margin-bottom: 10px; }
-.tab { flex: 1; min-height: 44px; border: 0; border-radius: 14px; background: rgba(255, 255, 255, .1); color: var(--ink-soft); font-family: var(--display); font-size: 16px; cursor: pointer; padding: 4px; }
+.tab { flex: 1; min-height: 44px; border: 0; border-radius: 14px; background: rgba(255, 255, 255, .1); color: var(--ink-soft); font-family: var(--display); font-size: 14px; cursor: pointer; padding: 4px 2px; }
 .tab.on { background: var(--pink); color: #fff; box-shadow: 0 0 18px var(--pink); }
 .rk { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 2px solid var(--panel-line); border-left: 5px solid var(--mc, var(--panel-line)); border-radius: 18px; padding: 10px 12px; margin-bottom: 8px; }
 .rk.me { border-color: var(--lime); box-shadow: 0 0 16px rgba(216, 255, 58, .5); }
@@ -283,6 +283,7 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
     <img id="hero" alt="">
     <button class="btn big lime pulse" id="playBtn">Jugar</button>
     <button class="btn pink" id="bSocial" style="font-size:19px">Comunidad · Ranking y torneos</button>
+    <button class="btn" id="bPro" style="font-size:19px;background:#FFD23A;color:#1a1036">Jugadas PRO · Copiá y subí tu video</button>
     <button class="btn cyan" id="bTrain" style="font-size:19px">Gimnasio mental · IQ <span id="vIq">70</span></button>
     <div class="row">
       <button class="btn small ghost" id="bMap">Circuito</button>

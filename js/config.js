@@ -7,6 +7,9 @@
   window.PP = window.PP || {};
   window.PP.CONFIG = {
     supabaseUrl: 'https://c--09345d9f-198e-448d-b310-c12bf6ec6aeb-prod.lovable.cloud',
-    supabaseKey: 'sb_publishable_mLT9nZBU2PMkW2waeDeN8w_wSYFhtA3'
+    supabaseKey: 'sb_publishable_mLT9nZBU2PMkW2waeDeN8w_wSYFhtA3',
+    // Suscripción Pro (Jugadas PRO): texto del precio y enlace o WhatsApp donde se paga. Vacío = "pedí tu alta".
+    proPrice: '',
+    proLink: ''
   };
 })();

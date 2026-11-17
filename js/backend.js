@@ -8,6 +8,9 @@
   var DB = PP.DB = { online: !!(CFG.supabaseUrl && CFG.supabaseKey), user: null };
   var BET_CLOSE_MS = 5 * 60 * 1000;
   DB.BET_CLOSE_MS = BET_CLOSE_MS;
+  DB.VIDEOS_PER_MONTH = 12; DB.VIDEO_MAX_S = 20; DB.VIDEO_MAX_MB = 15;
+  DB.isAdmin = function () { return !!(DB.user && DB.user.is_admin); };
+  DB.isVip = function () { return !!(DB.user && (DB.user.is_admin || (DB.user.vip_until && new Date(DB.user.vip_until).getTime() > Date.now()))); };
   function ok(v) { return Promise.resolve(v); }
   function fail(m) { return Promise.reject(new Error(m)); }
   function code() { var a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', s = ''; for (var i = 0; i < 6; i++) s += a[Math.floor(Math.random() * a.length)]; return s; }
@@ -90,6 +93,10 @@
       p.score = Math.max(p.score, score); store(d); return ok(p.score);
     }
   };
+  var NOSRV = 'Las Jugadas PRO necesitan el servidor de la comunidad.';
+  ['videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe'].forEach(function (k) {
+    Local[k] = function () { return k === 'refreshMe' ? ok(DB.user) : fail(NOSRV); };
+  });
   function find(d, id) { return (d.tours || []).filter(function (x) { return x.id === id; })[0]; }
   function pub(u) { return { id: u.id, email: u.email, name: u.name, cat: u.cat, side: u.side, stars: u.stars || 0, level: u.level || 1, iq: u.iq || 70, picks: u.picks || 0 }; }
 
@@ -129,7 +136,55 @@
       rest('GET', '/rest/v1/bets?tournament_id=eq.' + t.id + '&select=user_id,pick')
     ]).then(function (r) { t.players = r[0] || []; t.bets = r[1] || []; t.myBet = DB.user ? (t.bets.filter(function (b) { return b.user_id === DB.user.id; })[0] || null) : null; return t; });
   }
+  // Pedido sin JSON (subir o borrar archivos), con renovación de sesión
+  function raw(method, path, body, type, retried) {
+    var h = { apikey: CFG.supabaseKey }; if (sess) h.Authorization = 'Bearer ' + sess.access_token; if (type) h['Content-Type'] = type;
+    return fetch(CFG.supabaseUrl + path, { method: method, headers: h, body: body }).then(function (r) {
+      if (r.status === 401 && sess && sess.refresh_token && !retried) return refresh().then(function () { return raw(method, path, body, type, true); });
+      return r.text().then(function (tx) {
+        var j = null; try { j = tx ? JSON.parse(tx) : null; } catch (e) {}
+        if (!r.ok) throw new Error(human((j && (j.message || j.error || j.msg)) || 'Error ' + r.status));
+        return j;
+      });
+    });
+  }
+  var VSEL = 'id,user_id,name,challenge,path,status,created_at,video_likes(user_id)';
+  function vmap(rows) {
+    return (rows || []).map(function (v) {
+      var l = v.video_likes || []; v.likes = l.length; v.liked = !!(DB.user && l.some(function (x) { return x.user_id === DB.user.id; })); delete v.video_likes; return v;
+    });
+  }
   var Supa = {
+    refreshMe: function () { if (!sess || !sess.user) return ok(null); return profile(sess.user.id).then(function (p) { if (p) DB.user = Object.assign({ email: sess.user.email }, p); return DB.user; }); },
+    videos: function (ch) { return rest('GET', '/rest/v1/videos?challenge=eq.' + (+ch) + '&status=eq.approved&select=' + VSEL + '&order=created_at.desc&limit=60').then(vmap).then(function (l) { return l.sort(function (a, b) { return b.likes - a.likes; }); }); },
+    videoCounts: function () { return rest('GET', '/rest/v1/videos?status=eq.approved&select=challenge&limit=2000').then(function (rows) { var c = {}; (rows || []).forEach(function (r) { c[r.challenge] = (c[r.challenge] || 0) + 1; }); return c; }); },
+    myVideos: function () { return rest('GET', '/rest/v1/videos?user_id=eq.' + DB.user.id + '&select=' + VSEL + '&order=created_at.desc&limit=60').then(vmap); },
+    monthCount: function () { return rest('POST', '/rest/v1/rpc/videos_this_month', {}); },
+    uploadVideo: function (file, ch) {
+      var ext = /quicktime/.test(file.type) ? 'mov' : /webm/.test(file.type) ? 'webm' : 'mp4';
+      var path = DB.user.id + '/' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) + '.' + ext;
+      return Supa.monthCount().then(function (n) {
+        if (n >= DB.VIDEOS_PER_MONTH) throw new Error('Ya subiste los ' + DB.VIDEOS_PER_MONTH + ' videos de este mes.');
+        return raw('POST', '/storage/v1/object/jugadas/' + path, file, file.type || 'video/mp4');
+      }).then(function () {
+        return rest('POST', '/rest/v1/videos', { user_id: DB.user.id, name: DB.user.name, challenge: +ch, path: path }, 'return=representation')
+          .then(function (rows) { return rows[0]; }, function (e) { raw('DELETE', '/storage/v1/object/jugadas/' + path).catch(function () {}); throw e; });
+      });
+    },
+    videoUrl: function (path) { return rest('POST', '/storage/v1/object/sign/jugadas/' + path, { expiresIn: 3600 }).then(function (j) { return CFG.supabaseUrl + '/storage/v1' + (j.signedURL || j.signedUrl); }); },
+    like: function (id, on) {
+      return on ? rest('POST', '/rest/v1/video_likes', { video_id: id, user_id: DB.user.id }, 'resolution=ignore-duplicates')
+        : rest('DELETE', '/rest/v1/video_likes?video_id=eq.' + id + '&user_id=eq.' + DB.user.id);
+    },
+    pendingVideos: function () { return rest('GET', '/rest/v1/videos?status=eq.pending&select=' + VSEL + '&order=created_at.asc&limit=60').then(vmap); },
+    reviewVideo: function (v, status) {
+      return rest('PATCH', '/rest/v1/videos?id=eq.' + v.id, { status: status }, 'return=representation').then(function (r) {
+        if (!r || !r[0]) throw new Error('No tenés permiso para revisar videos.');
+        if (status === 'rejected') raw('DELETE', '/storage/v1/object/jugadas/' + v.path).catch(function () {});
+      });
+    },
+    deleteVideo: function (v) { return rest('DELETE', '/rest/v1/videos?id=eq.' + v.id).then(function () { return raw('DELETE', '/storage/v1/object/jugadas/' + v.path).catch(function () {}); }); },
+    setVip: function (mail, days) { return rest('POST', '/rest/v1/rpc/set_vip', { mail: mail, dias: days }); },
     init: function () {
       try { sess = JSON.parse(localStorage.getItem(SKEY)); } catch (e) { sess = null; }
       if (!sess || !sess.user) return ok(null);
@@ -187,7 +242,7 @@
   };
 
   var impl = DB.online ? Supa : Local;
-  ['init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore'].forEach(function (k) {
+  ['videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore'].forEach(function (k) {
     DB[k] = function () { try { return impl[k].apply(impl, arguments); } catch (e) { return Promise.reject(e); } };
   });
   DB.signUp = function (f) {

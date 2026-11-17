@@ -1181,6 +1181,7 @@
   on($('superBtn'), useSuper); on($('pauseBtn'), pause);
   on($('playBtn'), function () { preLevel(Math.min(save.level, PP.LEVELS.length - 1)); });
   on($('bSocial'), function () { go('social'); });
+  on($('bPro'), function () { PP.Social.open('pro'); go('social'); });
   on($('bHelp'), function () { showHelp(); });
   on($('bOpina'), function () { showFeedback(); });
   on($('bTrain'), function () { go('train'); });

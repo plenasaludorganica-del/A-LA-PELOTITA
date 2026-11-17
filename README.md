@@ -78,6 +78,19 @@ Pantalla con cuatro pestañas: **Ranking** (estrellas, IQ de pádel, pronóstico
 - **Pronósticos:** gratis y sin plata. Cada usuario elige un ganador hasta 5 minutos antes del inicio.
 - **Sponsors:** solo dos rubros (cancha o club, tienda de insumos de pádel). Cada pedido queda en revisión hasta aprobarlo.
 
+### Jugadas PRO (suscripción)
+
+Botón "Jugadas PRO" en el inicio y pestaña **Jugadas** en Comunidad.
+
+- **Gratis:** cualquiera ve las 50 jugadas con su indicación, de la más fácil a la más difícil (`PP.CHALLENGES` en `js/data.js`).
+- **Con suscripción Pro:** subir hasta 12 videos por mes (máximo 20 segundos y 15 MB cada uno), ver los videos de los demás
+  y votar con me gusta. Cada video queda en revisión hasta que la administración lo aprueba.
+- **Administración** (cuentas con `is_admin` en la tabla `profiles`): en la misma pantalla aparecen "Revisar videos"
+  (aprobar o rechazar) y "Dar alta Pro" (por mail de la cuenta: 1 mes, 3 meses, 1 año o quitar).
+- **Cobro:** todavía es manual. La persona paga por fuera (transferencia, enlace de pago) y la administración le da el alta.
+  El precio y el enlace o WhatsApp de pago se escriben en `js/config.js` (`proPrice`, `proLink`).
+- Los topes los hace cumplir el servidor (`supabase/schema.sql`): nadie puede darse el alta solo ni pasar de 12 videos por mes.
+
 ### Servidor
 
 El servidor ya está conectado: es la base Supabase de un proyecto de Lovable Cloud llamado **"A la Pelotita Servidor"**
@@ -104,6 +117,8 @@ Hecho: juego por niveles, personajes animados, control fácil y pro, Gimnasio me
 Pendiente, en orden sugerido:
 
 1. Probar cuentas, ranking y un torneo entre dos celulares de verdad.
+   Probar también Jugadas PRO con un video grabado desde un celular.
+   Cobro automático de la suscripción Pro (hoy el alta es manual).
 2. Recuperar contraseña y pantalla para aprobar sponsors sin entrar a Supabase.
 3. Guardar el progreso del juego en la cuenta (hoy queda en el dispositivo).
 4. Cobros reales: pasarela de pago para gemas y Pase.

@@ -25,7 +25,7 @@
     U = PP.ui;
     DB.init().then(function () { So.sync(); checkHash(); }, noop);
     window.addEventListener('hashchange', checkHash);
-    $('soTabs').addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (!b) return; tab = b.dataset.tab; cur = null; So.render(); });
+    $('soTabs').addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (!b) return; tab = b.dataset.tab; cur = null; proCh = 0; proView = 'list'; So.render(); });
     $('soBody').addEventListener('click', onClick);
   };
   function checkHash() {
@@ -40,10 +40,10 @@
 
   So.render = function () {
     if (tick) { clearInterval(tick); tick = null; }
-    var tabs = [['rank', 'Ranking'], ['tour', 'Torneos'], ['spon', 'Sponsors'], ['acc', DB.user ? 'Mi cuenta' : 'Entrar']];
+    var tabs = [['rank', 'Ranking'], ['tour', 'Torneos'], ['pro', 'Jugadas'], ['spon', 'Sponsors'], ['acc', DB.user ? 'Cuenta' : 'Entrar']];
     $('soTabs').innerHTML = tabs.map(function (t) { return '<button class="tab' + (tab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('');
     $('soBody').innerHTML = '<p class="note">Cargando…</p>';
-    ({ rank: renderRank, tour: cur ? renderTour : renderTours, spon: renderSpon, acc: renderAcc })[tab]();
+    ({ rank: renderRank, tour: cur ? renderTour : renderTours, pro: renderPro, spon: renderSpon, acc: renderAcc })[tab]();
   };
   function demoNote() { return DB.online ? '' : '<p class="note">Modo demo: por ahora los datos se guardan solo en este celular. El ranking y los torneos entre jugadores se activan al conectar el servidor.</p>'; }
 
@@ -156,6 +156,133 @@
     }, function (e) { err(e); openTour(id); });
   };
 
+  /* ---------- Jugadas PRO: 50 jugadas para copiar, videos de hasta 20 s, me gusta ---------- */
+  var proCh = 0, proView = 'list', proList = [], CFG = PP.CONFIG || {};
+  So.open = function (t) { tab = t; cur = null; proCh = 0; proView = 'list'; };
+  function fecha(d) { return new Date(d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }); }
+  function chip(lvl) { var l = PP.CH_LEVELS[lvl]; return '<span class="chipst" style="--c:' + l[1] + '">' + l[0] + '</span>'; }
+  function fail(e) { $('soBody').innerHTML = '<p class="note">' + esc(e.message) + '</p>'; }
+  function proHead() {
+    var u = DB.user, h;
+    if (!u) return '<div class="card" style="border-color:#FFD23A"><h3 class="disp" style="color:#FFD23A;font-size:22px">Jugadas PRO</h3><p style="color:#fff">50 jugadas para copiar, de la más fácil a la más difícil. Mirá las indicaciones gratis. Con la suscripción Pro subís tu video, ves los de los demás y votás.</p><button class="btn lime" data-act="goacc">Crear mi cuenta</button></div>';
+    if (!DB.isVip()) {
+      h = '<div class="card" style="border-color:#FFD23A;box-shadow:0 0 18px rgba(255,210,58,.45)"><h3 class="disp" style="color:#FFD23A;font-size:22px">Hacete PRO</h3><p style="color:#fff">Con la suscripción Pro:</p><p>· Subís hasta ' + DB.VIDEOS_PER_MONTH + ' videos por mes copiando las jugadas<br>· Ves los videos de todos<br>· Votás con me gusta y aparecés en el ranking de cada jugada</p>' +
+        (CFG.proPrice ? '<p style="color:#fff;font-size:18px"><b>' + esc(CFG.proPrice) + '</b></p>' : '') +
+        (CFG.proLink ? '<a class="btn lime" href="' + esc(CFG.proLink) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Quiero ser PRO</a>' : '<p>Pedile tu alta Pro a la organización con el mail de tu cuenta: <b style="color:#fff">' + esc(u.email || '') + '</b></p>') +
+        ' <button class="btn small ghost" data-act="provip">Ya pagué: actualizar</button></div>';
+      return h;
+    }
+    h = '<div class="card"><h3 class="disp" style="color:#FFD23A;font-size:20px">Sos PRO' + (u.is_admin ? ' · Administración' : ' hasta el ' + fecha(u.vip_until)) + '</h3><p id="proCount"></p><div class="row" style="justify-content:flex-start;flex-wrap:wrap">' +
+      '<button class="btn small ghost" data-act="promine">Mis videos</button>' +
+      (u.is_admin ? '<button class="btn small" data-act="prorev">Revisar videos</button><button class="btn small ghost" data-act="progive">Dar alta Pro</button>' : '') + '</div></div>';
+    return h;
+  }
+  function paintCount() { if (!DB.isVip()) return; DB.monthCount().then(function (n) { var el = $('proCount'); if (el) el.textContent = 'Este mes subiste ' + n + ' de ' + DB.VIDEOS_PER_MONTH + ' videos.'; }, noop); }
+  function renderPro() {
+    if (proCh) return renderChallenge();
+    if (proView === 'mine') return renderVideoList('Mis videos', DB.myVideos(), 'mine');
+    if (proView === 'rev') return renderVideoList('Videos para revisar', DB.pendingVideos(), 'rev');
+    var paint = function (counts) {
+      var h = proHead(), last = 0;
+      PP.CHALLENGES.forEach(function (c, i) {
+        if (c[0] !== last) { last = c[0]; h += '<h3 class="disp" style="margin:12px 4px 6px;color:' + PP.CH_LEVELS[last][1] + '">' + PP.CH_LEVELS[last][0] + '</h3>'; }
+        var n = counts && counts[i + 1];
+        h += '<button class="card tcard" data-act="ch" data-id="' + (i + 1) + '"><h3 class="disp">' + (i + 1) + '. ' + esc(c[1]) + '</h3><p>' + esc(c[2]) + '</p>' + (counts ? '<p style="color:#FFD23A">' + (n ? n + (n === 1 ? ' video' : ' videos') : 'Sé el primero en subirla') + '</p>' : '') + '</button>';
+      });
+      $('soBody').innerHTML = h + demoNote(); paintCount();
+    };
+    if (DB.isVip()) DB.videoCounts().then(paint, function () { paint(null); }); else paint(null);
+  }
+  function videoCard(v, mode) {
+    var c = PP.CHALLENGES[v.challenge - 1] || [1, 'Jugada', ''], st = { pending: ['EN REVISIÓN', '#FFB020'], approved: ['PUBLICADO', '#7CFF4D'], rejected: ['NO APROBADO', '#FF8A8A'] }[v.status];
+    return '<div class="card" data-vid="' + esc(v.id) + '"><div class="row" style="justify-content:flex-start;align-items:center;gap:10px">' + avatar(v.name) + '<div class="tx" style="flex:1;text-align:left"><h3>' + esc(v.name) + '</h3><p>' + (mode ? esc(v.challenge + '. ' + c[1]) + ' · ' : '') + fecha(v.created_at) + '</p></div>' +
+      (mode && st ? '<span class="chipst" style="--c:' + st[1] + '">' + st[0] + '</span>' : '') + '</div>' +
+      '<div class="vbox" style="margin:10px 0">' + (v.status === 'rejected' ? '<p>Este video no se publicó.</p>' : '<button class="btn ghost" data-act="vplay" data-id="' + esc(v.id) + '" style="width:100%">▶ Ver video</button>') + '</div>' +
+      '<div class="row" style="justify-content:flex-start;flex-wrap:wrap">' +
+      (mode === 'rev' ? '<button class="btn small lime" data-act="vok" data-id="' + esc(v.id) + '">Aprobar</button><button class="btn small ghost" data-act="vno" data-id="' + esc(v.id) + '">Rechazar</button>'
+        : mode === 'mine' ? '<span style="color:#FFD23A">' + v.likes + ' me gusta</span><button class="btn small ghost" data-act="vdel" data-id="' + esc(v.id) + '">Borrar</button>'
+        : '<button class="btn small ' + (v.liked ? 'lime' : 'ghost') + '" data-act="vlike" data-id="' + esc(v.id) + '">♥ ' + v.likes + '</button>' + (DB.isAdmin() ? '<button class="btn small ghost" data-act="vno" data-id="' + esc(v.id) + '">Quitar</button>' : '')) +
+      '</div></div>';
+  }
+  function renderChallenge() {
+    var c = PP.CHALLENGES[proCh - 1];
+    var top = '<button class="btn small ghost" data-act="problist" style="margin-bottom:10px">' + U.ic('back') + ' Jugadas</button>' +
+      '<div class="card">' + chip(c[0]) + '<h3 class="disp" style="font-size:24px">' + proCh + '. ' + esc(c[1]) + '</h3><p style="color:#fff;font-size:17px">' + esc(c[2]) + '</p><p>Grabate copiando la jugada tal cual dice la indicación. Hasta ' + DB.VIDEO_MAX_S + ' segundos.</p>' +
+      (DB.isVip() ? '<button class="btn lime" data-act="vup">Subir mi video</button>' : '') + '</div>';
+    if (!DB.isVip()) { $('soBody').innerHTML = top + proHead(); return; }
+    DB.videos(proCh).then(function (list) {
+      proList = list;
+      $('soBody').innerHTML = top + '<h3 class="disp" style="margin:6px 4px">Videos de esta jugada</h3>' + (list.length ? list.map(function (v) { return videoCard(v, ''); }).join('') : '<div class="card"><p>Todavía no hay videos publicados de esta jugada. Subí el primero.</p></div>') +
+        '<p class="note">Cada video se revisa antes de publicarse.</p>';
+    }, fail);
+  }
+  function renderVideoList(title, prom, mode) {
+    prom.then(function (list) {
+      proList = list;
+      $('soBody').innerHTML = '<button class="btn small ghost" data-act="problist" style="margin-bottom:10px">' + U.ic('back') + ' Jugadas</button><h3 class="disp" style="margin:6px 4px">' + title + '</h3>' +
+        (list.length ? list.map(function (v) { return videoCard(v, mode); }).join('') : '<div class="card"><p>' + (mode === 'rev' ? 'No hay videos esperando revisión.' : 'Todavía no subiste ningún video.') + '</p></div>');
+    }, fail);
+  }
+  function byId(id) { return proList.filter(function (v) { return v.id === id; })[0]; }
+  function playVideo(id, btn) {
+    var v = byId(id); if (!v) return; btn.disabled = true; btn.textContent = 'Cargando…';
+    DB.videoUrl(v.path).then(function (url) {
+      var el = document.createElement('video'); el.src = url; el.controls = true; el.autoplay = true; el.playsInline = true; el.setAttribute('playsinline', '');
+      el.style.cssText = 'width:100%;max-height:60vh;border-radius:14px;background:#000'; btn.parentNode.replaceChild(el, btn);
+    }, function (e) { btn.disabled = false; btn.textContent = '▶ Ver video'; err(e); });
+  }
+  function duration(file) {
+    return new Promise(function (res, rej) {
+      var el = document.createElement('video'), url = URL.createObjectURL(file), done = function (f, x) { URL.revokeObjectURL(url); f(x); };
+      el.preload = 'metadata'; el.onloadedmetadata = function () { done(res, el.duration); }; el.onerror = function () { done(rej, new Error('No pudimos leer ese video. Probá con otro archivo.')); }; el.src = url;
+    });
+  }
+  function pickVideo() {
+    var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'video/mp4,video/quicktime,video/webm,video/*';
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      if (!/^video\//.test(f.type)) return U.toast('Elegí un archivo de video.');
+      if (f.size > DB.VIDEO_MAX_MB * 1048576) return U.modal('<h2>El video pesa mucho</h2><p>Pesa ' + Math.round(f.size / 1048576) + ' MB y el máximo es ' + DB.VIDEO_MAX_MB + ' MB. Grabalo en calidad más baja (720p) o más corto.</p><div class="row"><button class="btn lime" id="vOk">Entendido</button></div>', function () { U.on($('vOk'), U.closeModal); });
+      duration(f).then(function (d) {
+        if (d > DB.VIDEO_MAX_S + 0.6) throw new Error('El video dura ' + Math.round(d) + ' segundos. El máximo es ' + DB.VIDEO_MAX_S + '.');
+        U.modal('<h2>Subiendo tu video…</h2><p>No cierres el juego. Puede tardar un poco según tu conexión.</p>');
+        return DB.uploadVideo(f, proCh).then(function () {
+          U.closeModal(); U.modal('<h2>¡Video recibido!</h2><p>Lo revisamos y, si cumple con la jugada, lo publicamos. Lo ves en "Mis videos".</p><div class="row"><button class="btn lime" id="vOk">Listo</button></div>', function () { U.on($('vOk'), function () { U.closeModal(); So.render(); }); });
+        });
+      }).catch(function (e) { U.closeModal(); err(e); });
+    };
+    inp.click();
+  }
+  function giveVip() {
+    U.modal('<h2>Dar alta Pro</h2><p>Escribí el mail con el que la persona creó su cuenta en el juego.</p><input class="fld" id="gMail" type="email" inputmode="email" placeholder="Mail de la cuenta">' +
+      '<label class="lb">Tiempo<select class="fld" id="gDays"><option value="30">1 mes</option><option value="90">3 meses</option><option value="365">1 año</option><option value="0">Quitar el alta Pro</option></select></label>' +
+      '<p id="gErr" style="color:#FF8A8A"></p><div class="row"><button class="btn ghost" id="gNo">Cerrar</button><button class="btn lime big" id="gOk">Guardar</button></div>', function () {
+      U.on($('gNo'), U.closeModal);
+      U.on($('gOk'), function () {
+        var m = $('gMail').value.trim(); if (!m) { $('gErr').textContent = 'Escribí el mail.'; return; }
+        $('gOk').disabled = true;
+        DB.setVip(m, +$('gDays').value).then(function (msg) { U.closeModal(); U.toast(String(msg)); }, function (e) { $('gOk').disabled = false; $('gErr').textContent = e.message; });
+      });
+    });
+  }
+  function proClick(a, b) {
+    var id = b.dataset.id, v = id && byId(id);
+    if (a === 'ch') { proCh = +id; So.render(); $('soBody').scrollTop = 0; }
+    else if (a === 'problist') { if (proCh) proCh = 0; else proView = 'list'; So.render(); }
+    else if (a === 'promine') { proView = 'mine'; So.render(); }
+    else if (a === 'prorev') { proView = 'rev'; So.render(); }
+    else if (a === 'progive') giveVip();
+    else if (a === 'provip') DB.refreshMe().then(function () { So.render(); U.toast(DB.isVip() ? '¡Ya sos PRO!' : 'Tu alta Pro todavía no está activa.'); }, err);
+    else if (a === 'vup') pickVideo();
+    else if (a === 'vplay') playVideo(id, b);
+    else if (a === 'vlike' && v) { b.disabled = true; DB.like(id, !v.liked).then(function () { v.liked = !v.liked; v.likes += v.liked ? 1 : -1; b.disabled = false; b.className = 'btn small ' + (v.liked ? 'lime' : 'ghost'); b.textContent = '♥ ' + v.likes; }, function (e) { b.disabled = false; err(e); }); }
+    else if (a === 'vok' && v) DB.reviewVideo(v, 'approved').then(function () { U.toast('Video publicado'); So.render(); }, err);
+    else if (a === 'vno' && v) DB.reviewVideo(v, 'rejected').then(function () { U.toast('Video rechazado'); So.render(); }, err);
+    else if (a === 'vdel' && v) DB.deleteVideo(v).then(function () { U.toast('Video borrado'); So.render(); }, err);
+    else return false;
+    return true;
+  }
+
   /* ---------- Sponsors ---------- */
   function renderSpon() {
     DB.sponsors().then(function (list) {
@@ -220,6 +347,7 @@
     if (b.dataset.tour) { openTour(b.dataset.tour); return; }
     if (b.dataset.pick) { needLogin(function () { DB.bet(cur.id, b.dataset.pick).then(function () { U.toast('Pronóstico guardado'); openTour(cur.id); }, err); }); return; }
     var a = b.dataset.act;
+    if (proClick(a, b)) return;
     if (a === 'goacc') { tab = 'acc'; So.render(); }
     else if (a === 'mup' || a === 'min') { mode = a === 'mup' ? 'up' : 'in'; So.render(); }
     else if (a === 'auth') auth();
