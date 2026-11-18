@@ -1,0 +1,28 @@
+# Publica el juego en Cloudflare Pages (proyecto "a-la-pelotita") cada vez que se sube un cambio.
+# El link https://a-la-pelotita.pages.dev/ no cambia nunca: cada publicación reemplaza a la anterior.
+# Necesita el secreto CLOUDFLARE_API_TOKEN en GitHub (Settings → Secrets and variables → Actions).
+name: Publicar en Cloudflare
+on:
+  push:
+    branches: [main, claude/inspiring-cori-unoeia]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: publicar
+  cancel-in-progress: true
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Juntar solo los archivos del sitio
+        run: |
+          mkdir dist
+          cp -r index.html admin.html js assets vendor dist/
+      - name: Subir a Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: a3f85b6b8a971d708473fcd430b9f7b5
+          command: pages deploy dist --project-name=a-la-pelotita --branch=main --commit-dirty=true
