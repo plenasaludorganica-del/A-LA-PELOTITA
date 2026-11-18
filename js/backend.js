@@ -222,13 +222,10 @@
       return profile(sess.user.id).then(function (p) { DB.user = p ? Object.assign({ email: sess.user.email }, p) : null; return DB.user; }, function () { return null; });
     },
     signUp: function (f) {
-      return fetch(CFG.supabaseUrl + '/auth/v1/signup', { method: 'POST', headers: { apikey: CFG.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.email, password: f.password, data: { name: f.name, cat: f.cat, side: f.side } }) })
-        .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(human(j.msg || j.message || j.error_description || 'No se pudo crear la cuenta.')); return j; }); })
-        .then(function (j) {
-          if (!j.access_token) throw new Error('Te mandamos un mail para confirmar la cuenta. Confirmalo y después entrá con tu contraseña.');
-          setSess(j);
-          return rest('POST', '/rest/v1/profiles', { id: j.user.id, name: f.name, cat: f.cat, side: f.side }, 'resolution=merge-duplicates,return=representation');
-        }).then(function (rows) { DB.user = Object.assign({ email: f.email }, rows[0]); return DB.user; });
+      // Registro por la función del servidor: crea la cuenta ya confirmada (sin mail) y después entra con la contraseña
+      return fetch(CFG.supabaseUrl + '/functions/v1/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.email, password: f.password, name: f.name, cat: f.cat, side: f.side }) })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(human(j.error || j.msg || 'No se pudo crear la cuenta.')); return j; }); })
+        .then(function () { return Supa.signIn({ email: f.email, password: f.password }); });
     },
     signIn: function (f) {
       return fetch(CFG.supabaseUrl + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: CFG.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.email, password: f.password }) })

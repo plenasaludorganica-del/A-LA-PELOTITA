@@ -147,6 +147,21 @@ Pendiente, en orden sugerido:
 5. Dobles 2 contra 2, más ejercicios mentales y más jugadas para leer.
 6. Instalable como app y registro anónimo de uso.
 
+## Estado de la mudanza al servidor propio (noviembre 2026)
+
+- **Servidor nuevo:** proyecto de Supabase `a-la-pelotita-sp` (id `lldifserfqgnjowgrfej`, São Paulo), plan gratis.
+  Tiene cargado todo `supabase/schema.sql` y las funciones `supabase/functions/` (`signup`, `pro-checkout`, `mp-webhook`).
+  El proyecto viejo `a-la-pelotita` (Ohio, vacío) quedó pausado.
+- **Registro:** pasa por la función `signup`, que crea la cuenta ya confirmada (no manda mails).
+- **Al registrarse:** `padelcoach.ar@gmail.com` queda como administradora y `gabrielcaranlarrosa@outlook.com` recupera
+  el Pro que pagó (hasta el 18/12/2026). Lo hace la función `mark_admin` de la base.
+- **Falta para publicar el cambio:** cargar el secreto `MERCADO_PAGO_ACCESS_TOKEN` (clave de producción de Mercado Pago)
+  en Supabase → Edge Functions → Secrets. Mientras tanto el sitio publicado sigue usando el servidor de Lovable
+  (`js/config.js` del repositorio ya apunta al nuevo; no subir esta versión a Lovable hasta tener la clave).
+- **Después:** comprar el dominio `.com` en Cloudflare, publicar el juego en Cloudflare Pages, poner la dirección nueva
+  en `app_settings.site_url`, y armar el cobro internacional (Paddle u otro, a evaluar).
+- **Plan:** seguir en el plan gratis de Supabase hasta tener ingresos; después pasar a Pro (USD 25 por mes).
+
 ## Estructura
 
 | Archivo | Qué tiene |
