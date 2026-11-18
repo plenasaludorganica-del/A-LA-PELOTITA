@@ -1,0 +1,38 @@
+# Revisa el dominio y lo conecta al proyecto de Cloudflare Pages "a-la-pelotita". Se lanza a mano (Actions → Run workflow).
+name: Conectar dominio
+on:
+  workflow_dispatch:
+    inputs:
+      dominio:
+        description: Dominio a conectar
+        default: alapelotita.com
+permissions:
+  contents: read
+jobs:
+  dominio:
+    runs-on: ubuntu-latest
+    env:
+      CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      ACC: a3f85b6b8a971d708473fcd430b9f7b5
+      D: ${{ inputs.dominio }}
+    steps:
+      - name: Registro del dominio (RDAP)
+        run: curl -s "https://rdap.verisign.com/com/v1/domain/$D" | jq '{dominio: .ldhName, estado: .status, alta: [.events[] | select(.eventAction=="registration") | .eventDate][0], vence: [.events[] | select(.eventAction=="expiration") | .eventDate][0], servidores: [.nameservers[].ldhName]}' || true
+      - name: DNS público
+        run: dig +short NS "$D"; dig +short A "$D"; dig +short CNAME "www.$D" || true
+      - name: Zona en Cloudflare
+        run: curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/zones?name=$D" | jq '{ok: .success, errores: .errors, zonas: [.result[]? | {nombre: .name, estado: .status, servidores: .name_servers}]}'
+      - name: Agregar dominios al proyecto de Pages
+        run: |
+          for h in "$D" "www.$D"; do
+            echo "== $h"
+            curl -s -X POST -H "Authorization: Bearer $CF" -H "Content-Type: application/json" \
+              "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects/a-la-pelotita/domains" \
+              -d "{\"name\":\"$h\"}" | jq '{ok: .success, errores: .errors, estado: .result.status, validacion: .result.validation_data.status}'
+          done
+      - name: Estado de los dominios del proyecto
+        run: |
+          sleep 20
+          curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects/a-la-pelotita/domains" \
+            | jq '{ok: .success, errores: .errors, dominios: [.result[]? | {nombre: .name, estado: .status, validacion: .validation_data.status, error: .validation_data.error_message}]}'
+          curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects/a-la-pelotita" | jq '{rama_principal: .result.production_branch, dominios: .result.domains}'
