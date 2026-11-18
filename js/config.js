@@ -6,7 +6,7 @@
   'use strict';
   window.PP = window.PP || {};
   window.PP.CONFIG = {
-    supabaseUrl: '',
-    supabaseKey: ''
+    supabaseUrl: 'https://xcvhqbqopuphdyuijvpu.supabase.co',
+    supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjdmhxYnFvcHVwaGR5dWlqdnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwMjE5MjAsImV4cCI6MjExMDU5NzkyMH0.bQJhqOVYO6gLZvqpqO2sKkeHP-Zf6RVxb9aRZ0VwIS4'
   };
 })();
