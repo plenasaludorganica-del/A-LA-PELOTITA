@@ -193,12 +193,37 @@
   function fecha(d) { return new Date(d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }); }
   function chip(lvl) { var l = PP.CH_LEVELS[lvl]; return '<span class="chipst" style="--c:' + l[1] + '">' + l[0] + '</span>'; }
   function fail(e) { $('soBody').innerHTML = '<p class="note">' + esc(e.message) + '</p>'; }
+  /* Ventana "Hacete PRO": beneficios, precio y botón de pago. Se abre con "Quiero ser PRO" y apenas alguien crea su cuenta. */
+  So.offerPro = function () {
+    if (!DB.user || !DB.online || DB.isVip() || !CFG.proCheckout) return;
+    DB.proPrice().then(function (n) {
+      if (!n || DB.isVip()) return;
+      var li = function (t) { return '<li style="margin:7px 0">' + t + '</li>'; };
+      U.modal('<h2 style="color:#FFD23A">Hacete PRO</h2>' +
+        '<p style="color:#fff">Antes de entrenar o de jugar un partido, la cabeza tiene que estar lista. PRO te mete de lleno en la comunidad que entrena la lectura del juego.</p>' +
+        '<ul style="text-align:left;list-style:none;padding:0;margin:10px 0;color:#fff">' +
+        li('✅ Subís hasta <b>' + DB.VIDEOS_PER_MONTH + ' videos por mes</b> copiando las 50 jugadas') +
+        li('✅ Ves los videos de todos los jugadores') +
+        li('✅ Votás con me gusta y aparecés en el <b>ranking de cada jugada</b>') +
+        li('✅ Entrás a las <b>competencias nuevas</b> que se van sumando') +
+        li('✅ Ayudás a que A la Pelotita siga creciendo') + '</ul>' +
+        '<p style="color:#fff;font-size:22px;margin:8px 0"><b>$ ' + n.toLocaleString('es-AR') + '</b> por 30 días</p>' +
+        '<p style="font-size:13px">Pago único con Mercado Pago. No se renueva solo.</p>' +
+        '<div class="row"><button class="btn ghost" id="oNo">Ahora no</button><button class="btn lime big" id="oOk">Pagar con Mercado Pago</button></div>', function () {
+        U.on($('oNo'), U.closeModal);
+        U.on($('oOk'), function () {
+          var b = $('oOk'); b.disabled = true; b.textContent = 'Abriendo Mercado Pago…';
+          DB.proCheckout().then(function (url) { location.href = url; }, function (e) { b.disabled = false; b.textContent = 'Pagar con Mercado Pago'; err(e); });
+        });
+      });
+    }, noop);
+  };
   function proHead() {
     var u = DB.user, h;
     if (!u) return '<div class="card" style="border-color:#FFD23A"><h3 class="disp" style="color:#FFD23A;font-size:22px">Jugadas PRO</h3><p style="color:#fff">50 jugadas para copiar, de la más fácil a la más difícil. Mirá las indicaciones gratis. Con la suscripción Pro subís tu video, ves los de los demás y votás.</p><button class="btn lime" data-act="goacc">Crear mi cuenta</button></div>';
     if (!DB.isVip()) {
       h = '<div class="card" style="border-color:#FFD23A;box-shadow:0 0 18px rgba(255,210,58,.45)"><h3 class="disp" style="color:#FFD23A;font-size:22px">Hacete PRO</h3><p style="color:#fff">Con la suscripción Pro:</p><p>· Subís hasta ' + DB.VIDEOS_PER_MONTH + ' videos por mes copiando las jugadas<br>· Ves los videos de todos<br>· Votás con me gusta y aparecés en el ranking de cada jugada</p>' +
-        (proPrice ? '<p style="color:#fff;font-size:20px"><b>$ ' + proPrice.toLocaleString('es-AR') + '</b> por 30 días · pagás con Mercado Pago</p><button class="btn lime" data-act="propay">Quiero ser PRO</button>'
+        (proPrice ? '<p style="color:#fff;font-size:20px"><b>$ ' + proPrice.toLocaleString('es-AR') + '</b> por 30 días · pagás con Mercado Pago</p><button class="btn lime" data-act="proinfo">Quiero ser PRO</button>'
           : (CFG.proPrice ? '<p style="color:#fff;font-size:18px"><b>' + esc(CFG.proPrice) + '</b></p>' : '') +
             (CFG.proLink ? '<a class="btn lime" href="' + esc(CFG.proLink) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Quiero ser PRO</a>' : '<p>Pedile tu alta Pro a la organización con el mail de tu cuenta: <b style="color:#fff">' + esc(u.email || '') + '</b></p>')) +
         '</div>';
@@ -396,6 +421,7 @@
     else if (a === 'gopro') { So.open('pro'); So.render(); }
     else if (a === 'prousers') { proView = 'users'; So.render(); }
     else if (a === 'usvip') { b.disabled = true; DB.setVip(b.dataset.mail, +b.dataset.days).then(function (msg) { U.toast(String(msg)); paintUsers(); }, function (e) { b.disabled = false; err(e); }); }
+    else if (a === 'proinfo') So.offerPro();
     else if (a === 'propay') { b.disabled = true; b.textContent = 'Abriendo Mercado Pago…'; DB.proCheckout().then(function (url) { location.href = url; }, function (e) { b.disabled = false; b.textContent = 'Quiero ser PRO'; err(e); }); }
     else if (a === 'vup') pickVideo();
     else if (a === 'vplay') playVideo(id, b);
@@ -449,7 +475,7 @@
         '<button class="btn ghost" data-act="out">Cerrar sesión</button></div>' +
         (DB.online ? '<div class="card" id="accPro" style="border-color:#FFD23A">' + (DB.isVip()
           ? '<h3 class="disp" style="color:#FFD23A;font-size:20px">Sos PRO' + (u.is_admin ? ' · Administración' : ' hasta el ' + fecha(u.vip_until)) + '</h3><button class="btn small" data-act="gopro">Ir a Jugadas PRO</button>' + (u.is_admin ? ' <a class="btn small ghost" href="admin.html" target="_blank" rel="noopener" style="text-decoration:none">Panel de administración</a>' : '')
-          : '<h3 class="disp" style="color:#FFD23A;font-size:20px">Hacete PRO</h3><p>Subí tus videos copiando las 50 jugadas, mirá los de todos y votá.</p><p id="accPrice"></p><button class="btn lime" data-act="propay">Pagar con Mercado Pago</button>') + '</div>' : '');
+          : '<h3 class="disp" style="color:#FFD23A;font-size:20px">Hacete PRO</h3><p>Sumate a la comunidad que entrena la cabeza antes de la cancha.</p><p id="accPrice"></p><button class="btn lime" data-act="proinfo">Quiero ser PRO</button>') + '</div>' : '');
     } else {
       var up = mode === 'up';
       h = '<div class="card"><div class="row" style="margin-bottom:10px"><button class="btn small ' + (up ? 'lime' : 'ghost') + '" data-act="mup">Crear cuenta</button><button class="btn small ' + (up ? 'ghost' : 'lime') + '" data-act="min">Ya tengo cuenta</button></div>' +
@@ -467,7 +493,7 @@
   function auth() {
     var f = { email: $('aMail').value.trim().toLowerCase(), password: $('aPass').value };
     if (mode === 'up') { f.name = $('aName').value.trim(); f.cat = $('aCat').value; f.side = $('aSide').value; }
-    (mode === 'up' ? DB.signUp(f) : DB.signIn(f)).then(function () { So.sync(); U.toast('¡Hola, ' + DB.user.name + '!'); if (pendingTour) { var c = pendingTour; pendingTour = null; openTour(c); return; } tab = 'rank'; So.render(); }, function (e) { var el = $('aErr'); if (el) el.textContent = e.message; });
+    (mode === 'up' ? DB.signUp(f) : DB.signIn(f)).then(function () { So.sync(); U.toast('¡Hola, ' + DB.user.name + '!'); if (pendingTour) { var c = pendingTour; pendingTour = null; openTour(c); return; } tab = 'rank'; So.render(); if (mode === 'up') So.offerPro(); }, function (e) { var el = $('aErr'); if (el) el.textContent = e.message; });
   }
 
   function onClick(e) {
