@@ -172,3 +172,18 @@ drop policy if exists jugadas_ins on storage.objects;  create policy jugadas_ins
   bucket_id = 'jugadas' and public.is_vip() and (storage.foldername(name))[1] = auth.uid()::text);
 drop policy if exists jugadas_del on storage.objects;  create policy jugadas_del on storage.objects for delete to authenticated using (
   bucket_id = 'jugadas' and (public.is_admin() or (storage.foldername(name))[1] = auth.uid()::text));
+
+-- Panel de usuarios de la administración: busca por nombre o mail (máximo 100 resultados).
+create or replace function admin_users(q text default '') returns table (id uuid, email text, name text, vip_until timestamptz, is_admin boolean, videos int, created_at timestamptz)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not is_admin() then raise exception 'Solo la administración puede ver los usuarios.'; end if;
+  return query
+    select u.id, u.email::text, p.name, p.vip_until, coalesce(p.is_admin, false),
+           (select count(*)::int from videos v where v.user_id = u.id), u.created_at
+    from auth.users u left join profiles p on p.id = u.id
+    where coalesce(q, '') = '' or p.name ilike '%' || q || '%' or u.email ilike '%' || q || '%'
+    order by u.created_at desc limit 100;
+end $$;
+revoke all on function admin_users(text) from public, anon;
+grant execute on function admin_users(text) to authenticated;

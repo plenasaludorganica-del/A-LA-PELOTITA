@@ -97,6 +97,8 @@
   ['videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe'].forEach(function (k) {
     Local[k] = function () { return k === 'refreshMe' ? ok(DB.user) : fail(NOSRV); };
   });
+  Local.searchPlayers = function (q) { return Local.ranking('stars').then(function (l) { q = q.toLowerCase(); return l.filter(function (p) { return String(p.name).toLowerCase().indexOf(q) >= 0; }); }); };
+  Local.adminUsers = function () { return fail(NOSRV); };
   Local.proPrice = function () { return ok(0); }; Local.proCheckout = function () { return fail(NOSRV); };
   [].forEach(function () {
   });
@@ -187,6 +189,9 @@
       });
     },
     deleteVideo: function (v) { return rest('DELETE', '/rest/v1/videos?id=eq.' + v.id).then(function () { return raw('DELETE', '/storage/v1/object/jugadas/' + v.path).catch(function () {}); }); },
+    // Buscar jugadores por nombre (para todos) y usuarios por nombre o mail (solo administración)
+    searchPlayers: function (q) { return rest('GET', '/rest/v1/profiles?select=id,name,cat,side,stars,level,iq,picks&name=ilike.' + encodeURIComponent('*' + q.replace(/[*,()]/g, ' ') + '*') + '&order=stars.desc&limit=50'); },
+    adminUsers: function (q) { return rest('POST', '/rest/v1/rpc/admin_users', { q: q || '' }); },
     // Precio de la suscripción (en pesos) guardado en el servidor; 0 = cobro no habilitado
     proPrice: function () { return rest('GET', '/rest/v1/app_settings?key=eq.pro_price_ars&select=value').then(function (r) { var n = r && r[0] ? parseFloat(r[0].value) : 0; return n > 0 ? n : 0; }, function () { return 0; }); },
     // Pide al servidor el enlace de pago de Mercado Pago para este usuario
@@ -258,7 +263,7 @@
   };
 
   var impl = DB.online ? Supa : Local;
-  ['proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore'].forEach(function (k) {
+  ['searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore'].forEach(function (k) {
     DB[k] = function () { try { return impl[k].apply(impl, arguments); } catch (e) { return Promise.reject(e); } };
   });
   DB.signUp = function (f) {

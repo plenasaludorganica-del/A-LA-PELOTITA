@@ -53,17 +53,27 @@
   function demoNote() { return DB.online ? '' : '<p class="note">Modo demo: por ahora los datos se guardan solo en este celular. El ranking y los torneos entre jugadores se activan al conectar el servidor.</p>'; }
 
   /* ---------- Ranking ---------- */
+  var rankQ = '', rankT = null;
   function renderRank() {
-    var kinds = [['stars', 'Estrellas'], ['iq', 'IQ de pádel'], ['picks', 'Pronósticos']], unit = { stars: 'estrellas', iq: 'IQ', picks: 'aciertos' };
-    DB.ranking(rankKind).then(function (list) {
-      var h = '<div class="row" style="margin-bottom:10px">' + kinds.map(function (k) { return '<button class="btn small ' + (rankKind === k[0] ? 'lime' : 'ghost') + '" data-rk="' + k[0] + '">' + k[1] + '</button>'; }).join('') + '</div>';
-      if (!list.length) h += '<div class="card"><h3 class="disp">Todavía no hay nadie</h3><p>Creá tu cuenta y sé el primero del ranking.</p><button class="btn lime" data-act="goacc">Crear mi cuenta</button></div>';
+    var kinds = [['stars', 'Estrellas'], ['iq', 'IQ de pádel'], ['picks', 'Pronósticos']];
+    $('soBody').innerHTML = '<div class="row" style="margin-bottom:10px">' + kinds.map(function (k) { return '<button class="btn small ' + (rankKind === k[0] ? 'lime' : 'ghost') + '" data-rk="' + k[0] + '">' + k[1] + '</button>'; }).join('') + '</div>' +
+      '<input class="fld" id="rkQ" type="search" maxlength="40" autocomplete="off" placeholder="Buscar jugador por nombre" value="' + esc(rankQ) + '"><div id="rkList"><p class="note">Cargando…</p></div>' + demoNote();
+    $('rkQ').addEventListener('input', function () { rankQ = this.value.trim(); clearTimeout(rankT); rankT = setTimeout(paintRank, 300); });
+    paintRank();
+  }
+  function paintRank() {
+    var unit = { stars: 'estrellas', iq: 'IQ', picks: 'aciertos' }, q = rankQ, k = rankKind;
+    (q.length >= 2 ? DB.searchPlayers(q) : DB.ranking(k)).then(function (list) {
+      var el = $('rkList'); if (!el || q !== rankQ || k !== rankKind) return;
+      if (q.length >= 2) list = list.slice().sort(function (a, b) { return (b[k] || 0) - (a[k] || 0); });
+      var h = '';
+      if (!list.length) h = q.length >= 2 ? '<div class="card"><p>No encontramos a nadie con "' + esc(q) + '".</p></div>' : '<div class="card"><h3 class="disp">Todavía no hay nadie</h3><p>Creá tu cuenta y sé el primero del ranking.</p><button class="btn lime" data-act="goacc">Crear mi cuenta</button></div>';
       list.forEach(function (p, i) {
-        var mine = DB.user && p.id === DB.user.id, medal = ['#FFD23A', '#C9D3E6', '#E0915A'][i];
-        h += '<div class="rk' + (mine ? ' me' : '') + '" style="' + (medal ? '--mc:' + medal : '') + '"><b class="pos">' + (i + 1) + '</b>' + avatar(p.name) + '<div class="tx"><h3>' + esc(p.name) + (mine ? ' (vos)' : '') + '</h3><p>' + esc(p.cat || '') + ' · ' + esc(p.side || '') + ' · nivel ' + (p.level || 1) + '</p></div><div class="val"><b>' + (p[rankKind] || 0) + '</b><small>' + unit[rankKind] + '</small></div></div>';
+        var mine = DB.user && p.id === DB.user.id, medal = q.length >= 2 ? null : ['#FFD23A', '#C9D3E6', '#E0915A'][i];
+        h += '<div class="rk' + (mine ? ' me' : '') + '" style="' + (medal ? '--mc:' + medal : '') + '"><b class="pos">' + (q.length >= 2 ? '' : i + 1) + '</b>' + avatar(p.name) + '<div class="tx"><h3>' + esc(p.name) + (mine ? ' (vos)' : '') + '</h3><p>' + esc(p.cat || '') + ' · ' + esc(p.side || '') + ' · nivel ' + (p.level || 1) + '</p></div><div class="val"><b>' + (p[k] || 0) + '</b><small>' + unit[k] + '</small></div></div>';
       });
-      $('soBody').innerHTML = h + demoNote();
-    }, function (e) { $('soBody').innerHTML = '<p class="note">' + esc(e.message) + '</p>'; });
+      el.innerHTML = h;
+    }, function (e) { var el = $('rkList'); if (el) el.innerHTML = '<p class="note">' + esc(e.message) + '</p>'; });
   }
 
   /* ---------- Torneos ---------- */
@@ -180,7 +190,7 @@
     }
     h = '<div class="card"><h3 class="disp" style="color:#FFD23A;font-size:20px">Sos PRO' + (u.is_admin ? ' · Administración' : ' hasta el ' + fecha(u.vip_until)) + '</h3><p id="proCount"></p><div class="row" style="justify-content:flex-start;flex-wrap:wrap">' +
       '<button class="btn small ghost" data-act="promine">Mis videos</button>' +
-      (u.is_admin ? '<button class="btn small" data-act="prorev">Revisar videos</button><button class="btn small ghost" data-act="progive">Dar alta Pro</button>' : '') + '</div></div>';
+      (u.is_admin ? '<button class="btn small" data-act="prorev">Revisar videos</button><button class="btn small ghost" data-act="prousers">Usuarios</button>' : '') + '</div></div>';
     return h;
   }
   function paintCount() { if (!DB.isVip()) return; DB.monthCount().then(function (n) { var el = $('proCount'); if (el) el.textContent = 'Este mes subiste ' + n + ' de ' + DB.VIDEOS_PER_MONTH + ' videos.'; }, noop); }
@@ -188,6 +198,7 @@
     if (proCh) return renderChallenge();
     if (proView === 'mine') return renderVideoList('Mis videos', DB.myVideos(), 'mine');
     if (proView === 'rev') return renderVideoList('Videos para revisar', DB.pendingVideos(), 'rev');
+    if (proView === 'users') return renderUsers();
     var paint = function (counts) {
       var h = proHead(), last = 0;
       PP.CHALLENGES.forEach(function (c, i) {
@@ -230,6 +241,27 @@
       $('soBody').innerHTML = '<button class="btn small ghost" data-act="problist" style="margin-bottom:10px">' + U.ic('back') + ' Jugadas</button><h3 class="disp" style="margin:6px 4px">' + title + '</h3>' +
         (list.length ? list.map(function (v) { return videoCard(v, mode); }).join('') : '<div class="card"><p>' + (mode === 'rev' ? 'No hay videos esperando revisión.' : 'Todavía no subiste ningún video.') + '</p></div>');
     }, fail);
+  }
+  var usrQ = '', usrT = null, usrList = [];
+  function renderUsers() {
+    $('soBody').innerHTML = '<button class="btn small ghost" data-act="problist" style="margin-bottom:10px">' + U.ic('back') + ' Jugadas</button><h3 class="disp" style="margin:6px 4px">Usuarios</h3>' +
+      '<input class="fld" id="usQ" type="search" maxlength="60" autocomplete="off" placeholder="Buscar por nombre o mail" value="' + esc(usrQ) + '"><p class="note" id="usSum"></p><div id="usList"><p class="note">Cargando…</p></div>';
+    $('usQ').addEventListener('input', function () { usrQ = this.value.trim(); clearTimeout(usrT); usrT = setTimeout(paintUsers, 300); });
+    paintUsers();
+  }
+  function paintUsers() {
+    var q = usrQ;
+    DB.adminUsers(q).then(function (list) {
+      var el = $('usList'); if (!el || q !== usrQ) return; usrList = list;
+      var now = Date.now(), pro = list.filter(function (x) { return x.vip_until && new Date(x.vip_until).getTime() > now; }).length;
+      $('usSum').textContent = list.length + (list.length === 100 ? '+' : '') + ' usuarios' + (q ? ' encontrados' : '') + ' · ' + pro + ' con Pro activo';
+      el.innerHTML = list.length ? list.map(function (x) {
+        var on = x.vip_until && new Date(x.vip_until).getTime() > now;
+        return '<div class="card"><div class="row" style="justify-content:flex-start;align-items:center;gap:10px">' + avatar(x.name || x.email) + '<div class="tx" style="flex:1;text-align:left;min-width:0"><h3>' + esc(x.name || '(sin perfil)') + (x.is_admin ? ' · admin' : '') + '</h3><p style="word-break:break-all">' + esc(x.email) + '</p>' +
+          '<p>' + (on ? '<b style="color:#FFD23A">PRO hasta el ' + fecha(x.vip_until) + '</b>' : 'Sin Pro') + ' · ' + x.videos + (x.videos === 1 ? ' video' : ' videos') + ' · desde ' + fecha(x.created_at) + '</p></div></div>' +
+          (x.is_admin ? '' : '<div class="row" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn small lime" data-act="usvip" data-mail="' + esc(x.email) + '" data-days="30">+1 mes Pro</button>' + (on ? '<button class="btn small ghost" data-act="usvip" data-mail="' + esc(x.email) + '" data-days="0">Quitar Pro</button>' : '') + '</div>') + '</div>';
+      }).join('') : '<div class="card"><p>No hay usuarios' + (q ? ' con "' + esc(q) + '"' : '') + '.</p></div>';
+    }, function (e) { var el = $('usList'); if (el) el.innerHTML = '<p class="note">' + esc(e.message) + '</p>'; });
   }
   function byId(id) { return proList.filter(function (v) { return v.id === id; })[0]; }
   function playVideo(id, btn) {
@@ -280,6 +312,9 @@
     else if (a === 'promine') { proView = 'mine'; So.render(); }
     else if (a === 'prorev') { proView = 'rev'; So.render(); }
     else if (a === 'progive') giveVip();
+    else if (a === 'gopro') { So.open('pro'); So.render(); }
+    else if (a === 'prousers') { proView = 'users'; So.render(); }
+    else if (a === 'usvip') { b.disabled = true; DB.setVip(b.dataset.mail, +b.dataset.days).then(function (msg) { U.toast(String(msg)); paintUsers(); }, function (e) { b.disabled = false; err(e); }); }
     else if (a === 'provip') DB.refreshMe().then(function () { So.render(); U.toast(DB.isVip() ? '¡Ya sos PRO!' : 'Tu alta Pro todavía no está activa.'); }, err);
     else if (a === 'propay') { b.disabled = true; b.textContent = 'Abriendo Mercado Pago…'; DB.proCheckout().then(function (url) { location.href = url; }, function (e) { b.disabled = false; b.textContent = 'Quiero ser PRO'; err(e); }); }
     else if (a === 'vup') pickVideo();
@@ -330,7 +365,10 @@
     if (u) {
       h = '<div class="card" style="text-align:center">' + avatar(u.name).replace('class="av"', 'class="av big"') + '<h3 class="disp" style="font-size:26px">' + esc(u.name) + '</h3><p>' + esc(u.email || '') + '</p><p>' + esc(u.cat || '') + ' · ' + esc(u.side || '') + '</p>' +
         '<div class="rew" style="margin:10px 0"><span>' + U.ic('star', 'color:#FFD23A') + U.totalStars() + '</span><span>IQ ' + U.iq() + '</span><span>Aciertos ' + (U.save().picks || 0) + '</span></div>' +
-        '<button class="btn ghost" data-act="out">Cerrar sesión</button></div>';
+        '<button class="btn ghost" data-act="out">Cerrar sesión</button></div>' +
+        (DB.online ? '<div class="card" id="accPro" style="border-color:#FFD23A">' + (DB.isVip()
+          ? '<h3 class="disp" style="color:#FFD23A;font-size:20px">Sos PRO' + (u.is_admin ? ' · Administración' : ' hasta el ' + fecha(u.vip_until)) + '</h3><button class="btn small" data-act="gopro">Ir a Jugadas PRO</button>'
+          : '<h3 class="disp" style="color:#FFD23A;font-size:20px">Hacete PRO</h3><p>Subí tus videos copiando las 50 jugadas, mirá los de todos y votá.</p><p id="accPrice"></p><button class="btn lime" data-act="propay">Pagar con Mercado Pago</button> <button class="btn small ghost" data-act="provip">Ya pagué: actualizar</button>') + '</div>' : '');
     } else {
       var up = mode === 'up';
       h = '<div class="card"><div class="row" style="margin-bottom:10px"><button class="btn small ' + (up ? 'lime' : 'ghost') + '" data-act="mup">Crear cuenta</button><button class="btn small ' + (up ? 'ghost' : 'lime') + '" data-act="min">Ya tengo cuenta</button></div>' +
@@ -343,6 +381,7 @@
         '<p class="note">Con tu cuenta aparecés en el ranking, creás torneos y hacés pronósticos.</p>';
     }
     $('soBody').innerHTML = h + demoNote();
+    if (u && DB.online && !DB.isVip()) DB.proPrice().then(function (n) { var el = $('accPrice'); if (el && n) el.innerHTML = '<b style="color:#fff;font-size:20px">$ ' + n.toLocaleString('es-AR') + '</b> por 30 días'; });
   }
   function auth() {
     var f = { email: $('aMail').value.trim().toLowerCase(), password: $('aPass').value };

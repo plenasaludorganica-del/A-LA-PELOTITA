@@ -86,7 +86,9 @@ Botón "Jugadas PRO" en el inicio y pestaña **Jugadas** en Comunidad.
 - **Con suscripción Pro:** subir hasta 12 videos por mes (máximo 20 segundos y 15 MB cada uno), ver los videos de los demás
   y votar con me gusta. Cada video queda en revisión hasta que la administración lo aprueba.
 - **Administración** (cuentas con `is_admin` en la tabla `profiles`): en la misma pantalla aparecen "Revisar videos"
-  (aprobar o rechazar) y "Dar alta Pro" (por mail de la cuenta: 1 mes, 3 meses, 1 año o quitar).
+  (aprobar o rechazar) y "Usuarios": buscador por nombre o mail, estado Pro de cada cuenta y botones para dar un mes o quitar el Pro.
+- **Buscador de jugadores:** en la pestaña Ranking, cualquiera busca a otro jugador por nombre.
+- **Pago:** además de Jugadas, la pestaña Cuenta muestra el precio y el botón "Pagar con Mercado Pago".
 - **Cobro:** pago único con Mercado Pago que habilita 30 días de Pro (no es débito automático). El botón "Quiero ser PRO"
   llama a `/api/public/pro-checkout` del proyecto de Lovable, que crea el pago; cuando Mercado Pago avisa que se aprobó,
   el servidor suma 30 días al alta (`vip_until`) una sola vez por pago. El precio en pesos está en la tabla `app_settings`
