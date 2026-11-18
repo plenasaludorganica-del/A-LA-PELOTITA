@@ -99,6 +99,7 @@
   });
   Local.searchPlayers = function (q) { return Local.ranking('stars').then(function (l) { q = q.toLowerCase(); return l.filter(function (p) { return String(p.name).toLowerCase().indexOf(q) >= 0; }); }); };
   Local.adminUsers = function () { return fail(NOSRV); };
+  Local.sendFeedback = function () { return fail(NOSRV); }; Local.admin = function () { return fail(NOSRV); };
   Local.proPrice = function () { return ok(0); }; Local.proCheckout = function () { return fail(NOSRV); };
   [].forEach(function () {
   });
@@ -135,12 +136,17 @@
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) { setSess(null); DB.user = null; throw new Error('Tu sesión venció. Volvé a entrar.'); } setSess(j); }); });
   }
   function profile(id) { return rest('GET', '/rest/v1/profiles?id=eq.' + id + '&select=*').then(function (rows) { return rows && rows[0]; }); }
+  // Inscriptos, puntajes y pronósticos de un torneo. El servidor no muestra los pronósticos ajenos:
+  // solo cuántos tiene cada jugador y el propio. Se arma la misma forma que usa la pantalla (t.bets, t.myBet).
   function players(t) {
-    return Promise.all([
-      rest('GET', '/rest/v1/tournament_players?tournament_id=eq.' + t.id + '&select=user_id,name,score'),
-      rest('GET', '/rest/v1/bets?tournament_id=eq.' + t.id + '&select=user_id,pick')
-    ]).then(function (r) { t.players = r[0] || []; t.bets = r[1] || []; t.myBet = DB.user ? (t.bets.filter(function (b) { return b.user_id === DB.user.id; })[0] || null) : null; return t; });
+    return rest('POST', '/rest/v1/rpc/tournament_detail', { p_id: t.id }).then(function (d) {
+      d = d || {}; t.players = d.players || []; t.bets = [];
+      (d.picks || []).forEach(function (x) { for (var i = 0; i < x.n; i++) t.bets.push({ pick: x.pick }); });
+      t.myBet = d.my_pick ? { user_id: DB.user && DB.user.id, pick: d.my_pick } : null;
+      return t;
+    });
   }
+  var NEED = 'Creá tu cuenta o entrá para ver el ranking y los torneos.';
   // Pedido sin JSON (subir o borrar archivos), con renovación de sesión
   function raw(method, path, body, type, retried) {
     var h = { apikey: CFG.supabaseKey }; if (sess) h.Authorization = 'Bearer ' + sess.access_token; if (type) h['Content-Type'] = type;
@@ -189,8 +195,12 @@
       });
     },
     deleteVideo: function (v) { return rest('DELETE', '/rest/v1/videos?id=eq.' + v.id).then(function () { return raw('DELETE', '/storage/v1/object/jugadas/' + v.path).catch(function () {}); }); },
+    // Opiniones: las puede dejar cualquiera; solo la administración las lee
+    sendFeedback: function (d) { return rest('POST', '/rest/v1/feedback', d); },
+    // Funciones del panel de administración (el servidor rechaza a quien no es administrador)
+    admin: function (fn, args) { return rest('POST', '/rest/v1/rpc/' + fn, args || {}); },
     // Buscar jugadores por nombre (para todos) y usuarios por nombre o mail (solo administración)
-    searchPlayers: function (q) { return rest('GET', '/rest/v1/profiles?select=id,name,cat,side,stars,level,iq,picks&name=ilike.' + encodeURIComponent('*' + q.replace(/[*,()]/g, ' ') + '*') + '&order=stars.desc&limit=50'); },
+    searchPlayers: function (q) { if (!DB.user) return fail(NEED); return rest('POST', '/rest/v1/rpc/search_players', { q: q }); },
     adminUsers: function (q) { return rest('POST', '/rest/v1/rpc/admin_users', { q: q || '' }); },
     // Precio de la suscripción (en pesos) guardado en el servidor; 0 = cobro no habilitado
     proPrice: function () { return rest('GET', '/rest/v1/app_settings?key=eq.pro_price_ars&select=value').then(function (r) { var n = r && r[0] ? parseFloat(r[0].value) : 0; return n > 0 ? n : 0; }, function () { return 0; }); },
@@ -236,13 +246,13 @@
       var body = { stars: s.stars, level: s.level, iq: s.iq, updated_at: new Date().toISOString() }; if (s.picks !== undefined) body.picks = s.picks;
       return rest('PATCH', '/rest/v1/profiles?id=eq.' + DB.user.id, body).then(function () { Object.assign(DB.user, body); });
     },
-    ranking: function (kind) { return rest('GET', '/rest/v1/profiles?select=id,name,cat,side,stars,level,iq,picks&order=' + kind + '.desc&limit=100'); },
+    ranking: function (kind) { if (!DB.user) return fail(NEED); return rest('POST', '/rest/v1/rpc/ranking_list', { p_kind: kind }); },
     sponsors: function () { return rest('GET', '/rest/v1/sponsors?select=*&order=created_at.desc'); },
     sponsorApply: function (f) { return rest('POST', '/rest/v1/sponsors', { name: f.name, type: f.type, descr: f.descr, contact: f.contact, created_by: DB.user.id }); },
-    tournaments: function () { return rest('GET', '/rest/v1/tournaments?select=*&order=start_at.asc&limit=60'); },
+    tournaments: function () { if (!DB.user) return fail(NEED); return rest('POST', '/rest/v1/rpc/tournaments_open', {}); },
     tournament: function (idOrCode) {
-      var q = /^[A-Z0-9]{6}$/.test(idOrCode) ? 'code=eq.' + idOrCode : 'id=eq.' + idOrCode;
-      return rest('GET', '/rest/v1/tournaments?' + q + '&select=*').then(function (rows) { if (!rows || !rows[0]) throw new Error('No encontramos ese torneo.'); return players(rows[0]); });
+      if (!DB.user) return fail(NEED);
+      return rest('POST', '/rest/v1/rpc/tournament_find', { p_ref: String(idOrCode) }).then(function (rows) { if (!rows || !rows[0]) throw new Error('No encontramos ese torneo.'); return players(rows[0]); });
     },
     createTournament: function (f) {
       return rest('POST', '/rest/v1/tournaments', { code: code(), name: f.name, kind: f.kind, mode: f.mode, start_at: f.start_at, hours: f.hours, created_by: DB.user.id, host: DB.user.name }, 'return=representation')
@@ -263,7 +273,7 @@
   };
 
   var impl = DB.online ? Supa : Local;
-  ['searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore'].forEach(function (k) {
+  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore'].forEach(function (k) {
     DB[k] = function () { try { return impl[k].apply(impl, arguments); } catch (e) { return Promise.reject(e); } };
   });
   DB.signUp = function (f) {

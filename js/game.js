@@ -686,7 +686,6 @@
         if (!rate && !msg) { $('fbErr').textContent = 'Elegí un puntaje o escribí un comentario.'; return; }
         var data = { 'form-name': 'opiniones', nombre: name, puntaje: rate || '', mensaje: msg, nivel: save.level + 1, control: save.ctrl === 'pro' ? 'pro' : 'facil',
           dispositivo: innerWidth + 'x' + innerHeight + (window.matchMedia && matchMedia('(pointer: coarse)').matches ? ' tactil' : ' mouse'), version: PP.VERSION };
-        var body = Object.keys(data).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]); }).join('&');
         $('fbSend').disabled = true; $('fbSend').textContent = 'Enviando…';
         var done = function (ok) {
           if (ok) {
@@ -704,7 +703,8 @@
           }
         };
         try {
-          fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body }).then(function (r) { done(r.ok); }, function () { done(false); });
+          PP.DB.sendFeedback({ name: name, rating: rate || 0, message: msg, level: data.nivel, control: data.control, device: data.dispositivo.slice(0, 60), version: String(PP.VERSION || '') })
+            .then(function () { done(true); }, function () { done(false); });
         } catch (e) { done(false); }
       });
     });

@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Administración · A la Pelotita</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap">
+<style>
+:root {
+  --bg: #120a33; --panel: #1f1452; --panel2: #2a1c6b; --line: rgba(255, 255, 255, .14);
+  --ink: #fff; --soft: #b9b0e0; --lime: #D8FF3A; --pink: #FF3D8B; --cyan: #22E1FF; --gold: #FFD23A; --red: #FF8A8A; --green: #7CFF4D;
+  --display: 'Lilita One', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 600 15px/1.45 Nunito, system-ui, sans-serif; }
+a { color: var(--cyan); }
+button { font: inherit; cursor: pointer; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 18px 16px 60px; }
+header.top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+header.top h1 { font-family: var(--display); font-weight: 400; font-size: 28px; margin: 0; flex: 1; min-width: 240px; }
+header.top h1 small { color: var(--soft); font-family: Nunito, sans-serif; font-size: 14px; font-weight: 800; margin-left: 8px; }
+.btn { border: 0; border-radius: 12px; padding: 9px 14px; background: var(--panel2); color: var(--ink); font-weight: 800; }
+.btn:hover { filter: brightness(1.15); }
+.btn.lime { background: var(--lime); color: #1b1033; }
+.btn.pink { background: var(--pink); }
+.btn.small { padding: 6px 10px; font-size: 13px; border-radius: 10px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+.login { max-width: 400px; margin: 60px auto; }
+.login h2 { font-family: var(--display); font-weight: 400; margin: 0 0 6px; }
+input.fld, select.fld { width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line); background: #140c3d; color: var(--ink); font: inherit; margin: 6px 0; }
+.err { color: var(--red); min-height: 1.4em; }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+.stat b { display: block; font-family: var(--display); font-weight: 400; font-size: 32px; line-height: 1.1; }
+.stat span { color: var(--soft); font-size: 13px; }
+.stat em { display: block; font-style: normal; font-size: 12px; color: var(--soft); margin-top: 2px; }
+.weeks { display: flex; align-items: flex-end; gap: 6px; height: 110px; margin-top: 10px; }
+.weeks div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; font-size: 11px; color: var(--soft); }
+.weeks i { display: block; width: 100%; max-width: 38px; background: var(--cyan); border-radius: 6px 6px 2px 2px; min-height: 2px; }
+.weeks b { color: var(--ink); font-size: 12px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 12px; }
+.tab { border: 0; border-radius: 12px; padding: 10px 16px; background: var(--panel); color: var(--soft); font-family: var(--display); font-size: 17px; }
+.tab.on { background: var(--pink); color: #fff; }
+.tab .n { background: var(--gold); color: #1b1033; border-radius: 999px; padding: 0 8px; margin-left: 6px; font-family: Nunito, sans-serif; font-weight: 900; font-size: 13px; }
+.bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.bar input.fld, .bar select.fld { width: auto; flex: 1; min-width: 200px; margin: 0; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { background: var(--panel2); color: var(--soft); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; }
+tr:hover td { background: rgba(255, 255, 255, .03); }
+td.wrap { white-space: normal; min-width: 180px; }
+.tag { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 900; }
+.tag.pro { background: var(--gold); color: #1b1033; }
+.tag.exp { background: rgba(255, 138, 138, .18); color: var(--red); }
+.tag.adm { background: var(--cyan); color: #1b1033; }
+.tag.no { background: rgba(255, 255, 255, .1); color: var(--soft); }
+.fb { display: grid; gap: 10px; }
+.fb .card { display: grid; gap: 6px; }
+.fb .card.unread { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+.fb .meta { color: var(--soft); font-size: 13px; }
+.fb .msg { white-space: pre-wrap; font-size: 16px; color: #fff; }
+.st { color: var(--gold); letter-spacing: 2px; font-size: 18px; }
+.vids { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.vids video { width: 100%; max-height: 360px; border-radius: 12px; background: #000; }
+.note { color: var(--soft); }
+.empty { color: var(--soft); padding: 24px; text-align: center; }
+#toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #fff; color: #1b1033; padding: 10px 16px; border-radius: 12px; font-weight: 900; box-shadow: 0 8px 30px rgba(0, 0, 0, .4); }
+@media (max-width: 600px) { header.top h1 { font-size: 22px; } .stat b { font-size: 26px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>A la Pelotita · Administración <small id="who"></small></h1>
+    <a class="btn" href="index.html" target="_blank" rel="noopener">Abrir el juego</a>
+    <button class="btn" id="reload" hidden>Actualizar</button>
+    <button class="btn" id="logout" hidden>Salir</button>
+  </header>
+
+  <div id="loginBox" class="card login" hidden>
+    <h2>Entrar</h2>
+    <p class="note">Solo para la cuenta administradora. Es la misma cuenta del juego.</p>
+    <input class="fld" id="lMail" type="email" autocomplete="email" placeholder="Mail">
+    <input class="fld" id="lPass" type="password" autocomplete="current-password" placeholder="Contraseña">
+    <p class="err" id="lErr"></p>
+    <button class="btn lime" id="lGo" style="width:100%">Entrar</button>
+  </div>
+
+  <main id="app" hidden>
+    <section class="stats" id="stats"></section>
+    <section class="card" style="margin-bottom:16px">
+      <b>Cuentas nuevas por semana</b> <span class="note">(últimas 12 semanas)</span>
+      <div class="weeks" id="weeks"></div>
+    </section>
+    <nav class="tabs" id="tabs"></nav>
+    <section id="view"></section>
+  </main>
+</div>
+<div id="toast" hidden></div>
+
+<script src="js/config.js?v=d04d7c3eb7"></script>
+<script src="js/data.js?v=351aca2bfb"></script>
+<script src="js/backend.js?v=9019bd416b"></script>
+<script>
+(function () {
+  'use strict';
+  var DB = PP.DB, $ = function (id) { return document.getElementById(id); };
+  var tab = 'fb', stats = null, users = [], fbOnlyUnread = true, uFilter = 'all', uQ = '', vids = [];
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function money(n) { return '$ ' + Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 }); }
+  function day(d) { return d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—'; }
+  function when(d) { return d ? new Date(d).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; }
+  var tt; function toast(m) { var t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(tt); tt = setTimeout(function () { t.hidden = true; }, 2600); }
+  function fail(e) { toast(e && e.message ? e.message : 'Algo salió mal'); }
+
+  /* ---------- Entrada ---------- */
+  function showLogin(msg) { $('app').hidden = true; $('loginBox').hidden = false; $('reload').hidden = $('logout').hidden = true; $('who').textContent = ''; $('lErr').textContent = msg || ''; }
+  function start() {
+    if (!DB.online) return showLogin('El juego no está conectado al servidor.');
+    if (!DB.user) return showLogin();
+    if (!DB.user.is_admin) return showLogin('La cuenta ' + (DB.user.email || '') + ' no es administradora.');
+    $('loginBox').hidden = true; $('app').hidden = false; $('reload').hidden = $('logout').hidden = false;
+    $('who').textContent = DB.user.email || '';
+    loadAll();
+  }
+  $('lGo').addEventListener('click', function () {
+    var b = this; b.disabled = true; $('lErr').textContent = '';
+    DB.signIn({ email: $('lMail').value.trim().toLowerCase(), password: $('lPass').value }).then(function () { b.disabled = false; start(); }, function (e) { b.disabled = false; $('lErr').textContent = e.message; });
+  });
+  $('lPass').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('lGo').click(); });
+  $('logout').addEventListener('click', function () { DB.signOut().then(function () { showLogin(); }); });
+  $('reload').addEventListener('click', loadAll);
+
+  /* ---------- Datos ---------- */
+  function loadAll() {
+    DB.admin('admin_stats').then(function (s) { stats = s; paintStats(); paintTabs(); }, fail);
+    render();
+  }
+  function paintStats() {
+    var s = stats, cards = [
+      ['Usuarios', s.users, '+' + s.users_7d + ' esta semana · +' + s.users_30d + ' en 30 días'],
+      ['Activos', s.active_7d, 'entraron en los últimos 7 días'],
+      ['Pro activos', s.pro_active, s.pro_expiring_7d + ' vencen en 7 días'],
+      ['Se fueron', s.pro_expired, 'tuvieron Pro y no renovaron'],
+      ['Ingresos del mes', money(s.income_month), s.pays_month + ' pagos este mes'],
+      ['Ingresos totales', money(s.income_total), s.payers + ' personas pagaron alguna vez'],
+      ['Videos por revisar', s.videos_pending, s.videos_approved + ' publicados · ' + s.likes + ' me gusta'],
+      ['Opiniones', s.feedback_total, s.feedback_unread + ' sin leer · ' + (s.rating_avg ? 'promedio ' + s.rating_avg + ' ★' : 'sin puntajes')],
+      ['Torneos', s.tournaments, 'creados por los jugadores'],
+      ['Precio Pro', s.price ? money(s.price) : 'sin precio', 'por 30 días']
+    ];
+    $('stats').innerHTML = cards.map(function (c) { return '<div class="stat"><span>' + c[0] + '</span><b>' + esc(c[1]) + '</b><em>' + esc(c[2]) + '</em></div>'; }).join('');
+    var w = s.signups_by_week || [], mx = Math.max.apply(null, w.map(function (x) { return x.n; }).concat([1]));
+    $('weeks').innerHTML = w.length ? w.map(function (x) { var d = new Date(x.week + 'T12:00:00'); return '<div><b>' + x.n + '</b><i style="height:' + Math.max(2, x.n / mx * 80) + 'px"></i>' + d.getDate() + '/' + (d.getMonth() + 1) + '</div>'; }).join('') : '<p class="note">Todavía no hay datos.</p>';
+  }
+  function paintTabs() {
+    var s = stats || {}, list = [['fb', 'Opiniones', s.feedback_unread], ['users', 'Usuarios'], ['pays', 'Pagos'], ['vids', 'Videos por revisar', s.videos_pending]];
+    $('tabs').innerHTML = list.map(function (t) { return '<button class="tab' + (tab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + (t[2] ? '<span class="n">' + t[2] + '</span>' : '') + '</button>'; }).join('');
+  }
+  $('tabs').addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (!b) return; tab = b.dataset.tab; paintTabs(); render(); });
+  function render() { paintTabs(); $('view').innerHTML = '<p class="note">Cargando…</p>'; ({ fb: renderFb, users: renderUsers, pays: renderPays, vids: renderVids })[tab](); }
+
+  /* ---------- Opiniones ---------- */
+  function renderFb() {
+    DB.admin('admin_feedback').then(function (list) {
+      var show = fbOnlyUnread ? list.filter(function (f) { return !f.read; }) : list;
+      var h = '<div class="bar"><button class="btn small' + (fbOnlyUnread ? ' lime' : '') + '" data-fbf="1">Sin leer (' + list.filter(function (f) { return !f.read; }).length + ')</button><button class="btn small' + (fbOnlyUnread ? '' : ' lime') + '" data-fbf="0">Todas (' + list.length + ')</button>' +
+        '<span class="note">Solo vos podés leer esto. Llegan desde el botón "Dejá tu opinión" del juego.</span></div>';
+      h += show.length ? '<div class="fb">' + show.map(function (f) {
+        return '<div class="card' + (f.read ? '' : ' unread') + '"><div class="meta">' + when(f.created_at) + ' · ' + esc(f.name || 'Sin nombre') + (f.email ? ' · ' + esc(f.email) : ' · sin cuenta') + ' · nivel ' + esc(f.level || '—') + ' · control ' + esc(f.control || '—') + ' · ' + esc(f.device || '') + '</div>' +
+          (f.rating ? '<div class="st">' + '★★★★★'.slice(0, f.rating) + '<span style="opacity:.25">' + '★★★★★'.slice(f.rating) + '</span></div>' : '') +
+          (f.message ? '<div class="msg">' + esc(f.message) + '</div>' : '<div class="note">(solo puntaje)</div>') +
+          '<div class="bar" style="margin:4px 0 0"><button class="btn small" data-fread="' + f.id + '" data-v="' + (f.read ? 0 : 1) + '">' + (f.read ? 'Marcar sin leer' : 'Marcar leída') + '</button><button class="btn small" data-fdel="' + f.id + '">Borrar</button></div></div>';
+      }).join('') + '</div>' : '<div class="card empty">' + (fbOnlyUnread ? 'No hay opiniones sin leer.' : 'Todavía no llegó ninguna opinión.') + '</div>';
+      $('view').innerHTML = h;
+    }, function (e) { $('view').innerHTML = '<p class="err">' + esc(e.message) + '</p>'; });
+  }
+
+  /* ---------- Usuarios ---------- */
+  function uState(u) { var now = Date.now(); if (u.is_admin) return 'adm'; if (u.vip_until && new Date(u.vip_until).getTime() > now) return 'pro'; if (u.vip_until || u.pays) return 'exp'; return 'no'; }
+  function renderUsers() {
+    DB.admin('admin_users', { q: '' }).then(function (list) {
+      users = list;
+      $('view').innerHTML = '<div class="bar"><input class="fld" id="uQ" type="search" placeholder="Buscar por nombre o mail" value="' + esc(uQ) + '">' +
+        '<select class="fld" id="uF" style="flex:0 1 240px"><option value="all">Todos</option><option value="pro">Pro activo</option><option value="exp">Se fueron (Pro vencido)</option><option value="paid">Pagaron alguna vez</option><option value="no">Nunca pagaron</option></select>' +
+        '<button class="btn small" id="uCsv">Descargar planilla (CSV)</button></div><p class="note" id="uSum"></p><div class="tablewrap" id="uTable"></div>';
+      $('uF').value = uFilter;
+      $('uQ').addEventListener('input', function () { uQ = this.value.trim().toLowerCase(); paintUsers(); });
+      $('uF').addEventListener('change', function () { uFilter = this.value; paintUsers(); });
+      $('uCsv').addEventListener('click', csv);
+      paintUsers();
+    }, function (e) { $('view').innerHTML = '<p class="err">' + esc(e.message) + '</p>'; });
+  }
+  function shown() {
+    return users.filter(function (u) {
+      var st = uState(u);
+      if (uFilter === 'pro' && st !== 'pro') return false;
+      if (uFilter === 'exp' && st !== 'exp') return false;
+      if (uFilter === 'paid' && !u.pays) return false;
+      if (uFilter === 'no' && (u.pays || st === 'pro' || st === 'adm')) return false;
+      return !uQ || String(u.name || '').toLowerCase().indexOf(uQ) >= 0 || String(u.email || '').toLowerCase().indexOf(uQ) >= 0;
+    });
+  }
+  function paintUsers() {
+    var l = shown(), lab = { pro: ['PRO', 'pro'], exp: ['VENCIDO', 'exp'], adm: ['ADMIN', 'adm'], no: ['GRATIS', 'no'] };
+    $('uSum').textContent = l.length + ' de ' + users.length + ' usuarios';
+    $('uTable').innerHTML = l.length ? '<table><thead><tr><th>Nombre</th><th>Mail</th><th>Estado</th><th>Pro</th><th>Pro hasta</th><th>Pagos</th><th>Videos</th><th>Estrellas</th><th>Categoría</th><th>Alta</th><th>Última entrada</th></tr></thead><tbody>' +
+      l.map(function (u) {
+        var st = uState(u);
+        return '<tr><td>' + esc(u.name || '(sin perfil)') + '</td><td>' + esc(u.email) + '</td><td><span class="tag ' + lab[st][1] + '">' + lab[st][0] + '</span></td>' +
+          '<td>' + (u.is_admin ? '' : '<button class="btn small lime" data-vip="' + esc(u.email) + '" data-d="30">+1 mes</button> ' + (st === 'pro' ? '<button class="btn small" data-vip="' + esc(u.email) + '" data-d="0">Quitar</button>' : '')) + '</td>' +
+          '<td>' + day(u.vip_until) + '</td><td>' + u.pays + (u.pays ? ' · ' + money(u.paid) : '') + '</td><td>' + u.videos + '</td><td>' + u.stars + '</td><td>' + esc(u.cat || '') + '</td><td>' + day(u.created_at) + '</td><td>' + day(u.last_sign_in) + '</td></tr>';
+      }).join('') + '</tbody></table>' : '<div class="empty">No hay usuarios con ese filtro.</div>';
+  }
+  function csv() {
+    var rows = [['Nombre', 'Mail', 'Estado', 'Pro hasta', 'Pagos', 'Total pagado', 'Videos', 'Estrellas', 'Categoría', 'Alta', 'Última entrada']];
+    var lab = { pro: 'Pro', exp: 'Pro vencido', adm: 'Admin', no: 'Gratis' };
+    shown().forEach(function (u) { rows.push([u.name || '', u.email, lab[uState(u)], day(u.vip_until), u.pays, u.paid, u.videos, u.stars, u.cat || '', day(u.created_at), day(u.last_sign_in)]); });
+    var txt = '﻿' + rows.map(function (r) { return r.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(';'); }).join('\r\n');
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' })); a.download = 'usuarios-a-la-pelotita.csv'; a.click();
+  }
+
+  /* ---------- Pagos ---------- */
+  function renderPays() {
+    DB.admin('admin_payments').then(function (list) {
+      var tot = list.reduce(function (a, p) { return a + Number(p.amount || 0); }, 0);
+      $('view').innerHTML = '<p class="note">' + list.length + ' pagos aprobados · total ' + money(tot) + '. Cada pago habilita 30 días de Pro. El detalle de cada cobro (comisiones, devoluciones) está en tu cuenta de Mercado Pago.</p>' +
+        (list.length ? '<div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Nombre</th><th>Mail</th><th>Monto</th><th>Estado</th><th>N.º de pago Mercado Pago</th></tr></thead><tbody>' +
+          list.map(function (p) { return '<tr><td>' + when(p.created_at) + '</td><td>' + esc(p.name || '') + '</td><td>' + esc(p.email || '(cuenta borrada)') + '</td><td>' + money(p.amount) + '</td><td>' + esc(p.status) + '</td><td>' + esc(p.mp_payment_id) + '</td></tr>'; }).join('') +
+          '</tbody></table></div>' : '<div class="card empty">Todavía no hay pagos.</div>');
+    }, function (e) { $('view').innerHTML = '<p class="err">' + esc(e.message) + '</p>'; });
+  }
+
+  /* ---------- Videos ---------- */
+  function renderVids() {
+    DB.pendingVideos().then(function (list) {
+      vids = list;
+      $('view').innerHTML = list.length ? '<div class="vids">' + list.map(function (v) {
+        var c = (PP.CHALLENGES && PP.CHALLENGES[v.challenge - 1]) || [0, 'Jugada ' + v.challenge];
+        return '<div class="card"><b>' + esc(v.name) + '</b><div class="note">' + v.challenge + '. ' + esc(c[1]) + ' · ' + when(v.created_at) + '</div>' +
+          '<div style="margin:10px 0"><button class="btn" data-play="' + v.id + '" style="width:100%">▶ Ver video</button></div>' +
+          '<div class="bar" style="margin:0"><button class="btn small lime" data-ok="' + v.id + '">Aprobar</button><button class="btn small" data-no="' + v.id + '">Rechazar</button></div></div>';
+      }).join('') + '</div>' : '<div class="card empty">No hay videos esperando revisión.</div>';
+    }, function (e) { $('view').innerHTML = '<p class="err">' + esc(e.message) + '</p>'; });
+  }
+
+  /* ---------- Botones ---------- */
+  $('view').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return; var d = b.dataset;
+    if (d.fbf) { fbOnlyUnread = d.fbf === '1'; renderFb(); }
+    else if (d.fread) DB.admin('admin_feedback_set', { fid: d.fread, is_read: d.v === '1', remove: false }).then(function () { renderFb(); loadStatsOnly(); }, fail);
+    else if (d.fdel) { if (confirm('¿Borrar esta opinión? No se puede deshacer.')) DB.admin('admin_feedback_set', { fid: d.fdel, is_read: true, remove: true }).then(function () { renderFb(); loadStatsOnly(); }, fail); }
+    else if (d.vip) { b.disabled = true; DB.setVip(d.vip, +d.d).then(function (m) { toast(String(m)); renderUsers(); loadStatsOnly(); }, function (er) { b.disabled = false; fail(er); }); }
+    else if (d.play) { var v = vids.filter(function (x) { return x.id === d.play; })[0]; b.disabled = true; DB.videoUrl(v.path).then(function (u) { var el = document.createElement('video'); el.src = u; el.controls = el.autoplay = true; el.playsInline = true; b.parentNode.replaceChild(el, b); }, function (er) { b.disabled = false; fail(er); }); }
+    else if (d.ok || d.no) { var w = vids.filter(function (x) { return x.id === (d.ok || d.no); })[0]; DB.reviewVideo(w, d.ok ? 'approved' : 'rejected').then(function () { toast(d.ok ? 'Video publicado' : 'Video rechazado'); renderVids(); loadStatsOnly(); }, fail); }
+  });
+  function loadStatsOnly() { DB.admin('admin_stats').then(function (s) { stats = s; paintStats(); paintTabs(); }, function () {}); }
+
+  DB.init().then(start, function () { showLogin(); });
+})();
+</script>
+</body>
+</html>

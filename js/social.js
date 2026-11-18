@@ -37,8 +37,10 @@
       again(); return;
     }
     var m = /^#torneo-([A-Z0-9]{6})$/.exec(location.hash || ''); if (!m) return;
+    if (DB.online && !DB.user) { pendingTour = m[1]; tab = 'acc'; mode = 'up'; U.go('social'); U.toast('Creá tu cuenta o entrá para ver el torneo'); return; }
     tab = 'tour'; U.go('social'); openTour(m[1]);
   }
+  var pendingTour = null;
   // Sube al servidor las estrellas, el nivel y el IQ de este jugador
   // Muñequito de la esquina: "Entrar" si no hay sesión; dorado si es Pro
   So.paintAcc = function () {
@@ -65,7 +67,9 @@
 
   /* ---------- Ranking ---------- */
   var rankQ = '', rankT = null;
+  function loginCard(what) { return '<div class="card" style="border-color:#D8FF3A"><h3 class="disp" style="font-size:22px">Creá tu cuenta para ver ' + what + '</h3><p>Es gratis. Con tu cuenta aparecés en el ranking, buscás jugadores y jugás torneos con otros.</p><button class="btn lime" data-act="goacc">Crear mi cuenta</button></div>'; }
   function renderRank() {
+    if (DB.online && !DB.user) { $('soBody').innerHTML = loginCard('el ranking'); return; }
     var kinds = [['stars', 'Estrellas'], ['iq', 'IQ de pádel'], ['picks', 'Pronósticos']];
     $('soBody').innerHTML = '<div class="row" style="margin-bottom:10px">' + kinds.map(function (k) { return '<button class="btn small ' + (rankKind === k[0] ? 'lime' : 'ghost') + '" data-rk="' + k[0] + '">' + k[1] + '</button>'; }).join('') + '</div>' +
       '<input class="fld" id="rkQ" type="search" maxlength="40" autocomplete="off" placeholder="Buscar jugador por nombre" value="' + esc(rankQ) + '"><div id="rkList"><p class="note">Cargando…</p></div>' + demoNote();
@@ -89,6 +93,7 @@
 
   /* ---------- Torneos ---------- */
   function renderTours() {
+    if (DB.online && !DB.user) { $('soBody').innerHTML = loginCard('los torneos'); return; }
     DB.tournaments().then(function (list) {
       var h = '<div class="row" style="margin-bottom:12px"><button class="btn lime" data-act="newtour">Crear torneo</button><button class="btn ghost" data-act="code">Tengo un código</button></div>';
       if (!list.length) h += '<div class="card"><h3 class="disp">No hay torneos todavía</h3><p>Armá el primero, invitá a tus amigos y que la gente pronostique quién gana.</p></div>';
@@ -385,7 +390,7 @@
         '<div class="rew" style="margin:10px 0"><span>' + U.ic('star', 'color:#FFD23A') + U.totalStars() + '</span><span>IQ ' + U.iq() + '</span><span>Aciertos ' + (U.save().picks || 0) + '</span></div>' +
         '<button class="btn ghost" data-act="out">Cerrar sesión</button></div>' +
         (DB.online ? '<div class="card" id="accPro" style="border-color:#FFD23A">' + (DB.isVip()
-          ? '<h3 class="disp" style="color:#FFD23A;font-size:20px">Sos PRO' + (u.is_admin ? ' · Administración' : ' hasta el ' + fecha(u.vip_until)) + '</h3><button class="btn small" data-act="gopro">Ir a Jugadas PRO</button>'
+          ? '<h3 class="disp" style="color:#FFD23A;font-size:20px">Sos PRO' + (u.is_admin ? ' · Administración' : ' hasta el ' + fecha(u.vip_until)) + '</h3><button class="btn small" data-act="gopro">Ir a Jugadas PRO</button>' + (u.is_admin ? ' <a class="btn small ghost" href="admin.html" target="_blank" rel="noopener" style="text-decoration:none">Panel de administración</a>' : '')
           : '<h3 class="disp" style="color:#FFD23A;font-size:20px">Hacete PRO</h3><p>Subí tus videos copiando las 50 jugadas, mirá los de todos y votá.</p><p id="accPrice"></p><button class="btn lime" data-act="propay">Pagar con Mercado Pago</button>') + '</div>' : '');
     } else {
       var up = mode === 'up';
@@ -404,7 +409,7 @@
   function auth() {
     var f = { email: $('aMail').value.trim().toLowerCase(), password: $('aPass').value };
     if (mode === 'up') { f.name = $('aName').value.trim(); f.cat = $('aCat').value; f.side = $('aSide').value; }
-    (mode === 'up' ? DB.signUp(f) : DB.signIn(f)).then(function () { So.sync(); tab = 'rank'; So.render(); U.toast('¡Hola, ' + DB.user.name + '!'); }, function (e) { var el = $('aErr'); if (el) el.textContent = e.message; });
+    (mode === 'up' ? DB.signUp(f) : DB.signIn(f)).then(function () { So.sync(); U.toast('¡Hola, ' + DB.user.name + '!'); if (pendingTour) { var c = pendingTour; pendingTour = null; openTour(c); return; } tab = 'rank'; So.render(); }, function (e) { var el = $('aErr'); if (el) el.textContent = e.message; });
   }
 
   function onClick(e) {

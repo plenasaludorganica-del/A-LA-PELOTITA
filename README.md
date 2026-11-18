@@ -88,7 +88,8 @@ Botón "Jugadas PRO" en el inicio y pestaña **Jugadas** en Comunidad.
   y votar con me gusta. Cada video queda en revisión hasta que la administración lo aprueba.
 - **Administración** (cuentas con `is_admin` en la tabla `profiles`): en la misma pantalla aparecen "Revisar videos"
   (aprobar o rechazar) y "Usuarios": buscador por nombre o mail, estado Pro de cada cuenta y botones para dar un mes o quitar el Pro.
-- **Buscador de jugadores:** en la pestaña Ranking, cualquiera busca a otro jugador por nombre.
+- **Buscador de jugadores:** en la pestaña Ranking, cualquiera con cuenta busca a otro jugador por nombre.
+- **Privacidad:** cada jugador lee solo sus datos; el ranking, el buscador y los torneos se ven con cuenta y solo muestran lo público.
 - **Pago:** además de Jugadas, la pestaña Cuenta muestra el precio y el botón "Pagar con Mercado Pago".
 - **Cobro:** pago único con Mercado Pago que habilita 30 días de Pro (no es débito automático). El botón "Quiero ser PRO"
   llama a `/api/public/pro-checkout` del proyecto de Lovable, que crea el pago; cuando Mercado Pago avisa que se aprobó,
@@ -96,6 +97,14 @@ Botón "Jugadas PRO" en el inicio y pestaña **Jugadas** en Comunidad.
   (clave `pro_price_ars`); vacío = cobro deshabilitado y el cartel pide el alta manual. La administración también puede
   dar el alta a mano. La clave de Mercado Pago está guardada como secreto en Lovable, no en este repositorio.
 - Los topes los hace cumplir el servidor (`supabase/schema.sql`): nadie puede darse el alta solo ni pasar de 12 videos por mes.
+
+### Panel de administración
+
+En la compu: **https://a-la-pelotita.lovable.app/juego/admin.html** (archivo `admin.html`). Se entra con la cuenta
+administradora del juego; cualquier otra cuenta ve "no es administradora". Muestra estadísticas (usuarios, activos,
+Pro activos, los que no renovaron, ingresos, videos, opiniones), las **opiniones** de "Dejá tu opinión" (privadas,
+solo las lee la administración), el listado de **usuarios** con buscador, filtros y descarga en planilla, los **pagos**
+y los **videos por revisar**. Todo se lee con funciones del servidor que rechazan a quien no es administrador.
 
 ### Servidor
 
