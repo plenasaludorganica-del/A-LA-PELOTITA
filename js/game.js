@@ -866,7 +866,7 @@
   }
   function trHud() {
     $('pMe').textContent = Math.max(0, TR.score);
-    $('pOp').textContent = TR.id === 'lights' ? Math.max(0, Math.ceil(TR.left)) : TR.id === 'read' ? TR.stage : Math.min(TR.round, TR.rounds) + '/' + TR.rounds;
+    $('pOp').textContent = TR.id === 'lights' ? TR.lv : TR.id === 'read' ? TR.stage : Math.min(TR.round, TR.rounds) + '/' + TR.rounds;
   }
   function startDrill(id) {
     if (id === 'ghost') {
@@ -886,10 +886,10 @@
       // Modo por etapas, casi infinito: 5 jugadas por etapa, cada etapa con menos tiempo y más ritmo. 3 vidas.
       TR.rounds = Infinity; TR.lives = 3; TR.stage = 1; TR.inStage = 0; TR.correct = 0; TR.streak = 0;
     }
-    if (id === 'lights') { TR.rounds = 1; $('lights').hidden = false; }
+    if (id === 'lights') { TR.rounds = Infinity; TR.lv = PP.testLightsLevel || 1; TR.lives = 3; TR.total = 0; $('lights').hidden = false; }
     S.mode = 'play'; S.showMachine(false); for (var i = 0; i < 3; i++) S.setTarget(i, null);
     screens.forEach(function (x) { $(x).hidden = true; }); $('top').hidden = true; $('hud').hidden = false; $('hud').classList.add('tr');
-    $('extra').innerHTML = ''; $('nMe').textContent = 'Puntos'; $('nOp').textContent = id === 'lights' ? 'Segundos' : id === 'read' ? 'Etapa' : 'Ronda'; setHint('');
+    $('extra').innerHTML = ''; $('nMe').textContent = 'Puntos'; $('nOp').textContent = id === 'lights' ? 'Nivel' : id === 'read' ? 'Etapa' : 'Ronda'; setHint('');
     $('tq').textContent = d.desc; trHud(); A.play('ready'); pop(d.name, 'big gold');
   }
   // Etapas de Leé la jugada: segundos por jugada y velocidad de la pelota
@@ -934,7 +934,7 @@
       var T = rnd(1.05, 1.5); launch(b, TR.tgt.x, TR.tgt.z, T, 'opp');
       TR.cut = T * Math.max(0.25, 0.62 - TR.round * 0.045); TR.ft = 0; TR.gt = 0; TR.canGuess = false; TR.phase = 'fly';
       opp.swing('drive'); A.play('hit'); S.setBallStyle('#D8FF3A', 0); $('tq').textContent = 'Mirá el golpe…';
-    } else { TR.phase = 'lights'; $('tq').innerHTML = 'Mirá la pelota del centro y tocá las <b>verdes</b>. Las <b class="no">rojas</b> no.<div class="bar"><i id="tqBar" style="width:100%"></i></div>'; }
+    } else lightsIntro();
     trHud();
   }
   function trAnswer(i) {
@@ -969,29 +969,124 @@
     var p = S.pickGround(e.clientX, e.clientY); if (!p) return;
     trGuess({ x: clamp(p.x, -5, 5), z: clamp(p.z, 0.3, 10) });
   }
-  function spawnLight() {
-    var red = TR.left < 24 && Math.random() < 0.25, el = document.createElement('button'), x, y, n = 0;
-    do { x = 10 + Math.random() * 80; y = 20 + Math.random() * 66; } while (n++ < 20 && Math.abs(x - 50) < 24 && Math.abs(y - 50) < 20);
-    el.className = 'light' + (red ? ' red' : ''); el.style.left = x + '%'; el.style.top = y + '%'; el.setAttribute('aria-label', red ? 'Luz roja' : 'Luz verde');
-    var born = performance.now(), done = false;
-    el.addEventListener('pointerdown', function (ev) {
-      ev.preventDefault(); if (done || !TR) return; done = true; A.unlock();
-      if (red) { TR.score -= 15; A.play('early'); flash(0.2); } else { TR.score += performance.now() - born < 520 ? 15 : 10; A.play('pop'); A.vibrate(10); }
-      el.remove(); trHud();
-    });
-    el.addEventListener('animationend', function () { if (!done && TR && !red) { TR.score -= 5; trHud(); } done = true; el.remove(); });
+  /* ---------- Tablero de luces por niveles ---------- */
+  function lvDef() { var L = PP.LIGHT_LEVELS; return L[(TR.lv - 1) % L.length]; }
+  function lvCycle() { return Math.floor((TR.lv - 1) / PP.LIGHT_LEVELS.length); }
+  function lvSpeed() { return Math.pow(0.85, lvCycle()); }
+  function clearLights() { Array.prototype.slice.call($('lights').querySelectorAll('.light,.flipban')).forEach(function (l) { l.remove(); }); }
+  function lightsIntro() {
+    var d = lvDef(), cy = lvCycle();
+    clearLights(); TR.phase = 'lintro'; TR.introT = 3.2; TR.hits = 0; TR.errs = 0; TR.invert = !!d.invert; TR.flipT = d.flip || 0;
+    TR.left = d.dur; TR.spawn = 0.5;
+    $('tq').innerHTML = '<div style="font-size:14px;color:#FFD23A">Nivel ' + TR.lv + (cy ? ' · vuelta ' + (cy + 1) + ', más rápido' : '') + ' · ' + lifeHearts() + '</div>' +
+      '<b style="font-size:22px">' + d.name + '</b><br>' + d.rule + '<div style="font-size:13px;opacity:.8;margin-top:4px">Entrena: ' + d.skill + '</div>' +
+      '<div style="font-size:15px;margin-top:4px">Meta: <b>' + d.need + '</b> aciertos en ' + d.dur + ' s · arranca en <b id="lCount">3</b></div>';
+    trHud();
+  }
+  function lifeHearts() { var h = ''; for (var i = 0; i < 3; i++) h += '<span style="color:' + (i < TR.lives ? '#FF4FA3' : 'rgba(255,255,255,.25)') + '">♥</span>'; return h; }
+  function lightsPlayHud() {
+    var d = lvDef();
+    $('tq').innerHTML = '<div style="font-size:14px">Nivel ' + TR.lv + ' · ' + d.name + ' · ' + lifeHearts() + '</div><div>' + d.rule + '</div>' +
+      '<div style="font-size:16px">Aciertos <b id="lHits">0</b>/' + d.need + ' · errores <b id="lErr" class="no">0</b>/4</div><div class="bar"><i id="tqBar" style="width:100%"></i></div>';
+    if (d.flip) flipBanner();
+  }
+  function flipBanner() {
+    var old = $('lights').querySelector('.flipban'); if (old) old.remove();
+    var el = document.createElement('div'); el.className = 'flipban';
+    el.innerHTML = TR.invert ? 'TOCÁ <span style="color:#FF5A5A">ROJAS</span>' : 'TOCÁ <span style="color:#7CFF4D">VERDES</span>';
     $('lights').appendChild(el);
+  }
+  function lightsLevelEnd(ok, why) {
+    var d = lvDef();
+    TR.phase = 'lend'; clearLights();
+    if (ok) {
+      var bonus = Math.round(TR.left * 10 * (1 + (TR.lv - 1) * 0.15)); TR.score += bonus;
+      pop('¡NIVEL ' + TR.lv + ' SUPERADO!', 'big gold'); A.play('chest'); S.confetti(60); flash(0.15);
+      $('tq').innerHTML = '<b>¡Superado!</b> ' + TR.hits + ' aciertos' + (bonus ? ' · +' + bonus + ' por el tiempo que sobró' : '') + '.';
+      TR.lv++; TR.wait = 2;
+    } else {
+      TR.lives--; A.play('lose'); S.shake(0.3);
+      $('tq').innerHTML = '<b class="no">' + (why || 'Se acabó el tiempo.') + '</b> ' + (TR.lives > 0 ? 'Perdiste una vida. Repetís el nivel ' + TR.lv + '.' : 'Sin vidas.') + '<div>' + lifeHearts() + '</div>';
+      TR.wait = 2.6;
+    }
+    trHud();
+  }
+  function lightGo(el) {
+    var k = el.dataset.k;
+    if (k === 'go') return !TR.invert;
+    if (k === 'no') return TR.invert;
+    if (k === 'wait') return el.dataset.ready === '1';
+    if (k === 'word') return el.dataset.c === 'g';
+    return true;   // azul y dorada
+  }
+  function pickKind(mix) {
+    var t = 0, k; for (k in mix) t += mix[k];
+    var r = Math.random() * t; for (k in mix) { r -= mix[k]; if (r <= 0) return k; } return 'go';
+  }
+  function lightPos(periph) {
+    var x, y, n = 0;
+    if (periph) {
+      if (Math.random() < 0.6) { x = Math.random() < 0.5 ? 7 + Math.random() * 12 : 81 + Math.random() * 12; y = 32 + Math.random() * 56; }
+      else { x = 10 + Math.random() * 80; y = Math.random() < 0.5 ? 32 + Math.random() * 5 : 84 + Math.random() * 5; }
+      return [x, y];
+    }
+    do { x = 10 + Math.random() * 80; y = 32 + Math.random() * 56; } while (n++ < 20 && Math.abs(x - 50) < 22 && Math.abs(y - 50) < 14);
+    return [x, y];
+  }
+  function spawnLight() {
+    var d = lvDef(), sp = lvSpeed(), k = pickKind(d.mix), el = document.createElement('button'), pos = lightPos(d.periph);
+    var life = d.life * sp, size = Math.round(d.size * (k === 'gold' ? 0.75 : 1) * Math.max(0.8, sp));
+    if (k === 'gold') life *= 0.8;
+    el.className = 'light' + ({ no: ' red', blue: ' blue', gold: ' gold', wait: ' wait', word: ' word' }[k] || '');
+    el.dataset.k = k; el.style.left = pos[0] + '%'; el.style.top = pos[1] + '%';
+    el.style.width = el.style.height = size + 'px'; el.style.margin = (-size / 2) + 'px'; el.style.animationDuration = life + 's';
+    if (k === 'word') {
+      var green = Math.random() < 0.55, mismatch = Math.random() < 0.7, word = (green !== mismatch) ? 'VERDE' : 'ROJO';
+      el.dataset.c = green ? 'g' : 'r'; el.textContent = word; el.style.width = (size + 34) + 'px'; el.style.marginLeft = (-(size + 34) / 2) + 'px';
+      el.style.background = green ? '#2FBF3A' : '#E8333B'; el.style.boxShadow = '0 0 30px ' + (green ? '#2FBF3A' : '#E8333B');
+    }
+    el.setAttribute('aria-label', 'Luz');
+    var born = performance.now(), done = false;
+    if (k === 'wait') setTimeout(function () { if (done) return; el.dataset.ready = '1'; el.className = 'light'; born = performance.now(); }, life * 450);
+    el.addEventListener('pointerdown', function (ev) {
+      ev.preventDefault(); if (done || !TR || TR.phase !== 'lights') return; done = true; A.unlock();
+      if (lightGo(el)) {
+        var fast = performance.now() - born < 480, pts = Math.round((fast ? 15 : 10) * (k === 'gold' ? 3 : 1) * (1 + (TR.lv - 1) * 0.15));
+        TR.score += pts; TR.hits++; TR.total++; A.play(k === 'gold' ? 'coin' : 'pop'); A.vibrate(10);
+        el.classList.add('hit'); setTimeout(function () { el.remove(); }, 160);
+        var h = $('lHits'); if (h) h.textContent = TR.hits;
+        if (TR.hits >= d.need) lightsLevelEnd(true);
+      } else {
+        TR.score = Math.max(0, TR.score - 15); TR.errs++; A.play('early'); A.vibrate(40); flash(0.2); el.remove();
+        var e = $('lErr'); if (e) e.textContent = TR.errs;
+        if (TR.errs >= 4) lightsLevelEnd(false, 'Demasiados errores.');
+      }
+      trHud();
+    });
+    el.addEventListener('animationend', function () { if (!done && TR && lightGo(el)) { TR.score = Math.max(0, TR.score - 3); trHud(); } done = true; el.remove(); });
+    $('lights').appendChild(el);
+    if (d.move) {
+      var to = lightPos(false);
+      requestAnimationFrame(function () { el.style.transition = 'left ' + life + 's linear, top ' + life + 's linear'; el.style.left = to[0] + '%'; el.style.top = to[1] + '%'; });
+    }
   }
   function trainFrame(dt, t) {
     var b = TR.ball, ev = [];
     extras.forEach(function (c) { c.update(dt, t); });
     if (TR.hold) return;
-    if (TR.wait > 0) { TR.wait -= dt; if (TR.wait <= 0) trRound(); if (!TR) return; }
+    if (TR.wait > 0) { TR.wait -= dt; if (TR.wait <= 0 && TR.phase !== 'lend') trRound(); if (!TR) return; }
     if (TR.phase === 'ask') { TR.left -= dt; var bar = $('tqBar'); if (bar) bar.style.width = Math.max(0, TR.left / (TR.limit || 10) * 100) + '%'; if (TR.left <= 0) trAnswer(-1); }
-    else if (TR.phase === 'lights') {
-      TR.left -= dt; TR.spawn -= dt; var lb = $('tqBar'); if (lb) lb.style.width = Math.max(0, TR.left / 30 * 100) + '%';
-      if (TR.spawn <= 0) { spawnLight(); TR.spawn = Math.max(0.42, 0.95 - (30 - TR.left) * 0.02); }
-      trHud(); if (TR.left <= 0) { TR.round = 1; TR.phase = 'end'; trRound(); return; }
+    else if (TR.phase === 'lintro') {
+      TR.introT -= dt; var lc = $('lCount'); if (lc) lc.textContent = Math.max(1, Math.ceil(TR.introT));
+      if (TR.introT <= 0) { TR.phase = 'lights'; lightsPlayHud(); A.play('ready'); }
+    } else if (TR.phase === 'lights') {
+      var ld = lvDef(); TR.left -= dt; TR.spawn -= dt; var lb = $('tqBar'); if (lb) lb.style.width = Math.max(0, TR.left / ld.dur * 100) + '%';
+      if (TR.spawn <= 0) { spawnLight(); TR.spawn = ld.spawn * lvSpeed() * (0.85 + Math.random() * 0.3); }
+      if (ld.flip) { TR.flipT -= dt; if (TR.flipT <= 0) { TR.flipT = ld.flip; TR.invert = !TR.invert; flipBanner(); A.play('warn'); flash(0.12); } }
+      if (TR.left <= 0) lightsLevelEnd(false, 'Se acabó el tiempo: te faltaron ' + (ld.need - TR.hits) + ' aciertos.');
+    } else if (TR.phase === 'lend' && TR.wait <= 0) {
+      if (TR.lives <= 0) { PP.lastDrillScore = TR.score; PP.lastLights = { stage: TR.lv, correct: TR.total, score: TR.score }; trainFinish('lights', (TR.lv - 1) / PP.LIGHT_LEVELS.length * 100); return; }
+      lightsIntro();
     }
     if (b.live) {
       var n = Math.max(1, Math.ceil(dt / 0.008));
@@ -1020,15 +1115,16 @@
     pct = clamp(Math.round(pct), 0, 100);
     var before = iq(), prev = save.train.best[id] || 0, first = save.train.last !== today(), coins = Math.round(pct * 0.6) + (first ? 100 : 0);
     save.train.best[id] = Math.max(prev, pct); save.train.last = today(); save.coins += coins; var rankUp = addXp(20);
-    var rd = id === 'read' ? PP.lastRead : null, rdPrev = save.train.readBest || { stage: 0, score: 0 }, rdNew = false;
-    if (rd) { rdNew = rd.score > rdPrev.score; save.train.readBest = { stage: Math.max(rdPrev.stage, rd.stage), score: Math.max(rdPrev.score, rd.score) }; }
+    var rd = id === 'read' ? PP.lastRead : id === 'lights' ? PP.lastLights : null, rdKey = id + 'Best', rdPrev = save.train[rdKey] || { stage: 0, score: 0 }, rdNew = false;
+    var rdLab = id === 'lights' ? 'Nivel' : 'Etapa', rdUnit = id === 'lights' ? ' aciertos' : ' jugadas bien';
+    if (rd) { rdNew = rd.score > rdPrev.score; save.train[rdKey] = { stage: Math.max(rdPrev.stage, rd.stage), score: Math.max(rdPrev.score, rd.score) }; }
     persist();
     PP.Social.sync();
     var gain = iq() - before, d = PP.DRILLS.filter(function (x) { return x.id === id; })[0];
     if (pct >= 60) { S.confetti(140); A.play('win'); } else A.play('point');
-    modal('<p style="color:' + d.color + '">' + d.name + '</p><h2>' + ((rd ? rd.stage >= 6 : pct >= 85) ? '¡Cabeza de profesional!' : (rd ? rd.stage >= 3 : pct >= 60) ? '¡Muy bien!' : 'A seguir entrenando') + '</h2>' +
-      (rd ? '<div class="iq">Etapa ' + rd.stage + '</div><p style="font-size:18px;color:#fff">' + rd.correct + ' jugadas bien · <b>' + rd.score + '</b> puntos</p>' +
-        (rdNew && rdPrev.score > 0 ? '<p class="disp" style="color:#FFD23A;font-size:22px">¡Nuevo récord!</p>' : '<p>Tu récord: etapa ' + save.train.readBest.stage + ' · ' + save.train.readBest.score + ' puntos</p>')
+    modal('<p style="color:' + d.color + '">' + d.name + '</p><h2>' + ((rd ? rd.stage >= (id === 'lights' ? 9 : 6) : pct >= 85) ? '¡Cabeza de profesional!' : (rd ? rd.stage >= (id === 'lights' ? 5 : 3) : pct >= 60) ? '¡Muy bien!' : 'A seguir entrenando') + '</h2>' +
+      (rd ? '<div class="iq">' + rdLab + ' ' + rd.stage + '</div><p style="font-size:18px;color:#fff">' + rd.correct + rdUnit + ' · <b>' + rd.score + '</b> puntos</p>' +
+        (rdNew && rdPrev.score > 0 ? '<p class="disp" style="color:#FFD23A;font-size:22px">¡Nuevo récord!</p>' : '<p>Tu récord: ' + rdLab.toLowerCase() + ' ' + save.train[rdKey].stage + ' · ' + save.train[rdKey].score + ' puntos</p>')
         : '<div class="iq">' + pct + '<span style="font-size:24px;color:#fff"> / 100</span></div>' + (pct > prev && prev > 0 ? '<p class="disp" style="color:#FFD23A;font-size:22px">¡Nueva marca!</p>' : '')) +
       '<p style="font-size:18px;color:#fff">IQ de pádel: <b>' + iq() + '</b>' + (gain > 0 ? ' <b style="color:#D8FF3A">(+' + gain + ')</b>' : '') + '</p>' +
       '<div class="rew"><span>' + ic('coin') + '+' + coins + '</span><span>XP +20</span></div>' + (first ? '<p>Incluye el bono del primer entrenamiento del día.</p>' : '') +

@@ -121,8 +121,26 @@
     { id: 'read', name: 'Leé la jugada', desc: 'Se congela el punto: elegí el golpe correcto. Cada etapa tiene menos tiempo y más ritmo. Tenés 3 vidas.', color: '#FFB020' },
     // Oculto por ahora: no funcionaba bien. Para volver a mostrarlo, quitar "hidden: true".
     { id: 'antic', hidden: true, name: 'Anticipación', desc: 'La pelota desaparece en el aire. Tocá donde creés que va a picar.', color: '#22E1FF' },
-    { id: 'lights', name: 'Tablero de luces', desc: 'Tocá las luces verdes apenas aparecen. Las rojas no se tocan.', color: '#7CFF4D' },
+    { id: 'lights', name: 'Tablero de luces', desc: 'Entrenamiento del cerebro por niveles: reflejos, paciencia, visión periférica y cambios de regla. Cada nivel, más difícil.', color: '#7CFF4D' },
     { id: 'ghost', name: 'Pelota fantasma', desc: 'Peloteo con la pelota que parpadea, como entrenar con lentes estroboscópicos.', color: '#FF4FA3' }
+  ];
+  // Tablero de luces por niveles. Cada nivel entrena una habilidad con un ejercicio clásico de psicología cognitiva
+  // (Go/No-Go, Stroop, cambio de regla, visión periférica, seguimiento). Después del nivel 12 se repite todo más rápido.
+  // mix: peso de cada tipo de luz. go = verde, no = roja, blue = azul (se toca), gold = dorada (vale triple),
+  // wait = amarilla (esperar a que se ponga verde), word = color con palabra (Stroop). life = segundos visible.
+  PP.LIGHT_LEVELS = [
+    { name: 'Verdes sí, rojas no', rule: 'Tocá las <b>verdes</b>. Las <b class="no">rojas</b> no se tocan.', skill: 'Control de impulsos (ejercicio Go/No-Go): frenar el golpe cuando no corresponde.', need: 11, dur: 22, spawn: 1.0, life: 1.6, size: 80, mix: { go: 8, no: 2 } },
+    { name: 'Más rápido', rule: 'Lo mismo, pero aparecen más rápido y duran menos.', skill: 'Velocidad de reacción: ver, decidir y tocar en menos tiempo.', need: 13, dur: 22, spawn: 0.7, life: 1.1, size: 76, mix: { go: 7, no: 3 } },
+    { name: 'Dos colores buenos', rule: '<b>Verdes</b> y <b style="color:#4DA6FF">azules</b> sí. <b class="no">Rojas</b> no.', skill: 'Decisión con más opciones: elegir rápido entre varias señales.', need: 13, dur: 22, spawn: 0.8, life: 1.2, size: 76, mix: { go: 4, blue: 4, no: 3 } },
+    { name: 'Al revés', rule: 'Ahora se tocan las <b class="no">rojas</b>. Las <b>verdes</b> no.', skill: 'Flexibilidad: cambiar una costumbre que el cerebro ya tenía automatizada.', need: 9, dur: 22, spawn: 0.85, life: 1.2, size: 76, mix: { go: 4, no: 5 }, invert: true },
+    { name: 'Paciencia', rule: 'Las <b style="color:#FFD23A">amarillas</b> se tocan recién cuando se ponen <b>verdes</b>. Lento, pero sin apurarse.', skill: 'Esperar el momento justo: como dejar pasar la pelota y jugarla de la pared.', need: 10, dur: 24, spawn: 1.2, life: 2.4, size: 80, mix: { wait: 6, go: 2, no: 2 } },
+    { name: 'Mirada al centro', rule: 'Mirá la pelota del centro. Las luces salen en los <b>bordes</b> y son más chicas.', skill: 'Visión periférica: ver a los rivales sin sacar los ojos de la pelota.', need: 12, dur: 22, spawn: 0.8, life: 1.15, size: 62, mix: { go: 7, no: 3 }, periph: true },
+    { name: 'Doradas', rule: 'Las <b style="color:#FFD23A">doradas</b> valen triple pero son chicas y rápidas. Las <b class="no">rojas</b> no.', skill: 'Atención selectiva: encontrar lo importante entre muchas cosas.', need: 14, dur: 22, spawn: 0.65, life: 1.1, size: 72, mix: { go: 5, gold: 2, no: 3 } },
+    { name: 'En movimiento', rule: 'Las luces <b>se mueven</b>. Verdes sí, rojas no.', skill: 'Seguimiento de objetos: como seguir la pelota y a los cuatro jugadores a la vez.', need: 11, dur: 22, spawn: 0.85, life: 1.7, size: 74, mix: { go: 7, no: 3 }, move: true },
+    { name: 'Color, no palabra', rule: 'Tocá si el <b>color</b> es verde, aunque la palabra diga otra cosa.', skill: 'Efecto Stroop: ignorar la información que distrae y decidir bien igual.', need: 8, dur: 24, spawn: 1.0, life: 1.7, size: 92, mix: { word: 10 } },
+    { name: 'Cambio de regla', rule: 'La regla cambia cada pocos segundos: mirá arriba si hay que tocar <b>verdes</b> o <b class="no">rojas</b>.', skill: 'Cambiar de plan en medio del punto sin perder la cabeza.', need: 10, dur: 26, spawn: 0.8, life: 1.2, size: 74, mix: { go: 5, no: 5 }, flip: 5 },
+    { name: 'Todo junto', rule: 'Verdes, azules y doradas sí. Amarillas, esperá. Rojas no. Y se mueven.', skill: 'Todo lo anterior a la vez, como en un partido de verdad.', need: 16, dur: 26, spawn: 0.7, life: 1.4, size: 70, mix: { go: 4, blue: 2, gold: 1, wait: 2, no: 3 }, move: true },
+    { name: 'Modo leyenda', rule: 'Rápido, chico, en los bordes y con cambio de regla. Suerte.', skill: 'Decidir bajo presión, que es lo que separa a los mejores.', need: 13, dur: 26, spawn: 0.6, life: 1.0, size: 62, mix: { go: 5, no: 4, gold: 1 }, periph: true, flip: 4 }
   ];
   // Fichas "La mente también se entrena". Solo datos con fuente; lo que es cálculo propio o consenso de entrenadores está aclarado.
   PP.MIND = [

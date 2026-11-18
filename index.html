@@ -71,6 +71,10 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 #lights { z-index: 6; } #lights .fix { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px; border-radius: 50%; background: radial-gradient(circle at 32% 30%, #F6FFB0, var(--lime) 45%, #9CC400); box-shadow: 0 0 30px var(--lime); }
 .light { position: absolute; width: 76px; height: 76px; margin: -38px; border-radius: 50%; border: 4px solid #fff; background: #7CFF4D; box-shadow: 0 0 34px #7CFF4D; animation: lt 1.2s linear forwards; cursor: pointer; padding: 0; }
 .light.red { background: var(--red); box-shadow: 0 0 34px var(--red); } @keyframes lt { from { transform: scale(1.15); } to { transform: scale(.5); opacity: .55; } }
+.light.blue { background: #4DA6FF; box-shadow: 0 0 34px #4DA6FF; } .light.gold { background: #FFD23A; box-shadow: 0 0 40px #FFD23A; border-color: #fff8c8; } .light.wait { background: #FFB020; box-shadow: 0 0 30px #FFB020; border-style: dashed; }
+.light.word { font-family: var(--display); font-size: 19px; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.6); border-radius: 22px; }
+.light.hit { animation: none; transform: scale(1.3); opacity: 0; transition: transform .15s, opacity .15s; }
+#lights .flipban { position: absolute; left: 50%; top: 21%; transform: translateX(-50%); font-family: var(--display); font-size: 26px; padding: 6px 16px; border-radius: 14px; background: rgba(0,0,0,.55); pointer-events: none; white-space: nowrap; }
 .iq { font-family: var(--display); font-size: 64px; color: var(--lime); line-height: 1; text-shadow: 0 0 24px var(--lime); }
 #rank b { font-family: var(--display); font-weight: 400; font-size: 15px; color: var(--amber); }
 .bar { height: 6px; background: rgba(255, 255, 255, .16); border-radius: 4px; overflow: hidden; }
@@ -342,12 +346,12 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 
 <script src="vendor/three.min.js?v=ccabb6c3b0"></script>
 <script src="js/config.js?v=d04d7c3eb7"></script>
-<script src="js/data.js?v=d8217e724d"></script>
+<script src="js/data.js?v=1df9d087b3"></script>
 <script src="js/backend.js?v=9019bd416b"></script>
 <script src="js/social.js?v=1f963dc69a"></script>
 <script src="js/audio.js?v=a6951ea3dd"></script>
 <script src="js/scene.js?v=66492ff147"></script>
-<script src="js/game.js?v=64093e463a"></script>
+<script src="js/game.js?v=4b6788c154"></script>
 <!--/PAGE-->
 </body>
 </html>

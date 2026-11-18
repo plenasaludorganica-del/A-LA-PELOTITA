@@ -61,7 +61,11 @@ Modo de entrenamiento táctico y visual, con un "IQ de pádel" que sube con la m
   puntos multiplicados por etapa y bonus por racha. 40 jugadas en `PP.PLAYS` dentro de `js/data.js`; para sumar una alcanza con agregar un objeto.
   Las jugadas están en `PP.PLAYS` dentro de `js/data.js`; para sumar una alcanza con agregar un objeto.
 - **Anticipación** (oculto por ahora, no funcionaba bien; se reactiva quitando `hidden: true` en `PP.DRILLS`): la pelota desaparece en el aire y hay que tocar dónde va a picar.
-- **Tablero de luces:** tocar las verdes, no tocar las rojas, mirando el centro.
+- **Tablero de luces:** entrenamiento del cerebro por niveles (`PP.LIGHT_LEVELS` en `js/data.js`), con 3 vidas. Cada nivel tiene
+  una meta de aciertos en un tiempo; si no se llega, se pierde una vida y se repite. Doce niveles basados en ejercicios de
+  psicología cognitiva: Go/No-Go (verdes sí, rojas no), más velocidad, dos colores buenos, regla al revés, paciencia
+  (amarillas que se ponen verdes), visión periférica, doradas que valen triple, luces que se mueven, efecto Stroop (color
+  contra palabra), cambio de regla, todo junto y modo leyenda. Después del 12 vuelve a empezar, cada vuelta un 15 % más rápida.
 - **Pelota fantasma:** peloteo con la pelota que parpadea.
 
 ## Personajes
