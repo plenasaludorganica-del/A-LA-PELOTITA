@@ -36,9 +36,22 @@ jobs:
               "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects/a-la-pelotita/domains" \
               -d "{\"name\":\"$h\"}" | jq '{ok: .success, errores: .errors, estado: .result.status, validacion: .result.validation_data.status}'
           done
+      - name: Registros DNS hacia el sitio
+        run: |
+          Z=$(curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/zones?name=$D" | jq -r '.result[0].id')
+          echo "Registros actuales:"
+          curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/zones/$Z/dns_records" | jq '[.result[]? | {tipo: .type, nombre: .name, valor: .content}]'
+          for h in "$D" "www.$D"; do
+            EX=$(curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/zones/$Z/dns_records?name=$h" | jq '.result | length')
+            if [ "$EX" = "0" ]; then
+              echo "== creando CNAME $h"
+              curl -s -X POST -H "Authorization: Bearer $CF" -H "Content-Type: application/json" "https://api.cloudflare.com/client/v4/zones/$Z/dns_records" \
+                -d "{\"type\":\"CNAME\",\"name\":\"$h\",\"content\":\"a-la-pelotita.pages.dev\",\"proxied\":true}" | jq '{ok: .success, errores: .errors}'
+            else echo "== $h ya tiene registro"; fi
+          done
       - name: Estado de los dominios del proyecto
         run: |
-          sleep 20
+          sleep 45
           curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects/a-la-pelotita/domains" \
             | jq '{ok: .success, errores: .errors, dominios: [.result[]? | {nombre: .name, estado: .status, validacion: .validation_data.status, error: .validation_data.error_message}]}'
           curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/accounts/$ACC/pages/projects/a-la-pelotita" | jq '{rama_principal: .result.production_branch, dominios: .result.domains}'
