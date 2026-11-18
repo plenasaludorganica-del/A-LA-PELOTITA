@@ -989,6 +989,8 @@
     $('tq').innerHTML = '<div style="font-size:14px">Nivel ' + TR.lv + ' · ' + d.name + ' · ' + lifeHearts() + '</div><div>' + d.rule + '</div>' +
       '<div style="font-size:16px">Aciertos <b id="lHits">0</b>/' + d.need + ' · errores <b id="lErr" class="no">0</b>/4</div><div class="bar"><i id="tqBar" style="width:100%"></i></div>';
     if (d.flip) flipBanner();
+    else if (d.banner) { var bn = document.createElement('div'); bn.className = 'flipban'; bn.style.top = '30%'; bn.style.fontSize = '20px'; bn.innerHTML = d.banner; $('lights').appendChild(bn); }
+    TR.prevC = null;
   }
   function flipBanner() {
     var old = $('lights').querySelector('.flipban'); if (old) old.remove();
@@ -1017,7 +1019,35 @@
     if (k === 'no') return TR.invert;
     if (k === 'wait') return el.dataset.ready === '1';
     if (k === 'word') return el.dataset.c === 'g';
+    if (k === 'sq') return false;                        // cuadrado: no se toca
+    if (k === 'turn') return el.dataset.red !== '1';     // amague: solo mientras está verde
+    if (el.dataset.ok) return el.dataset.ok === '1';     // números, flechas, memoria, lados, dónde estaba
     return true;   // azul y dorada
+  }
+  // Texto y regla de los tipos nuevos (se decide al aparecer)
+  var LCOL = { g: ['#2FBF3A', 'VERDE'], b: ['#4DA6FF', 'AZUL'], p: ['#B45CFF', 'VIOLETA'] };
+  function paintLight(el, c) { el.style.background = LCOL[c][0]; el.style.boxShadow = '0 0 30px ' + LCOL[c][0]; }
+  function setupKind(el, k, d, size, pos) {
+    var wide = function (w) { el.style.width = (size + w) + 'px'; el.style.marginLeft = (-(size + w) / 2) + 'px'; el.classList.add('word'); };
+    if (k === 'num') {
+      var n = 1 + Math.floor(Math.random() * 9), ok = d.num === 'par' ? n % 2 === 0 : d.num === 'impar' ? n % 2 === 1 : n > 5;
+      el.textContent = n; el.dataset.ok = ok ? '1' : '0'; el.classList.add('word'); el.style.fontSize = '34px'; paintLight(el, 'p');
+    } else if (k === 'arrow') {
+      var right = Math.random() < 0.5, same = Math.random() < 0.4, mid = right ? '▶' : '◀', side = (same ? right : !right) ? '▶' : '◀';
+      el.textContent = side + side + mid + side + side; el.dataset.ok = right ? '1' : '0'; wide(60); el.style.fontSize = '20px'; paintLight(el, 'b');
+    } else if (k === 'nb') {
+      var keys = ['g', 'b', 'p'], prev = TR.prevC, c;
+      if (prev && Math.random() < 0.38) c = prev; else { c = keys[Math.floor(Math.random() * 3)]; if (c === prev) c = keys[(keys.indexOf(c) + 1) % 3]; }
+      el.dataset.ok = prev && c === prev ? '1' : '0'; TR.prevC = c; paintLight(el, c);
+    } else if (k === 'side') {
+      var green = Math.random() < 0.5, left = pos[0] < 50;
+      el.dataset.ok = (left ? green : !green) ? '1' : '0'; paintLight(el, green ? 'g' : 'b');
+    } else if (k === 'sq') {
+      el.style.borderRadius = '10px'; paintLight(el, 'g');
+    } else if (k === 'mem') {
+      el.dataset.ok = '1'; paintLight(el, 'g');
+      setTimeout(function () { el.style.transition = 'opacity .12s'; el.style.opacity = '0'; }, Math.max(260, 450 * lvSpeed()));
+    }
   }
   function pickKind(mix) {
     var t = 0, k; for (k in mix) t += mix[k];
@@ -1045,9 +1075,13 @@
       el.dataset.c = green ? 'g' : 'r'; el.textContent = word; el.style.width = (size + 34) + 'px'; el.style.marginLeft = (-(size + 34) / 2) + 'px';
       el.style.background = green ? '#2FBF3A' : '#E8333B'; el.style.boxShadow = '0 0 30px ' + (green ? '#2FBF3A' : '#E8333B');
     }
+    setupKind(el, k, d, size, pos);
+    if (k === 'mem') el.style.animation = 'none';   // no se achica: se apaga y queda invisible en su lugar
     el.setAttribute('aria-label', 'Luz');
     var born = performance.now(), done = false;
     if (k === 'wait') setTimeout(function () { if (done) return; el.dataset.ready = '1'; el.className = 'light'; born = performance.now(); }, life * 450);
+    if (k === 'turn') setTimeout(function () { if (done) return; el.dataset.red = '1'; el.classList.add('red'); }, life * 380);
+    if (k === 'mem') setTimeout(function () { if (done) return; done = true; if (TR && TR.phase === 'lights') { TR.score = Math.max(0, TR.score - 3); trHud(); } el.remove(); }, life * 1000);
     el.addEventListener('pointerdown', function (ev) {
       ev.preventDefault(); if (done || !TR || TR.phase !== 'lights') return; done = true; A.unlock();
       if (lightGo(el)) {
@@ -1085,7 +1119,7 @@
       if (ld.flip) { TR.flipT -= dt; if (TR.flipT <= 0) { TR.flipT = ld.flip; TR.invert = !TR.invert; flipBanner(); A.play('warn'); flash(0.12); } }
       if (TR.left <= 0) lightsLevelEnd(false, 'Se acabó el tiempo: te faltaron ' + (ld.need - TR.hits) + ' aciertos.');
     } else if (TR.phase === 'lend' && TR.wait <= 0) {
-      if (TR.lives <= 0) { PP.lastDrillScore = TR.score; PP.lastLights = { stage: TR.lv, correct: TR.total, score: TR.score }; trainFinish('lights', (TR.lv - 1) / PP.LIGHT_LEVELS.length * 100); return; }
+      if (TR.lives <= 0) { PP.lastDrillScore = TR.score; PP.lastLights = { stage: TR.lv, correct: TR.total, score: TR.score }; trainFinish('lights', (TR.lv - 1) / 12 * 100); return; }   // 12 = escala original del IQ (no cambia al sumar niveles)
       lightsIntro();
     }
     if (b.live) {

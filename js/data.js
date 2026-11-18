@@ -125,7 +125,7 @@
     { id: 'ghost', name: 'Pelota fantasma', desc: 'Peloteo con la pelota que parpadea, como entrenar con lentes estroboscópicos.', color: '#FF4FA3' }
   ];
   // Tablero de luces por niveles. Cada nivel entrena una habilidad con un ejercicio clásico de psicología cognitiva
-  // (Go/No-Go, Stroop, cambio de regla, visión periférica, seguimiento). Después del nivel 12 se repite todo más rápido.
+  // (Go/No-Go, Stroop, cambio de regla, visión periférica, seguimiento). Después del nivel 24 se repite todo más rápido.
   // mix: peso de cada tipo de luz. go = verde, no = roja, blue = azul (se toca), gold = dorada (vale triple),
   // wait = amarilla (esperar a que se ponga verde), word = color con palabra (Stroop). life = segundos visible.
   PP.LIGHT_LEVELS = [
@@ -140,7 +140,22 @@
     { name: 'Color, no palabra', rule: 'Tocá si el <b>color</b> es verde, aunque la palabra diga otra cosa.', skill: 'Efecto Stroop: ignorar la información que distrae y decidir bien igual.', need: 8, dur: 24, spawn: 1.0, life: 1.7, size: 92, mix: { word: 10 } },
     { name: 'Cambio de regla', rule: 'La regla cambia cada pocos segundos: mirá arriba si hay que tocar <b>verdes</b> o <b class="no">rojas</b>.', skill: 'Cambiar de plan en medio del punto sin perder la cabeza.', need: 10, dur: 26, spawn: 0.8, life: 1.2, size: 74, mix: { go: 5, no: 5 }, flip: 5 },
     { name: 'Todo junto', rule: 'Verdes, azules y doradas sí. Amarillas, esperá. Rojas no. Y se mueven.', skill: 'Todo lo anterior a la vez, como en un partido de verdad.', need: 16, dur: 26, spawn: 0.7, life: 1.4, size: 70, mix: { go: 4, blue: 2, gold: 1, wait: 2, no: 3 }, move: true },
-    { name: 'Modo leyenda', rule: 'Rápido, chico, en los bordes y con cambio de regla. Suerte.', skill: 'Decidir bajo presión, que es lo que separa a los mejores.', need: 13, dur: 26, spawn: 0.6, life: 1.0, size: 62, mix: { go: 5, no: 4, gold: 1 }, periph: true, flip: 4 }
+    { name: 'Modo leyenda', rule: 'Rápido, chico, en los bordes y con cambio de regla. Suerte.', skill: 'Decidir bajo presión, que es lo que separa a los mejores.', need: 13, dur: 26, spawn: 0.6, life: 1.0, size: 62, mix: { go: 5, no: 4, gold: 1 }, periph: true, flip: 4 },
+    // Segunda temporada: nuevos enfoques (números, flechas engañosas, memoria, zonas, amagues, formas y memoria espacial)
+    // num = número (regla en "num": par, impar o mayor), arrow = flechas, nb = mismo color que la anterior,
+    // side = regla según el lado, turn = verde que se pone roja, sq = cuadrado (no se toca), mem = se apaga y hay que tocar donde estaba.
+    { name: 'Números pares', rule: 'Tocá solo los números <b>pares</b> (2, 4, 6, 8).', skill: 'Pensar y decidir a la vez: como llevar el marcador en la cabeza y elegir el golpe sin perder el punto.', need: 10, dur: 24, spawn: 0.9, life: 1.7, size: 80, mix: { num: 10 }, num: 'par' },
+    { name: 'Flechas engañosas', rule: 'Tocá si la flecha <b>del medio</b> apunta a la derecha ▶, aunque las de los costados digan otra cosa.', skill: 'Ejercicio de flancos de Eriksen: concentrarse en lo importante e ignorar el ruido, como no comerse el amague del rival.', need: 9, dur: 24, spawn: 1.0, life: 1.8, size: 70, mix: { arrow: 10 } },
+    { name: 'Memoria de color', rule: 'Tocá la luz solo si es del <b>mismo color que la anterior</b>.', skill: 'Memoria de trabajo: recordar lo que acaba de pasar mientras mirás lo nuevo, como acordarte dónde quedó parado el rival.', need: 7, dur: 26, spawn: 1.1, life: 1.6, size: 80, mix: { nb: 10 } },
+    { name: 'Cada lado su color', rule: 'A la <b>izquierda</b> tocá las <b>verdes</b>. A la <b>derecha</b> tocá las <b style="color:#4DA6FF">azules</b>.', skill: 'Reglas según la zona: como saber qué golpe conviene según el lado de la cancha en el que estás.', need: 12, dur: 24, spawn: 0.8, life: 1.3, size: 76, mix: { side: 10 }, banner: '<span style="color:#7CFF4D">◀ VERDES</span> · <span style="color:#4DA6FF">AZULES ▶</span>' },
+    { name: 'Amague', rule: 'Las verdes se ponen <b class="no">rojas</b> enseguida. Tocalas <b>antes</b> de que cambien.', skill: 'Reaccionar al primer indicio: decidir antes de que la jugada termine de mostrarse.', need: 11, dur: 22, spawn: 0.8, life: 1.4, size: 76, mix: { turn: 7, no: 3 } },
+    { name: 'Formas', rule: 'Tocá los <b>círculos</b> verdes. Los <b>cuadrados</b> no se tocan, aunque sean verdes.', skill: 'Distinguir cosas parecidas en un instante, como un globo de una bandeja que viene igual de alta.', need: 12, dur: 22, spawn: 0.75, life: 1.2, size: 76, mix: { go: 6, sq: 4 } },
+    { name: 'Dónde estaba', rule: 'Las luces se apagan enseguida. Tocá <b>donde estaban</b>.', skill: 'Memoria espacial: recordar dónde quedó el hueco o el rival aunque ya no lo estés mirando.', need: 9, dur: 24, spawn: 1.1, life: 1.9, size: 84, mix: { mem: 10 } },
+    { name: 'Impares a toda velocidad', rule: 'Tocá solo los números <b>impares</b> (1, 3, 5, 7, 9). Más rápido.', skill: 'Velocidad de cálculo bajo presión.', need: 12, dur: 22, spawn: 0.7, life: 1.2, size: 74, mix: { num: 10 }, num: 'impar' },
+    { name: 'Flechas en movimiento', rule: 'Flecha del medio a la derecha ▶ sí. Y ahora <b>se mueven</b>.', skill: 'Atención selectiva con todo en movimiento, como en un punto rápido en la red.', need: 9, dur: 26, spawn: 0.9, life: 1.8, size: 70, mix: { arrow: 10 }, move: true },
+    { name: 'Memoria rápida', rule: 'Mismo color que la anterior, pero más rápido.', skill: 'Memoria de trabajo con poco tiempo: lo que pasa en los últimos golpes de un punto largo.', need: 9, dur: 26, spawn: 0.85, life: 1.3, size: 76, mix: { nb: 10 } },
+    { name: 'Mezcla mental', rule: 'Números <b>mayores que 5</b> sí. Flecha del medio ▶ sí. Verdes sí. <b class="no">Rojas</b> no.', skill: 'Cambiar de tipo de decisión a cada momento sin perder el hilo.', need: 13, dur: 28, spawn: 0.8, life: 1.4, size: 74, mix: { num: 3, arrow: 3, go: 2, no: 2 }, num: 'mayor' },
+    { name: 'Maestro de la cancha', rule: 'Todo junto, en los bordes y en movimiento: amagues, formas, doradas y rojas.', skill: 'Ver la cancha entera y decidir bien bajo presión: el nivel de los mejores.', need: 14, dur: 28, spawn: 0.65, life: 1.25, size: 66, mix: { turn: 3, sq: 2, go: 3, no: 2, gold: 1 }, periph: true, move: true }
   ];
   // Fichas "La mente también se entrena". Solo datos con fuente; lo que es cálculo propio o consenso de entrenadores está aclarado.
   PP.MIND = [
@@ -233,7 +248,44 @@
     { q: 'Estás en la red y la pelota viene muy rápida al cuerpo.', me: [2, 2.8], mate: [-2, 3], r1: [-2, -3], r2: [2, -3], ball: [2, 1.2, 2.5],
       opts: ['Bloquear con la paleta adelante', 'Correrte y pegar fuerte', 'Dejarla pasar'], why: 'Al cuerpo no hay tiempo de armar el golpe: paleta adelante y bloqueo.', shot: [0, -5, 1.0] },
     { q: 'Los rivales están cansados y les cuesta moverse.', me: [2, 8], mate: [-2, 8], r1: [-2, -8], r2: [2, -8], ball: [2.3, 1, 7.5],
-      opts: ['Alternar chiquitas y globos', 'Pegar siempre fuerte', 'Jugarle siempre al mismo'], why: 'Mover al rival adelante y atrás castiga el cansancio más que la fuerza.', shot: [-1.5, -3, 1.3] }
+      opts: ['Alternar chiquitas y globos', 'Pegar siempre fuerte', 'Jugarle siempre al mismo'], why: 'Mover al rival adelante y atrás castiga el cansancio más que la fuerza.', shot: [-1.5, -3, 1.3] },
+    // Segunda temporada: saque y resto, paredes, comunicación, cabeza y anticipación
+    { q: 'Le sacaste siempre al revés y el rival ya te resta cómodo con globo.', me: [2, 7.4], mate: [-2, 3], r1: [-2, -8], r2: [2, -8], ball: [2.7, 1, 7],
+      opts: ['Cambiar: sacarle al cuerpo o al otro lado', 'Seguir sacando igual', 'Sacar más fuerte al mismo lugar'], why: 'Si el rival ya sabe adónde va el saque, se acomoda. Variar la dirección lo saca de su zona cómoda.', shot: [1.5, -5, 1.1], move: [2, 3] },
+    { q: 'Vas a restar y los dos rivales ya están en la red.', me: [2, 8.4], mate: [-2, 4], r1: [-2, -2.6], r2: [2, -3], ball: [2.4, 1, 8],
+      opts: ['Globo por encima', 'Resto fuerte al medio', 'Resto al vidrio lateral'], why: 'Con los dos rivales en la red, el globo es la forma de sacarlos de ahí y recuperar la iniciativa.', shot: [-2, -8.6, 2.0] },
+    { q: 'La pelota quedó muy pegada a tu vidrio de fondo y no tenés espacio para pegar.', me: [2, 8.6], mate: [-2, 8], r1: [-2, -2.6], r2: [2, -2.6], ball: [2.4, 0.8, 9.3],
+      opts: ['Contrapared: pegarle contra tu vidrio', 'Intentar un golpe normal', 'Darla por perdida'], why: 'Sin espacio, la contrapared es el recurso: le pegás a tu propio vidrio y la pelota sale alta hacia el otro lado.', shot: [0, -6, 1.8] },
+    { q: 'Tu pareja corre a una pelota difícil al fondo y no puede ver a los rivales.', me: [-2, 6], mate: [2.4, 8.6], r1: [-2, -2.6], r2: [2, -2.6], ball: [2.8, 1, 9],
+      opts: ['Avisarle dónde están los rivales', 'Quedarte callado para no distraerla', 'Ir vos también a la pelota'], why: 'Tu pareja mira la pelota y vos mirás a los rivales. Decirle "subieron" o "están atrás" la ayuda a elegir el golpe.' },
+    { q: 'Erraste dos pelotas fáciles seguidas.', me: [2, 8], mate: [-2, 8], r1: [-2, -3], r2: [2, -3], ball: [2.4, 1.1, 7.5],
+      opts: ['Respirar y volver a lo simple: profundo y al medio', 'Arriesgar más para compensar', 'Enojarte para meterle energía'], why: 'Después de errores ayuda volver a lo seguro. Querer compensar arriesgando suma más errores.', shot: [0, -8.4, 1.4] },
+    { q: 'El rival se para muy pegado a la red esperando volear.', me: [2, 8], mate: [-2, 8], r1: [-2, -1.8], r2: [2, -1.8], ball: [2.3, 1, 7.5],
+      opts: ['Globo por encima', 'Pegarle fuerte al cuerpo', 'Chiquita'], why: 'Muy pegado a la red, cualquier globo bien tirado lo obliga a correr hacia atrás.', shot: [-2, -8.6, 2.0] },
+    { q: 'Vas perdiendo 0-40 con el saque del rival.', me: [2, 8.4], mate: [-2, 8], r1: [2, -6], r2: [-2, -3], ball: [2.4, 0.9, 8],
+      opts: ['Restar seguro y obligarlo a jugar', 'Buscar un resto ganador', 'Restar fuerte al de la red'], why: 'La presión está del lado del rival: restá adentro y que sea él quien tenga que ganar el punto.', shot: [-2, -6, 1.2] },
+    { q: 'Te tiran un globo por tu lado, pero tu pareja está mejor ubicada para llegar.', me: [-2, 3], mate: [2, 3.6], r1: [-2, -8], r2: [2, -8], ball: [-1.4, 3.6, 6],
+      opts: ['Cruzarse: la juega tu pareja y vos cubrís su lado', 'Ir vos igual de espaldas', 'Dejar que pique y ver'], why: 'Si llega mejor tu pareja, se cruzan: uno va a la pelota y el otro cubre el lado que queda libre.', move: [2, 4] },
+    { q: 'Tenés un remate cómodo, pero estás lejos de la red.', me: [2, 6.6], mate: [-2, 3.4], r1: [-2, -8], r2: [2, -8], ball: [2.3, 3, 6.4],
+      opts: ['Bandeja o víbora para mantener la posición', 'Remate a sacarla por 3', 'Globo'], why: 'Lejos de la red el remate pierde fuerza y el rival la devuelve. Una bandeja o víbora te deja volver a subir.', shot: [-3, -8, 1.3], move: [2, 3.4] },
+    { q: 'Ves que el rival se prepara para una víbora fuerte hacia tu reja lateral.', me: [2, 7], mate: [-2, 7], r1: [-2, -3.5], r2: [2, -3], ball: [-2, 2.4, -3.5],
+      opts: ['Correrte hacia ese lado antes del golpe', 'Quedarte en el centro', 'Subir a la red'], why: 'Leer el golpe antes del impacto te regala medio segundo. Moverte temprano es llegar cómodo.', move: [3.4, 7.4] },
+    { q: 'Juegan al aire libre y el viento empuja tus globos para que se vayan largos.', me: [2, 8], mate: [-2, 8], r1: [-2, -3], r2: [2, -3], ball: [2.3, 1, 7.5],
+      opts: ['Globos más bajos o tiros planos', 'Globos altos como siempre', 'Pegar todo más fuerte'], why: 'Con el viento a favor del rival los globos altos se pasan. Conviene bajarlos o cambiar por tiros planos.', shot: [0, -7, 1.6] },
+    { q: 'Un rival salió de la cancha a buscar una pelota y te devuelve alta y lenta.', me: [1.6, 2.6], mate: [-2, 3], r1: [4.8, -7], r2: [-2, -6], ball: [1.8, 1.5, 2.4],
+      opts: ['Dejada corta al lado contrario', 'Pegarle fuerte al medio', 'Globo'], why: 'Con un rival fuera de la cancha, la dejada al lado opuesto es casi imposible de alcanzar.', shot: [-3.5, -1.5, 0.7] },
+    { q: 'Ganaste un punto larguísimo y espectacular. Estás eufórico.', me: [2, 8], mate: [-2, 8], r1: [-2, -3], r2: [2, -3], ball: [2.5, 1, 7.5],
+      opts: ['Festejar corto y concentrarte en el siguiente', 'Seguir arriesgando porque estás en racha', 'Relajarte un poco'], why: 'Después de un gran punto viene el más peligroso. Festejá, respirá y volvé al plan enseguida.', shot: [0, -8.4, 1.4] },
+    { q: 'Tu pareja está en la red, vos a mitad de cancha y los rivales en el fondo.', me: [2, 5.5], mate: [-2, 3], r1: [-2, -8], r2: [2, -8], ball: [-1, 1.5, -7],
+      opts: ['Terminar de subir a la par de tu pareja', 'Volver al fondo', 'Quedarte en la mitad'], why: 'La mitad de la cancha es tierra de nadie: te pican a los pies. Se termina de subir para quedar en línea con tu pareja.', move: [2, 3] },
+    { q: 'La pelota va a pegar en la reja metálica, no en el vidrio.', me: [3, 6.5], mate: [-2, 7], r1: [-2, -3], r2: [2, -3], ball: [3.8, 1.1, 6],
+      opts: ['Jugarla antes de que pegue en la reja', 'Esperar el rebote como en el vidrio', 'Dejarla ir'], why: 'La reja no devuelve la pelota de forma pareja como el vidrio. Casi siempre conviene jugarla antes.', shot: [-1, -7, 1.3] },
+    { q: 'Al rival le sale muy bien el remate, pero la bandeja le cuesta.', me: [2, 8], mate: [-2, 8], r1: [-2, -2.6], r2: [2, -2.6], ball: [2.3, 1, 7.6],
+      opts: ['Globos profundos que lo obliguen a hacer bandeja', 'Globos cortos', 'No tirarle globos nunca'], why: 'El globo profundo no le deja rematar. Si su bandeja es floja, ahí recuperás la red.', shot: [-2, -8.6, 2.0] },
+    { q: 'Estás en la red y el rival baja la paleta y abre la cara, como para tirar un globo.', me: [2, 3], mate: [-2, 3], r1: [2, -8], r2: [-2, -8], ball: [2, 0.8, -8],
+      opts: ['Dar un paso atrás antes de que pegue', 'Pegarte más a la red', 'Quedarte quieto'], why: 'La paleta baja y abierta anuncia el globo. Leer esa señal te deja llegar cómodo a la bandeja.', move: [2, 5] },
+    { q: 'El rival arma el remate como para pegar fuerte, pero frena la paleta.', me: [2, 8], mate: [-2, 8], r1: [-1.6, -2.6], r2: [2, -3], ball: [-1.6, 3, -2.5],
+      opts: ['Salir hacia adelante: viene una dejada', 'Quedarte atrás esperando el golpe fuerte', 'Darla por perdida'], why: 'El amague engaña si mirás el cuerpo. Si mirás la paleta, ves que frena y llegás a tiempo a la dejada.', move: [1.4, 3] }
   ];
 
   // Tienda: en esta demo los pagos son simulados. Los SKU son los que usaría la pasarela real.
