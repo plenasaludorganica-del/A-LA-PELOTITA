@@ -1,6 +1,9 @@
 # Revisa el dominio y lo conecta al proyecto de Cloudflare Pages "a-la-pelotita". Se lanza a mano (Actions → Run workflow).
 name: Conectar dominio
 on:
+  push:
+    branches: [claude/inspiring-cori-unoeia]
+    paths: ['.github/workflows/dominio.yml']
   workflow_dispatch:
     inputs:
       dominio:
@@ -14,7 +17,7 @@ jobs:
     env:
       CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       ACC: a3f85b6b8a971d708473fcd430b9f7b5
-      D: ${{ inputs.dominio }}
+      D: ${{ inputs.dominio || 'alapelotita.com' }}
     steps:
       - name: Registro del dominio (RDAP)
         run: curl -s "https://rdap.verisign.com/com/v1/domain/$D" | jq '{dominio: .ldhName, estado: .status, alta: [.events[] | select(.eventAction=="registration") | .eventDate][0], vence: [.events[] | select(.eventAction=="expiration") | .eventDate][0], servidores: [.nameservers[].ldhName]}' || true
