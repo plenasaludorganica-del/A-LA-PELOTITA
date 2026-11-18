@@ -99,6 +99,10 @@
   });
   Local.searchPlayers = function (q) { return Local.ranking('stars').then(function (l) { q = q.toLowerCase(); return l.filter(function (p) { return String(p.name).toLowerCase().indexOf(q) >= 0; }); }); };
   Local.adminUsers = function () { return fail(NOSRV); };
+  // Seguir jugadores e invitaciones: solo con el servidor de la comunidad
+  Local.following = function () { return ok([]); }; Local.followCounts = function () { return ok({ following: 0, followers: 0 }); };
+  Local.myRank = function () { return ok(null); }; Local.myInvites = function () { return ok([]); };
+  Local.follow = Local.invite = Local.dismissInvite = function () { return fail('Seguir e invitar jugadores necesita el servidor de la comunidad.'); };
   Local.sendFeedback = function () { return fail(NOSRV); }; Local.admin = function () { return fail(NOSRV); };
   Local.proPrice = function () { return ok(0); }; Local.proCheckout = function () { return fail(NOSRV); };
   [].forEach(function () {
@@ -244,6 +248,20 @@
       return rest('PATCH', '/rest/v1/profiles?id=eq.' + DB.user.id, body).then(function () { Object.assign(DB.user, body); });
     },
     ranking: function (kind) { if (!DB.user) return fail(NEED); return rest('POST', '/rest/v1/rpc/ranking_list', { p_kind: kind }); },
+    myRank: function (kind) { if (!DB.user) return ok(null); return rest('POST', '/rest/v1/rpc/my_rank', { p_kind: kind }); },
+    // Seguir jugadores (como en Instagram) para encontrarlos rápido e invitarlos a torneos
+    following: function () { if (!DB.user) return fail(NEED); return rest('POST', '/rest/v1/rpc/following_list', {}); },
+    followCounts: function () { if (!DB.user) return ok({ following: 0, followers: 0 }); return rest('POST', '/rest/v1/rpc/follow_counts', {}); },
+    follow: function (id, on) {
+      return on ? rest('POST', '/rest/v1/follows', { followed: id }, 'resolution=ignore-duplicates')
+        : rest('DELETE', '/rest/v1/follows?follower=eq.' + DB.user.id + '&followed=eq.' + encodeURIComponent(id));
+    },
+    invite: function (tid, uid) {
+      return rest('POST', '/rest/v1/tournament_invites', { tournament_id: tid, user_id: uid }, 'resolution=ignore-duplicates')
+        .catch(function () { throw new Error('Para invitar tenés que organizar o estar inscripto en el torneo, y que todavía no haya empezado.'); });
+    },
+    myInvites: function () { if (!DB.user) return ok([]); return rest('POST', '/rest/v1/rpc/my_invites', {}); },
+    dismissInvite: function (tid) { return rest('DELETE', '/rest/v1/tournament_invites?tournament_id=eq.' + encodeURIComponent(tid) + '&user_id=eq.' + DB.user.id); },
     sponsors: function () { return rest('GET', '/rest/v1/sponsors?select=*&order=created_at.desc'); },
     sponsorApply: function (f) { return rest('POST', '/rest/v1/sponsors', { name: f.name, type: f.type, descr: f.descr, contact: f.contact, created_by: DB.user.id }); },
     tournaments: function () { if (!DB.user) return fail(NEED); return rest('POST', '/rest/v1/rpc/tournaments_open', {}); },
@@ -270,7 +288,7 @@
   };
 
   var impl = DB.online ? Supa : Local;
-  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore'].forEach(function (k) {
+  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite'].forEach(function (k) {
     DB[k] = function () { try { return impl[k].apply(impl, arguments); } catch (e) { return Promise.reject(e); } };
   });
   DB.signUp = function (f) {

@@ -70,25 +70,60 @@
   function loginCard(what) { return '<div class="card" style="border-color:#D8FF3A"><h3 class="disp" style="font-size:22px">Creá tu cuenta para ver ' + what + '</h3><p>Es gratis. Con tu cuenta aparecés en el ranking, buscás jugadores y jugás torneos con otros.</p><button class="btn lime" data-act="goacc">Crear mi cuenta</button></div>'; }
   function renderRank() {
     if (DB.online && !DB.user) { $('soBody').innerHTML = loginCard('el ranking'); return; }
-    var kinds = [['stars', 'Estrellas'], ['iq', 'IQ de pádel'], ['picks', 'Pronósticos']];
-    $('soBody').innerHTML = '<div class="row" style="margin-bottom:10px">' + kinds.map(function (k) { return '<button class="btn small ' + (rankKind === k[0] ? 'lime' : 'ghost') + '" data-rk="' + k[0] + '">' + k[1] + '</button>'; }).join('') + '</div>' +
-      '<input class="fld" id="rkQ" type="search" maxlength="40" autocomplete="off" placeholder="Buscar jugador por nombre" value="' + esc(rankQ) + '"><div id="rkList"><p class="note">Cargando…</p></div>' + demoNote();
+    var kinds = [['stars', 'Estrellas'], ['iq', 'IQ de pádel'], ['picks', 'Pronósticos'], ['follow', 'Siguiendo']];
+    $('soBody').innerHTML = '<div class="row" style="margin-bottom:10px;flex-wrap:wrap">' + kinds.map(function (k) { return '<button class="btn small ' + (rankKind === k[0] ? 'lime' : 'ghost') + '" data-rk="' + k[0] + '">' + k[1] + '</button>'; }).join('') + '</div>' +
+      '<input class="fld" id="rkQ" type="search" maxlength="40" autocomplete="off" placeholder="Buscar jugador por nombre para seguirlo" value="' + esc(rankQ) + '"><p class="note" id="rkCounts" style="margin:4px 0 8px"></p><div id="rkList"><p class="note">Cargando…</p></div>' + demoNote();
     $('rkQ').addEventListener('input', function () { rankQ = this.value.trim(); clearTimeout(rankT); rankT = setTimeout(paintRank, 300); });
-    paintRank();
+    paintCounts(); paintRank();
+  }
+  var followSet = {};
+  function paintCounts() {
+    DB.followCounts().then(function (c) { var el = $('rkCounts'); if (el && c) el.textContent = 'Seguís a ' + c.following + ' · Te siguen ' + c.followers; }, noop);
+  }
+  function folBtn(p) {
+    if (!DB.online || !DB.user || p.id === DB.user.id) return '';
+    var on = !!followSet[p.id];
+    return '<button class="btn small ' + (on ? 'ghost' : 'lime') + '" data-fol="' + esc(p.id) + '" style="margin-left:6px">' + (on ? 'Siguiendo' : 'Seguir') + '</button>';
+  }
+  function rkRow(p, pos, k, medal, extra) {
+    var unit = { stars: 'estrellas', iq: 'IQ', picks: 'aciertos', follow: 'estrellas' }, mine = DB.user && p.id === DB.user.id, f = k === 'follow' ? 'stars' : k;
+    return '<div class="rk' + (mine ? ' me' : '') + '" style="' + (medal ? '--mc:' + medal : '') + '"><b class="pos">' + (pos || '') + '</b>' + avatar(p.name) + '<div class="tx"><h3>' + esc(p.name) + (mine ? ' (vos)' : '') + '</h3><p>' + esc(p.cat || '') + ' · ' + esc(p.side || '') + ' · nivel ' + (p.level || 1) + (extra || '') + '</p></div><div class="val"><b>' + (p[f] || 0) + '</b><small>' + unit[k] + '</small></div>' + folBtn(p) + '</div>';
   }
   function paintRank() {
-    var unit = { stars: 'estrellas', iq: 'IQ', picks: 'aciertos' }, q = rankQ, k = rankKind;
-    (q.length >= 2 ? DB.searchPlayers(q) : DB.ranking(k)).then(function (list) {
-      var el = $('rkList'); if (!el || q !== rankQ || k !== rankKind) return;
-      if (q.length >= 2) list = list.slice().sort(function (a, b) { return (b[k] || 0) - (a[k] || 0); });
-      var h = '';
-      if (!list.length) h = q.length >= 2 ? '<div class="card"><p>No encontramos a nadie con "' + esc(q) + '".</p></div>' : '<div class="card"><h3 class="disp">Todavía no hay nadie</h3><p>Creá tu cuenta y sé el primero del ranking.</p><button class="btn lime" data-act="goacc">Crear mi cuenta</button></div>';
+    var q = rankQ, k = rankKind, search = q.length >= 2;
+    var load = DB.online && DB.user ? DB.following().catch(function () { return []; }) : Promise.resolve([]);
+    load.then(function (fl) {
+      followSet = {}; fl.forEach(function (p) { followSet[p.id] = 1; });
+      return (search ? DB.searchPlayers(q) : k === 'follow' ? Promise.resolve(fl) : DB.ranking(k)).then(function (list) { return [list, fl]; });
+    }).then(function (r) {
+      var list = r[0], fl = r[1], el = $('rkList'); if (!el || q !== rankQ || k !== rankKind) return;
+      var f = k === 'follow' ? 'stars' : k, h = '';
+      if (search || k === 'follow') list = list.slice().sort(function (a, b) { return (b[f] || 0) - (a[f] || 0); });
+      if (!search && k !== 'follow') h += '<h3 class="disp" style="margin:4px 4px 8px">Top 20</h3>';
+      if (!list.length) h += search ? '<div class="card"><p>No encontramos a nadie con "' + esc(q) + '".</p></div>'
+        : k === 'follow' ? '<div class="card"><h3 class="disp">Todavía no seguís a nadie</h3><p>Escribí el nombre de un jugador arriba y tocá <b>Seguir</b>. Así lo encontrás rápido para jugar e invitarlo a tus torneos.</p></div>'
+        : '<div class="card"><h3 class="disp">Todavía no hay nadie</h3><p>Creá tu cuenta y sé el primero del ranking.</p><button class="btn lime" data-act="goacc">Crear mi cuenta</button></div>';
+      var meIn = false;
       list.forEach(function (p, i) {
-        var mine = DB.user && p.id === DB.user.id, medal = q.length >= 2 ? null : ['#FFD23A', '#C9D3E6', '#E0915A'][i];
-        h += '<div class="rk' + (mine ? ' me' : '') + '" style="' + (medal ? '--mc:' + medal : '') + '"><b class="pos">' + (q.length >= 2 ? '' : i + 1) + '</b>' + avatar(p.name) + '<div class="tx"><h3>' + esc(p.name) + (mine ? ' (vos)' : '') + '</h3><p>' + esc(p.cat || '') + ' · ' + esc(p.side || '') + ' · nivel ' + (p.level || 1) + '</p></div><div class="val"><b>' + (p[k] || 0) + '</b><small>' + unit[k] + '</small></div></div>';
+        if (DB.user && p.id === DB.user.id) meIn = true;
+        h += rkRow(p, search || k === 'follow' ? '' : i + 1, k, search || k === 'follow' ? null : ['#FFD23A', '#C9D3E6', '#E0915A'][i], p.follows_me ? ' · te sigue' : '');
       });
       el.innerHTML = h;
+      // Tu puesto, aunque no estés entre los 20 mejores
+      if (!search && k !== 'follow' && !meIn && DB.user && list.length) DB.myRank(k).then(function (n) {
+        var el2 = $('rkList'); if (!el2 || !n || k !== rankKind || q !== rankQ) return;
+        el2.insertAdjacentHTML('beforeend', '<p class="note" style="margin:10px 4px 4px">Tu puesto</p>' + rkRow(DB.user, n, k, null, ''));
+      }, noop);
     }, function (e) { var el = $('rkList'); if (el) el.innerHTML = '<p class="note">' + esc(e.message) + '</p>'; });
+  }
+  function toggleFollow(b) {
+    var id = b.dataset.fol, on = !followSet[id]; b.disabled = true;
+    DB.follow(id, on).then(function () {
+      if (on) followSet[id] = 1; else delete followSet[id];
+      b.disabled = false; b.className = 'btn small ' + (on ? 'ghost' : 'lime'); b.textContent = on ? 'Siguiendo' : 'Seguir';
+      U.toast(on ? 'Ahora lo seguís' : 'Dejaste de seguirlo'); paintCounts();
+      if (!on && rankKind === 'follow' && !rankQ) paintRank();
+    }, function (e) { b.disabled = false; err(e); });
   }
 
   /* ---------- Torneos ---------- */
@@ -101,8 +136,37 @@
         var ph = PHASE[DB.phase(t)];
         h += '<button class="card tcard" data-tour="' + esc(t.id) + '"><span class="chipst" style="--c:' + ph[1] + '">' + ph[0] + '</span><h3 class="disp">' + esc(t.name) + '</h3><p>' + KIND[t.kind] + ' · ' + (t.mode === 'parejas' ? 'Parejas' : 'Individual') + '</p><p>' + when(t.start_at) + ' · organiza ' + esc(t.host || '') + '</p></button>';
       });
-      $('soBody').innerHTML = h + '<p class="note">Los pronósticos son gratis y por diversión: no se juega plata ni hay premios en dinero. Cierran 5 minutos antes de que empiece el torneo.</p>' + demoNote();
+      $('soBody').innerHTML = '<div id="invList"></div>' + h + '<p class="note">Los pronósticos son gratis y por diversión: no se juega plata ni hay premios en dinero. Cierran 5 minutos antes de que empiece el torneo.</p>' + demoNote();
+      paintInvites();
     }, function (e) { $('soBody').innerHTML = '<p class="note">' + esc(e.message) + '</p>'; });
+  }
+  // Torneos a los que me invitaron (de gente que me sigue o a la que sigo)
+  function paintInvites() {
+    DB.myInvites().then(function (list) {
+      var el = $('invList'); if (!el || !list || !list.length) return;
+      el.innerHTML = '<h3 class="disp" style="margin:0 4px 8px;color:#FFD23A">Te invitaron</h3>' + list.map(function (t) {
+        return '<div class="card" style="border-color:#FFD23A;box-shadow:0 0 14px rgba(255,210,58,.35)"><h3 class="disp">' + esc(t.name) + '</h3><p><b style="color:#fff">' + esc(t.by_name) + '</b> te invitó · ' + KIND[t.kind] + ' · ' + (t.mode === 'parejas' ? 'Parejas' : 'Individual') + '</p><p>' + when(t.start_at) + '</p>' +
+          '<div class="row" style="justify-content:flex-start"><button class="btn lime small" data-tour="' + esc(t.tournament_id) + '">Ver y sumarme</button><button class="btn ghost small" data-act="noinv" data-id="' + esc(t.tournament_id) + '">No, gracias</button></div></div>';
+      }).join('');
+    }, noop);
+  }
+  // Invitar a los jugadores que sigo al torneo abierto
+  function inviteModal(t) {
+    DB.following().then(function (fl) {
+      var inT = {}; (t.players || []).forEach(function (p) { inT[p.user_id] = 1; });
+      var rows = fl.filter(function (p) { return !inT[p.id]; }).map(function (p) {
+        return '<div class="rk">' + avatar(p.name) + '<div class="tx"><h3>' + esc(p.name) + '</h3><p>' + esc(p.cat || '') + ' · ' + esc(p.side || '') + '</p></div><button class="btn small lime" data-inv="' + esc(p.id) + '">Invitar</button></div>';
+      }).join('');
+      U.modal('<h2>Invitar jugadores</h2>' + (rows ? '<p>Les aparece la invitación en su pestaña Torneos.</p><div id="invBox" style="max-height:50vh;overflow:auto;text-align:left">' + rows + '</div>'
+        : '<p>' + (fl.length ? 'Todos los que seguís ya están inscriptos.' : 'Todavía no seguís a nadie. En <b>Ranking</b> buscá jugadores por nombre y tocá <b>Seguir</b>; después los invitás desde acá.') + '</p>') +
+        '<p class="note">También podés compartir el cartel con el código del torneo.</p><div class="row"><button class="btn ghost" id="iNo">Listo</button></div>', function () {
+        U.on($('iNo'), U.closeModal);
+        var box = $('invBox'); if (box) box.addEventListener('click', function (e) {
+          var b = e.target.closest('[data-inv]'); if (!b || b.disabled) return; b.disabled = true;
+          DB.invite(t.id, b.dataset.inv).then(function () { b.textContent = 'Invitado'; b.className = 'btn small ghost'; }, function (er) { b.disabled = false; err(er); });
+        });
+      });
+    }, err);
   }
   function openTour(id) { tab = 'tour'; DB.tournament(id).then(function (t) { cur = t; So.render(); }, function (e) { cur = null; So.render(); err(e); }); }
   function renderTour() {
@@ -114,6 +178,7 @@
       '<div class="row" style="justify-content:flex-start;margin-top:8px">' +
       ((ph === 'open' || ph === 'closed') && !joined ? '<button class="btn lime" data-act="join">Inscribirme</button>' : '') +
       (ph === 'live' && joined ? '<button class="btn lime pulse" data-act="play">Jugar mi turno</button>' : '') +
+      ((ph === 'open' || ph === 'closed') && DB.online && DB.user ? '<button class="btn" data-act="invite">Invitar jugadores</button>' : '') +
       '<button class="btn ghost" data-act="poster">Ver cartel</button></div></div>';
     if (win) h += '<div class="card" style="border-color:#FFD23A;box-shadow:0 0 20px #FFD23A"><h3 class="disp" style="color:#FFD23A">Ganó ' + esc(win.name) + '</h3><p>Con ' + win.score + ' puntos.' + (t.myBet ? (t.myBet.pick === win.user_id ? ' <b style="color:#D8FF3A">¡Acertaste tu pronóstico!</b>' : ' Tu pronóstico no salió esta vez.') : '') + '</p></div>';
     else if (ph === 'done') h += '<div class="card"><h3 class="disp">Terminó sin ganador</h3><p>Nadie llegó a sumar puntos.</p></div>';
@@ -497,8 +562,9 @@
   }
 
   function onClick(e) {
-    var b = e.target.closest('[data-act],[data-rk],[data-tour],[data-pick]'); if (!b) return;
+    var b = e.target.closest('[data-act],[data-rk],[data-tour],[data-pick],[data-fol]'); if (!b) return;
     if (b.dataset.rk) { rankKind = b.dataset.rk; So.render(); return; }
+    if (b.dataset.fol) { if (!b.disabled) toggleFollow(b); return; }
     if (b.dataset.tour) { openTour(b.dataset.tour); return; }
     if (b.dataset.pick) { needLogin(function () { DB.bet(cur.id, b.dataset.pick).then(function () { U.toast('Pronóstico guardado'); openTour(cur.id); }, err); }); return; }
     var a = b.dataset.act;
@@ -511,6 +577,8 @@
     else if (a === 'newspon') needLogin(formSpon);
     else if (a === 'back') { cur = null; So.render(); }
     else if (a === 'poster') poster(cur);
+    else if (a === 'invite') inviteModal(cur);
+    else if (a === 'noinv') { b.disabled = true; DB.dismissInvite(b.dataset.id).then(function () { var c = b.closest('.card'); if (c) c.remove(); }, function (er) { b.disabled = false; err(er); }); }
     else if (a === 'play') So.play(cur);
     else if (a === 'join') needLogin(function () {
       var go = function (partner) { DB.join(cur.id, partner).then(function () { U.toast('¡Estás adentro!'); openTour(cur.id); }, err); };

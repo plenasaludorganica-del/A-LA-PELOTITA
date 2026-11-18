@@ -366,3 +366,78 @@ begin
 end $$;
 revoke all on function public.apply_pro_payment(text, uuid, numeric, text, text) from public, anon, authenticated;
 grant execute on function public.apply_pro_payment(text, uuid, numeric, text, text) to service_role;
+
+-- =====================================================================
+-- Seguir jugadores (como en Instagram) e invitaciones a torneos.
+-- Ranking: solo los 20 mejores, más el puesto propio.
+-- =====================================================================
+create table if not exists follows (
+  follower uuid not null references auth.users on delete cascade default auth.uid(),
+  followed uuid not null references auth.users on delete cascade,
+  created_at timestamptz default now(),
+  primary key (follower, followed),
+  check (follower <> followed)
+);
+alter table follows enable row level security;
+drop policy if exists f_read on follows; create policy f_read on follows for select to authenticated using (follower = auth.uid() or followed = auth.uid());
+drop policy if exists f_ins on follows;  create policy f_ins on follows for insert to authenticated with check (follower = auth.uid());
+drop policy if exists f_del on follows;  create policy f_del on follows for delete to authenticated using (follower = auth.uid());
+grant select, insert, delete on follows to authenticated;
+
+create table if not exists tournament_invites (
+  tournament_id uuid not null references tournaments on delete cascade,
+  user_id uuid not null references auth.users on delete cascade,
+  invited_by uuid not null references auth.users on delete cascade default auth.uid(),
+  created_at timestamptz default now(),
+  primary key (tournament_id, user_id)
+);
+alter table tournament_invites enable row level security;
+-- Invita quien organiza o juega el torneo, solo antes de que empiece.
+drop policy if exists ti_read on tournament_invites; create policy ti_read on tournament_invites for select to authenticated using (user_id = auth.uid() or invited_by = auth.uid());
+drop policy if exists ti_ins on tournament_invites;  create policy ti_ins on tournament_invites for insert to authenticated with check (
+  invited_by = auth.uid() and user_id <> auth.uid() and public.tournament_member(tournament_id) and public.tournament_window(tournament_id, 'join'));
+drop policy if exists ti_del on tournament_invites;  create policy ti_del on tournament_invites for delete to authenticated using (user_id = auth.uid() or invited_by = auth.uid());
+grant select, insert, delete on tournament_invites to authenticated;
+
+create or replace function public.ranking_list(p_kind text)
+returns table(id uuid, name text, cat text, side text, stars integer, level integer, iq integer, picks integer)
+language sql stable security definer set search_path = public as $$
+  select p.id, p.name, p.cat, p.side, p.stars, p.level, p.iq, p.picks from public.profiles p
+  where auth.uid() is not null
+  order by case p_kind when 'level' then p.level when 'iq' then p.iq when 'picks' then p.picks else p.stars end desc, p.updated_at asc
+  limit 20;
+$$;
+-- Puesto propio en el ranking (para mostrarlo aunque no esté entre los 20).
+create or replace function public.my_rank(p_kind text) returns integer
+language sql stable security definer set search_path = public as $$
+  with v as (select id, case p_kind when 'level' then level when 'iq' then iq when 'picks' then picks else stars end val from public.profiles)
+  select (select count(*) from v where v.val > me.val)::int + 1 from v me where me.id = auth.uid();
+$$;
+-- A quién sigo, con sus datos públicos y si me sigue de vuelta.
+create or replace function public.following_list()
+returns table(id uuid, name text, cat text, side text, stars integer, level integer, iq integer, picks integer, follows_me boolean)
+language sql stable security definer set search_path = public as $$
+  select p.id, p.name, p.cat, p.side, p.stars, p.level, p.iq, p.picks,
+         exists (select 1 from public.follows b where b.follower = p.id and b.followed = auth.uid())
+  from public.follows f join public.profiles p on p.id = f.followed
+  where f.follower = auth.uid() order by p.name;
+$$;
+create or replace function public.follow_counts() returns json
+language sql stable security definer set search_path = public as $$
+  select json_build_object(
+    'following', (select count(*) from public.follows where follower = auth.uid()),
+    'followers', (select count(*) from public.follows where followed = auth.uid()));
+$$;
+-- Torneos a los que me invitaron y que todavía no empezaron.
+create or replace function public.my_invites()
+returns table(tournament_id uuid, code text, name text, kind text, mode text, start_at timestamptz, hours integer, by_name text)
+language sql stable security definer set search_path = public as $$
+  select t.id, t.code, t.name, t.kind, t.mode, t.start_at, t.hours, coalesce(p.name, 'Alguien')
+  from public.tournament_invites i join public.tournaments t on t.id = i.tournament_id
+  left join public.profiles p on p.id = i.invited_by
+  where i.user_id = auth.uid() and now() < t.start_at
+    and not exists (select 1 from public.tournament_players tp where tp.tournament_id = t.id and tp.user_id = auth.uid())
+  order by t.start_at;
+$$;
+revoke all on function public.my_rank(text), public.following_list(), public.follow_counts(), public.my_invites() from public, anon;
+grant execute on function public.my_rank(text), public.following_list(), public.follow_counts(), public.my_invites() to authenticated;
