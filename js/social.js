@@ -24,7 +24,8 @@
   So.init = function () {
     U = PP.ui;
     DB.init().then(function () { So.sync(); So.paintAcc(); checkHash(); }, noop);
-    $('accBtn').addEventListener('click', function () { So.open('acc'); U.go('social'); });
+    // Muñequito del inicio: sin sesión abre directo el formulario para crear la cuenta
+    $('accBtn').addEventListener('click', function () { So.open('acc'); if (!DB.user) mode = 'up'; U.go('social'); });
     window.addEventListener('hashchange', checkHash);
     $('soTabs').addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (!b) return; tab = b.dataset.tab; cur = null; proCh = 0; proView = 'list'; So.render(); });
     $('soBody').addEventListener('click', onClick);

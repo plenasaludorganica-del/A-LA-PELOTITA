@@ -9,6 +9,7 @@ HTML + JavaScript + Three.js (incluido en `vendor/`).
 
 El juego está publicado dentro del proyecto de Lovable "A La Pelotita" (carpeta `public/juego/`). Ese sitio es una copia:
 cuando cambia el código de este repositorio hay que volver a subir los archivos a Lovable y publicar de nuevo.
+Antes de subir, correr `python3 tools/stamp.py`: marca cada archivo con su versión para que los celulares no usen una copia vieja.
 
 Para probarlo en la compu sin publicar:
 
