@@ -152,18 +152,18 @@ Pendiente, en orden sugerido:
 - **Servidor:** proyecto de Supabase `a-la-pelotita-sp` (id `lldifserfqgnjowgrfej`, São Paulo), plan gratis.
   Tiene todo `supabase/schema.sql` y las funciones `supabase/functions/` (`signup`, `pro-checkout`, `mp-webhook`).
   El proyecto viejo `a-la-pelotita` (Ohio, vacío) quedó pausado.
-- **Sitio:** https://a-la-pelotita.pages.dev/ (Cloudflare Pages, proyecto `a-la-pelotita`). El link no cambia nunca.
+- **Sitio:** https://alapelotita.com/ (también www.alapelotita.com y https://a-la-pelotita.pages.dev/). Cloudflare Pages, proyecto `a-la-pelotita`.
+  Dominio comprado en Cloudflare el 18/11/2026, vence el 18/11/2027 (renovación automática). Los dos registros CNAME (`@` y `www`) apuntan a `a-la-pelotita.pages.dev`.
   **Se publica solo:** cada cambio que se sube a la rama `claude/inspiring-cori-unoeia` (o `main`) lo publica
   `.github/workflows/publicar.yml`, con el secreto `CLOUDFLARE_API_TOKEN` guardado en GitHub. Panel: `/admin.html`.
 - **Mercado Pago:** el secreto `MERCADO_PAGO_ACCESS_TOKEN` ya está en Supabase. Precio en `app_settings.pro_price_ars` (7999).
-  `app_settings.site_url` apunta a pages.dev (ahí vuelve la gente después de pagar). Falta un pago real de prueba.
+  `app_settings.site_url` apunta a https://alapelotita.com/index.html (ahí vuelve la gente después de pagar). Falta un pago real de prueba.
 - **Administración:** `padelcoach.ar@gmail.com` es administradora (PRO gratis y panel). `gabrielcaranlarrosa@outlook.com`
   recupera el Pro que pagó (hasta el 18/12/2026) al registrarse. Lo hace la función `mark_admin` de la base.
 - **Comunidad:** ranking top 20 con el puesto propio, seguir jugadores (pestaña Siguiendo) e invitaciones a torneos
   (tablas `follows` y `tournament_invites`). La ventana "Hacete PRO" se abre al crear la cuenta y con "Quiero ser PRO".
 - **Antes de cada publicación:** correr `python3 tools/stamp.py` para que los celulares bajen los archivos nuevos.
-- **Próximo:** comprar el `.com` en Cloudflare y conectarlo al proyecto de Pages (cambiar también `site_url`),
-  @usuario único, recuperar contraseña, progreso en la cuenta, planillas de pagos y opiniones, cobro internacional.
+- **Próximo:** @usuario único, recuperar contraseña, progreso en la cuenta, planillas de pagos y opiniones, cobro internacional.
 - **Plan:** seguir en el plan gratis de Supabase hasta tener ingresos; después pasar a Pro (USD 25 por mes).
 
 ## Estructura
