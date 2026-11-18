@@ -20,11 +20,14 @@ jobs:
       D: ${{ inputs.dominio || 'alapelotita.com' }}
     steps:
       - name: Registro del dominio (RDAP)
-        run: curl -s "https://rdap.verisign.com/com/v1/domain/$D" | jq '{dominio: .ldhName, estado: .status, alta: [.events[] | select(.eventAction=="registration") | .eventDate][0], vence: [.events[] | select(.eventAction=="expiration") | .eventDate][0], servidores: [.nameservers[].ldhName]}' || true
+        run: |
+          curl -s "https://rdap.verisign.com/com/v1/domain/$D" | jq '{dominio: .ldhName, estado: .status, alta: [.events[] | select(.eventAction=="registration") | .eventDate][0], vence: [.events[] | select(.eventAction=="expiration") | .eventDate][0], servidores: [.nameservers[].ldhName]}' || true
       - name: DNS público
-        run: dig +short NS "$D"; dig +short A "$D"; dig +short CNAME "www.$D" || true
+        run: |
+          dig +short NS "$D"; dig +short A "$D"; dig +short CNAME "www.$D" || true
       - name: Zona en Cloudflare
-        run: curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/zones?name=$D" | jq '{ok: .success, errores: .errors, zonas: [.result[]? | {nombre: .name, estado: .status, servidores: .name_servers}]}'
+        run: |
+          curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/zones?name=$D" | jq '{ok: .success, errores: .errors, zonas: [.result[]? | {nombre: .name, estado: .status, servidores: .name_servers}]}'
       - name: Agregar dominios al proyecto de Pages
         run: |
           for h in "$D" "www.$D"; do
