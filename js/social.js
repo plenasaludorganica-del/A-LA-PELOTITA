@@ -23,7 +23,8 @@
 
   So.init = function () {
     U = PP.ui;
-    DB.init().then(function () { So.sync(); checkHash(); }, noop);
+    DB.init().then(function () { So.sync(); So.paintAcc(); checkHash(); }, noop);
+    $('accBtn').addEventListener('click', function () { So.open('acc'); U.go('social'); });
     window.addEventListener('hashchange', checkHash);
     $('soTabs').addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (!b) return; tab = b.dataset.tab; cur = null; proCh = 0; proView = 'list'; So.render(); });
     $('soBody').addEventListener('click', onClick);
@@ -38,12 +39,21 @@
     tab = 'tour'; U.go('social'); openTour(m[1]);
   }
   // Sube al servidor las estrellas, el nivel y el IQ de este jugador
+  // Muñequito de la esquina: "Entrar" si no hay sesión; dorado si es Pro
+  So.paintAcc = function () {
+    var b = $('accBtn'); if (!b) return;
+    var u = DB.user, l = $('accLbl');
+    b.className = 'chip' + (u ? ' in' : '') + (u && DB.isVip() ? ' pro' : '');
+    l.textContent = u ? String(u.name || 'Mi cuenta').split(/\s+/)[0] + (DB.isVip() ? ' · PRO' : '') : 'Entrar';
+    b.setAttribute('aria-label', u ? 'Mi cuenta: ' + u.name : 'Entrar o crear cuenta');
+  };
   So.sync = function () {
     if (!DB.user || !U) return; var s = U.save();
     DB.pushStats({ stars: U.totalStars(), level: s.level + 1, iq: U.iq(), picks: s.picks || 0 }).catch(noop);
   };
 
   So.render = function () {
+    So.paintAcc();
     if (tick) { clearInterval(tick); tick = null; }
     var tabs = [['rank', 'Ranking'], ['tour', 'Torneos'], ['pro', 'Jugadas'], ['spon', 'Sponsors'], ['acc', DB.user ? 'Cuenta' : 'Entrar']];
     $('soTabs').innerHTML = tabs.map(function (t) { return '<button class="tab' + (tab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('');

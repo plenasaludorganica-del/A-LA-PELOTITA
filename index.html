@@ -54,6 +54,10 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 .chip.plus::after { content: '+'; background: var(--lime); color: #1b1033; border-radius: 50%; width: 20px; height: 20px; display: grid; place-items: center; font-size: 16px; line-height: 1; }
 .spacer { flex: 1; }
 #top { flex-wrap: nowrap; }
+#accBtn { position: absolute; right: var(--gutter-r); top: calc(env(safe-area-inset-top, 0px) + 58px); z-index: 2; color: #1b1033; background: #D8FF3A; border-color: #D8FF3A; font-weight: 800; box-shadow: 0 0 16px rgba(216,255,58,.55); }
+#accBtn.in { color: #fff; background: var(--panel); border-color: var(--panel-line); box-shadow: none; font-weight: 700; }
+#accBtn.pro { color: #FFD23A; border-color: #FFD23A; }
+#accLbl { max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 420px) { .chip { padding: 6px 9px; gap: 4px; font-size: 15px; } .chip.plus::after { width: 17px; height: 17px; font-size: 14px; } }
 #rank { flex-direction: column; align-items: stretch; gap: 3px; border-radius: 14px; padding: 6px 12px; min-width: 130px; font-size: 13px; position: absolute; left: var(--gutter-l); top: calc(env(safe-area-inset-top, 0px) + 58px); }
 #tq { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 100px); left: 50%; transform: translateX(-50%); width: min(92%, 520px); box-sizing: border-box; background: var(--panel); border: 2px solid var(--panel-line); border-radius: 18px; padding: 10px 14px; font-size: 16px; text-align: center; }
@@ -225,6 +229,10 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 #toast { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); background: #fff; color: #1b1033; border-radius: 16px; padding: 10px 18px; z-index: 30; font-size: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); max-width: 86%; text-align: center; }
 #toast[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .logo .o, #hero, .pulse, .node.cur { animation: none; } }
+#home .duo { width: min(440px, 100%); flex-wrap: nowrap; } #home .duo .btn { flex: 1; font-size: 18px; padding-left: 8px; padding-right: 8px; }
+@media (max-height: 880px) { #hero { height: min(15vh, 150px); } .logo { font-size: clamp(40px, 11vw, 74px); } }
+@media (max-height: 700px) { #hero { height: 11vh; } .logo { font-size: clamp(36px, 10vw, 60px); } }
+@media (max-height: 620px) { #hero { display: none; } .logo { font-size: 40px; } #home { gap: 8px; } }
 @media (max-height: 560px) { #hero { display: none; } .logo { font-size: 44px; } }
 </style>
 <!--/PAGE-->
@@ -238,6 +246,7 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
   <symbol id="i-gem" viewBox="0 0 24 24"><path fill="#22E1FF" stroke="#fff" stroke-width="1.5" stroke-linejoin="round" d="M6 3h12l4 6-10 12L2 9z"/><path fill="#9cf3ff" d="M6 3l3 6h6l3-6z"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><path fill="currentColor" d="M7 10V7a5 5 0 0110 0v3h1.5v11h-13V10zm2.500 0h5V7a2.500 2.500 0 00-5 0z"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M6 4h4v16H6zm8 0h4v16h-4z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12a4.5 4.5 0 100-9 4.5 4.5 0 000 9zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5z"/></symbol>
   <symbol id="i-sound" viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9zm12.500-1.500v9a5 5 0 000-9z"/></symbol>
   <symbol id="i-mute" viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9z"/><path stroke="currentColor" stroke-width="2.500" d="M15 9l6 6m0-6l-6 6"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3.500" stroke-linecap="round" stroke-linejoin="round" d="M15 4l-8 8 8 8"/></symbol>
@@ -278,12 +287,12 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
   </div>
 
   <section id="home" class="layer screen">
+    <button class="chip" id="accBtn" aria-label="Entrar o crear cuenta"><svg class="ic"><use href="#i-user"/></svg><span id="accLbl">Entrar</span></button>
     <button class="chip" id="rank"><span>Categoría <b id="vRank">8va</b></span><div class="bar"><i id="vXp"></i></div></button>
     <h1 class="logo"><span class="br">[</span>A LA<br>PEL<span class="o"></span>TITA<span class="br">]</span><small>PÁDEL ARCADE</small></h1>
     <img id="hero" alt="">
     <button class="btn big lime pulse" id="playBtn">Jugar</button>
-    <button class="btn pink" id="bSocial" style="font-size:19px">Comunidad · Ranking y torneos</button>
-    <button class="btn" id="bPro" style="font-size:19px;background:#FFD23A;color:#1a1036">Jugadas PRO · Copiá y subí tu video</button>
+    <div class="row duo"><button class="btn pink" id="bSocial">Comunidad</button><button class="btn" id="bPro" style="background:#FFD23A;color:#1a1036">Jugadas PRO</button></div>
     <button class="btn cyan" id="bTrain" style="font-size:19px">Gimnasio mental · IQ <span id="vIq">70</span></button>
     <div class="row">
       <button class="btn small ghost" id="bMap">Circuito</button>
