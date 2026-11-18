@@ -866,7 +866,7 @@
   }
   function trHud() {
     $('pMe').textContent = Math.max(0, TR.score);
-    $('pOp').textContent = TR.id === 'lights' ? Math.max(0, Math.ceil(TR.left)) : Math.min(TR.round, TR.rounds) + '/' + TR.rounds;
+    $('pOp').textContent = TR.id === 'lights' ? Math.max(0, Math.ceil(TR.left)) : TR.id === 'read' ? TR.stage : Math.min(TR.round, TR.rounds) + '/' + TR.rounds;
   }
   function startDrill(id) {
     if (id === 'ghost') {
@@ -883,38 +883,51 @@
       var other = PP.CHARS.filter(function (x) { return x.id !== c.id; })[0];
       extras = [S.makeSpriteChar(other.sprite, { accent: other.accent }), S.makeSpriteChar('assets/sprites/r3.png', { accent: '#ffffff' })];
       extras[0].place(-2, HOME_ME); extras[1].place(2, HOME_OP); opp.place(-2, HOME_OP); me.place(2, HOME_ME);
-      // Mazo: no se repite ninguna jugada hasta haberlas visto todas
-      var dk = (save.train.deck || []).filter(function (n) { return n < PP.PLAYS.length; });
-      if (dk.length < TR.rounds) {
-        var rest = []; for (var pi = 0; pi < PP.PLAYS.length; pi++) if (dk.indexOf(pi) < 0) rest.push(pi);
-        for (var si = rest.length - 1; si > 0; si--) { var sj = Math.floor(Math.random() * (si + 1)), tmpv = rest[si]; rest[si] = rest[sj]; rest[sj] = tmpv; }
-        dk = dk.concat(rest);
-      }
-      TR.plays = dk.slice(0, TR.rounds).map(function (n) {
-        var o = PP.PLAYS[n], fx = Math.random() < 0.5 ? -1 : 1, m = function (a) { return a ? [a[0] * fx].concat(a.slice(1)) : a; };
-        return { q: o.q, opts: o.opts, why: o.why, me: m(o.me), mate: m(o.mate), r1: m(o.r1), r2: m(o.r2), ball: m(o.ball), shot: m(o.shot), move: m(o.move) };
-      });
-      save.train.deck = dk.slice(TR.rounds); persist();
+      // Modo por etapas, casi infinito: 5 jugadas por etapa, cada etapa con menos tiempo y más ritmo. 3 vidas.
+      TR.rounds = Infinity; TR.lives = 3; TR.stage = 1; TR.inStage = 0; TR.correct = 0; TR.streak = 0;
     }
     if (id === 'lights') { TR.rounds = 1; $('lights').hidden = false; }
     S.mode = 'play'; S.showMachine(false); for (var i = 0; i < 3; i++) S.setTarget(i, null);
     screens.forEach(function (x) { $(x).hidden = true; }); $('top').hidden = true; $('hud').hidden = false; $('hud').classList.add('tr');
-    $('extra').innerHTML = ''; $('nMe').textContent = 'Puntos'; $('nOp').textContent = id === 'lights' ? 'Segundos' : 'Ronda'; setHint('');
+    $('extra').innerHTML = ''; $('nMe').textContent = 'Puntos'; $('nOp').textContent = id === 'lights' ? 'Segundos' : id === 'read' ? 'Etapa' : 'Ronda'; setHint('');
     $('tq').textContent = d.desc; trHud(); A.play('ready'); pop(d.name, 'big gold');
   }
+  // Etapas de Leé la jugada: segundos por jugada y velocidad de la pelota
+  var READ_PER_STAGE = 5, READ_TIMES = [10, 8.5, 7, 6, 5, 4.3, 3.7, 3.3, 3, 2.7];
+  function readTime(st) { return READ_TIMES[st - 1] || 2.5; }
+  function readSpeed(st) { return Math.max(0.55, 1 - (st - 1) * 0.06); }
+  // Mazo: no se repite ninguna jugada hasta haberlas visto todas; cada una puede salir espejada
+  function drawPlay() {
+    var dk = (save.train.deck || []).filter(function (n) { return n < PP.PLAYS.length; });
+    if (!dk.length) {
+      for (var pi = 0; pi < PP.PLAYS.length; pi++) dk.push(pi);
+      for (var si = dk.length - 1; si > 0; si--) { var sj = Math.floor(Math.random() * (si + 1)), tv = dk[si]; dk[si] = dk[sj]; dk[sj] = tv; }
+    }
+    var n = dk.shift(); save.train.deck = dk; persist();
+    var o = PP.PLAYS[n], fx = Math.random() < 0.5 ? -1 : 1, m = function (a) { return a ? [a[0] * fx].concat(a.slice(1)) : a; };
+    return { q: o.q, opts: o.opts, why: o.why, me: m(o.me), mate: m(o.mate), r1: m(o.r1), r2: m(o.r2), ball: m(o.ball), shot: m(o.shot), move: m(o.move) };
+  }
+  function hearts() { var h = ''; for (var i = 0; i < 3; i++) h += '<span style="color:' + (i < TR.lives ? '#FF4FA3' : 'rgba(255,255,255,.25)') + '">♥</span>'; return h; }
   function trRound() {
+    if (TR.id === 'read' && TR.lives <= 0) { PP.lastDrillScore = TR.score; PP.lastRead = { stage: TR.stage, correct: TR.correct, score: TR.score }; trainFinish('read', TR.correct * 4); return; }
     if (TR.round >= TR.rounds) { PP.lastDrillScore = TR.score; trainFinish(TR.id, TR.id === 'lights' ? TR.score / 3.6 : TR.score / TR.max * 100); return; }
     TR.round++; S.setTarget(0, null); S.ring(null); S.ballHide = false; me.setMood('idle'); opp.setMood('idle');
     var b = TR.ball;
     if (TR.id === 'read') {
-      var p = TR.play = TR.plays[TR.round - 1];
+      if (++TR.inStage > READ_PER_STAGE) {
+        TR.stage++; TR.inStage = 1;
+        pop('¡ETAPA ' + TR.stage + '!', 'big gold'); A.play('chest'); S.excite = 1; flash(0.2);
+      }
+      TR.limit = readTime(TR.stage);
+      var p = TR.play = drawPlay();
       me.place(p.me[0], p.me[1]); extras[0].place(p.mate[0], p.mate[1]); opp.place(p.r1[0], p.r1[1]); extras[1].place(p.r2[0], p.r2[1]);
       b.live = false; b.x = p.ball[0]; b.y = p.ball[1]; b.z = p.ball[2]; S.setBall(b, true); S.setBallStyle('#D8FF3A', 1);
       S.ring({ x: b.x, z: b.z }, 0, TR.char.accent);
       TR.opts = p.opts.map(function (t, i) { return { t: t, ok: i === 0 }; }).sort(function () { return Math.random() - 0.5; });
       $('opts').innerHTML = TR.opts.map(function (o, i) { return '<button class="btn ghost" data-o="' + i + '">' + o.t + '</button>'; }).join('');
-      $('tq').innerHTML = p.q + '<div class="bar"><i id="tqBar" style="width:100%"></i></div><button class="btn small ghost" data-why="1">¿Por qué tan poco tiempo?</button>';
-      TR.left = 10; TR.phase = 'ask'; A.play('pop');
+      $('tq').innerHTML = '<div style="font-size:14px;color:#FFD23A;margin-bottom:4px">Etapa ' + TR.stage + ' · jugada ' + TR.inStage + '/' + READ_PER_STAGE + ' · ' + String(TR.limit).replace('.', ',') + ' s · ' + hearts() + '</div>' + p.q +
+        '<div class="bar"><i id="tqBar" style="width:100%"></i></div><button class="btn small ghost" data-why="1">¿Por qué tan poco tiempo?</button>';
+      TR.left = TR.limit; TR.phase = 'ask'; A.play('pop');
     } else if (TR.id === 'antic') {
       opp.place(rnd(-3, 3), HOME_OP); me.place(0, HOME_ME);
       b.x = opp.x - 0.5; b.y = 1; b.z = -7.2; TR.tgt = { x: rnd(-3.9, 3.9), z: rnd(2.6, 8.6) };
@@ -926,16 +939,19 @@
   }
   function trAnswer(i) {
     if (!TR || TR.phase !== 'ask') return;
-    var p = TR.play, ok = i >= 0 && TR.opts[i].ok, pts = ok ? 100 + Math.round(TR.left / 10 * 50) : 0, b = TR.ball;
+    var p = TR.play, ok = i >= 0 && TR.opts[i].ok, b = TR.ball, st = TR.stage;
+    if (ok) { TR.correct++; TR.streak++; } else { TR.streak = 0; TR.lives--; }
+    var pts = ok ? Math.round((100 + TR.left / TR.limit * 50) * (1 + (st - 1) * 0.25)) + (TR.streak >= 3 ? Math.min(100, TR.streak * 10) : 0) : 0;
     TR.phase = 'show'; TR.score += pts; TR.max += 150;
     Array.prototype.forEach.call($('opts').children, function (el, k) { el.disabled = true; el.classList.add(TR.opts[k].ok ? 'ok' : (k === i ? 'no' : 'dim')); el.classList.remove('ghost'); });
-    $('tq').innerHTML = (ok ? '<b>¡Correcto!</b> ' : '<b class="no">' + (i < 0 ? 'Se acabó el tiempo.' : 'No era esa.') + '</b> ') + p.why;
+    $('tq').innerHTML = '<div style="font-size:14px;margin-bottom:4px">' + hearts() + (TR.streak >= 3 ? ' <b style="color:#FFD23A">racha x' + TR.streak + '</b>' : '') + '</div>' +
+      (ok ? '<b>¡Correcto!</b> ' : '<b class="no">' + (i < 0 ? 'Se acabó el tiempo.' : 'No era esa.') + '</b> ') + p.why + (TR.lives <= 0 ? ' <b class="no">Sin vidas.</b>' : '');
     if (ok) {
       A.play('perfect', TR.round); S.excite = 1; flash(0.15); pop('+' + pts, 'gold', { x: me.x, y: 3, z: me.z }); S.ring(null);
-      if (p.shot) { launch(b, p.shot[0], p.shot[1], p.shot[2], 'me'); me.swing(p.ball[1] > 1.75 && !p.move ? 'smash' : 'drive'); S.burst(b, TR.char.accent, 30, 7, 0.6); S.shock(b, TR.char.accent); S.shake(0.3); }
+      if (p.shot) { launch(b, p.shot[0], p.shot[1], p.shot[2] * readSpeed(st), 'me'); me.swing(p.ball[1] > 1.75 && !p.move ? 'smash' : 'drive'); S.burst(b, TR.char.accent, 30, 7, 0.6); S.shock(b, TR.char.accent); S.shake(0.3); }
       if (p.move) me.goTo(p.move[0], p.move[1]);
     } else { A.play('lose'); me.setMood('sad'); S.shake(0.2); }
-    TR.wait = ok ? 3.2 : 4.2; trHud();
+    TR.wait = ok ? Math.max(1.6, 3.2 - (st - 1) * 0.2) : Math.max(2.8, 4.2 - (st - 1) * 0.15); trHud();
   }
   $('opts').addEventListener('click', function (e) { var b = e.target.closest('[data-o]'); if (b) { A.unlock(); trAnswer(+b.dataset.o); } });
   function trGuess(p) {
@@ -971,7 +987,7 @@
     extras.forEach(function (c) { c.update(dt, t); });
     if (TR.hold) return;
     if (TR.wait > 0) { TR.wait -= dt; if (TR.wait <= 0) trRound(); if (!TR) return; }
-    if (TR.phase === 'ask') { TR.left -= dt; var bar = $('tqBar'); if (bar) bar.style.width = Math.max(0, TR.left * 10) + '%'; if (TR.left <= 0) trAnswer(-1); }
+    if (TR.phase === 'ask') { TR.left -= dt; var bar = $('tqBar'); if (bar) bar.style.width = Math.max(0, TR.left / (TR.limit || 10) * 100) + '%'; if (TR.left <= 0) trAnswer(-1); }
     else if (TR.phase === 'lights') {
       TR.left -= dt; TR.spawn -= dt; var lb = $('tqBar'); if (lb) lb.style.width = Math.max(0, TR.left / 30 * 100) + '%';
       if (TR.spawn <= 0) { spawnLight(); TR.spawn = Math.max(0.42, 0.95 - (30 - TR.left) * 0.02); }
@@ -1003,12 +1019,17 @@
     if (PP.tourCtx) { var tc = PP.tourCtx; PP.tourCtx = null; S.mode = 'menu'; PP.Social.tourDone(tc, PP.lastDrillScore || 0); return; }
     pct = clamp(Math.round(pct), 0, 100);
     var before = iq(), prev = save.train.best[id] || 0, first = save.train.last !== today(), coins = Math.round(pct * 0.6) + (first ? 100 : 0);
-    save.train.best[id] = Math.max(prev, pct); save.train.last = today(); save.coins += coins; var rankUp = addXp(20); persist();
+    save.train.best[id] = Math.max(prev, pct); save.train.last = today(); save.coins += coins; var rankUp = addXp(20);
+    var rd = id === 'read' ? PP.lastRead : null, rdPrev = save.train.readBest || { stage: 0, score: 0 }, rdNew = false;
+    if (rd) { rdNew = rd.score > rdPrev.score; save.train.readBest = { stage: Math.max(rdPrev.stage, rd.stage), score: Math.max(rdPrev.score, rd.score) }; }
+    persist();
     PP.Social.sync();
     var gain = iq() - before, d = PP.DRILLS.filter(function (x) { return x.id === id; })[0];
     if (pct >= 60) { S.confetti(140); A.play('win'); } else A.play('point');
-    modal('<p style="color:' + d.color + '">' + d.name + '</p><h2>' + (pct >= 85 ? '¡Cabeza de profesional!' : pct >= 60 ? '¡Muy bien!' : 'A seguir entrenando') + '</h2>' +
-      '<div class="iq">' + pct + '<span style="font-size:24px;color:#fff"> / 100</span></div>' + (pct > prev && prev > 0 ? '<p class="disp" style="color:#FFD23A;font-size:22px">¡Nueva marca!</p>' : '') +
+    modal('<p style="color:' + d.color + '">' + d.name + '</p><h2>' + ((rd ? rd.stage >= 6 : pct >= 85) ? '¡Cabeza de profesional!' : (rd ? rd.stage >= 3 : pct >= 60) ? '¡Muy bien!' : 'A seguir entrenando') + '</h2>' +
+      (rd ? '<div class="iq">Etapa ' + rd.stage + '</div><p style="font-size:18px;color:#fff">' + rd.correct + ' jugadas bien · <b>' + rd.score + '</b> puntos</p>' +
+        (rdNew && rdPrev.score > 0 ? '<p class="disp" style="color:#FFD23A;font-size:22px">¡Nuevo récord!</p>' : '<p>Tu récord: etapa ' + save.train.readBest.stage + ' · ' + save.train.readBest.score + ' puntos</p>')
+        : '<div class="iq">' + pct + '<span style="font-size:24px;color:#fff"> / 100</span></div>' + (pct > prev && prev > 0 ? '<p class="disp" style="color:#FFD23A;font-size:22px">¡Nueva marca!</p>' : '')) +
       '<p style="font-size:18px;color:#fff">IQ de pádel: <b>' + iq() + '</b>' + (gain > 0 ? ' <b style="color:#D8FF3A">(+' + gain + ')</b>' : '') + '</p>' +
       '<div class="rew"><span>' + ic('coin') + '+' + coins + '</span><span>XP +20</span></div>' + (first ? '<p>Incluye el bono del primer entrenamiento del día.</p>' : '') +
       (rankUp ? '<p class="disp" style="font-size:22px;color:#FFD23A">¡Subiste a ' + PP.RANKS[save.rank] + '!</p>' : '') +

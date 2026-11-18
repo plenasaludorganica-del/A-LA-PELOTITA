@@ -118,7 +118,7 @@
   // Gimnasio mental: jugadas para leer. La primera opción es siempre la correcta (se mezclan al mostrarlas).
   // Posiciones [x, z]: tu lado es z > 0, la red está en z = 0.
   PP.DRILLS = [
-    { id: 'read', name: 'Leé la jugada', desc: 'Se congela el punto. Elegí el golpe correcto antes de que se acabe el tiempo.', color: '#FFB020' },
+    { id: 'read', name: 'Leé la jugada', desc: 'Se congela el punto: elegí el golpe correcto. Cada etapa tiene menos tiempo y más ritmo. Tenés 3 vidas.', color: '#FFB020' },
     // Oculto por ahora: no funcionaba bien. Para volver a mostrarlo, quitar "hidden: true".
     { id: 'antic', hidden: true, name: 'Anticipación', desc: 'La pelota desaparece en el aire. Tocá donde creés que va a picar.', color: '#22E1FF' },
     { id: 'lights', name: 'Tablero de luces', desc: 'Tocá las luces verdes apenas aparecen. Las rojas no se tocan.', color: '#7CFF4D' },
@@ -180,7 +180,42 @@
     { q: 'Les están ganando la red con globos una y otra vez.', me: [2, 2], mate: [-2, 2], r1: [-2, -8], r2: [2, -8], ball: [0, 2, -7.6],
       opts: ['Pararse un paso más atrás en la red', 'Pegarse todavía más a la red', 'Quedarse los dos en el fondo'], why: 'Muy pegado a la red cualquier globo te pasa. Un paso atrás cubrís el globo sin regalar la red.', move: [2, 3.6] },
     { q: 'Notaste que a un rival le cuesta mucho el revés.', me: [2, 3], mate: [-2, 3], r1: [-2.4, -8], r2: [2.4, -8], ball: [1.8, 1.4, 2.8],
-      opts: ['Jugarle a ese revés con paciencia', 'Evitar tirarle para no despertarlo', 'Pegarle siempre lo más fuerte posible'], why: 'El pádel se gana insistiendo donde el rival sufre, no con un solo golpe ganador.', shot: [-1.2, -8, 1.0] }
+      opts: ['Jugarle a ese revés con paciencia', 'Evitar tirarle para no despertarlo', 'Pegarle siempre lo más fuerte posible'], why: 'El pádel se gana insistiendo donde el rival sufre, no con un solo golpe ganador.', shot: [-1.2, -8, 1.0] },
+    // Jugadas agregadas para el modo por etapas
+    { q: 'Los rivales están en el fondo y ustedes dos en la red. Te llega una pelota a media altura.', me: [1.8, 3], mate: [-2, 3], r1: [-2, -8], r2: [2, -8], ball: [2.2, 1.2, 2.8],
+      opts: ['Volea profunda al medio', 'Dejada', 'Globo'], why: 'Con los rivales atrás, la volea profunda al medio los mantiene lejos y les genera dudas.', shot: [0, -8.6, 1.0] },
+    { q: 'La pareja rival se desarmó: uno quedó en la red y el otro atrás.', me: [2, 8], mate: [-2, 8], r1: [-2, -2.8], r2: [2, -8], ball: [2.4, 1, 7.4],
+      opts: ['Tirar al hueco entre los dos', 'Globo al de atrás', 'Pegarle al de la red'], why: 'Cuando una pareja se desarma, el hueco entre los dos es lo más difícil de cubrir.', shot: [0.3, -5.2, 1.1] },
+    { q: 'La pelota sale de la pared lateral muy pegada al vidrio.', me: [3, 8], mate: [-2, 8], r1: [-2, -3], r2: [2, -3], ball: [4.2, 1, 7],
+      opts: ['Esperar que se despegue y jugarla cruzada', 'Pegarle antes de que toque el vidrio', 'Contrapared'], why: 'Esperar que se despegue del lateral te da espacio para pegar; apurarse contra el vidrio suele terminar en error.', shot: [-2.5, -7, 1.4] },
+    { q: 'Te rematan fuerte y la pelota sale alta de tu vidrio de fondo.', me: [2, 7.6], mate: [-2, 7], r1: [-2, -3], r2: [2, -3], ball: [2.3, 2.2, 8.4],
+      opts: ['Bajada de pared', 'Globo', 'Dejarla pasar'], why: 'Si la pelota sale alta del vidrio, es tu momento de atacar con una bajada a los pies.', shot: [-1.8, -4, 0.8] },
+    { q: 'Vas ganando 40-0 y te llega una pelota dudosa para atacar.', me: [2, 8], mate: [-2, 8], r1: [-2, -3], r2: [2, -3], ball: [2.5, 1.1, 7.5],
+      opts: ['Jugar seguro y profundo', 'Arriesgar a la línea', 'Dejada'], why: 'Con ventaja no hace falta arriesgar: un error regala confianza al rival.', shot: [0, -8.4, 1.4] },
+    { q: 'El rival del revés se pega al vidrio lateral para defender.', me: [1.8, 3], mate: [-2, 3], r1: [-3.8, -8], r2: [2, -8], ball: [2.2, 1.3, 2.6],
+      opts: ['Tirar al medio', 'Tirarle al vidrio de su lado', 'Globo a su lado'], why: 'Si se abre hacia el vidrio, el medio queda libre y su pareja duda.', shot: [-0.6, -7.8, 0.9] },
+    { q: 'Tu globo quedó perfecto: los dos rivales corren hacia atrás.', me: [2, 8], mate: [-2, 8], r1: [-2, -8.6], r2: [2, -8.6], ball: [0, 3, -7.5],
+      opts: ['Subir a la red con tu pareja', 'Quedarte atrás mirando', 'Subir solo vos'], why: 'Después de un buen globo la red queda libre: se sube en pareja, a la par.', move: [2, 3] },
+    { q: 'Estás en la mitad de la cancha y te llega una pelota baja a los pies.', me: [2, 5.5], mate: [-2, 4], r1: [-2, -8], r2: [2, -8], ball: [2.3, 0.5, 5],
+      opts: ['Volea de bloqueo y seguir hacia la red', 'Remate', 'Esperar a que pique dos veces'], why: 'En la zona de nadie, bloqueá suave y terminá de llegar a la red.', shot: [0, -6.5, 1.2], move: [2, 3] },
+    { q: 'Estás en la red y el rival te tira un paralelo por tu lado.', me: [2.5, 3], mate: [-2, 3], r1: [-2, -8], r2: [2.5, -8], ball: [3.4, 1.2, 2.6],
+      opts: ['Volea cruzada al hueco', 'Volea al mismo rival', 'Dejarla pasar'], why: 'La volea cruzada busca el espacio que dejó el rival al abrirse para el paralelo.', shot: [-3, -6, 0.9] },
+    { q: 'El rival saca y sube a la red siempre de la misma manera.', me: [2, 8.4], mate: [-2, 4], r1: [2, -6], r2: [-2, -3], ball: [2.4, 0.9, 8],
+      opts: ['Restar bajo a sus pies', 'Restar fuerte al vidrio', 'Restar siempre con globo alto'], why: 'Si sube rápido, el resto bajo a los pies lo obliga a volear desde abajo.', shot: [1.8, -3.2, 1.2] },
+    { q: 'Tu pareja está en problemas defendiendo en el fondo y vos en la red.', me: [-1.8, 2.6], mate: [2.5, 8.4], r1: [-2, -3], r2: [2, -3], ball: [2.5, 2, 9],
+      opts: ['Retroceder un poco para cubrir', 'Quedarte pegado a la red', 'Correr al fondo a ayudarla'], why: 'Si tu pareja defiende, dar un paso atrás evita que los ataquen fácil por tu lado.', move: [-1.6, 4.4] },
+    { q: 'Te tiran una víbora que pica y se va contra la reja lateral.', me: [3, 7], mate: [-2, 7], r1: [-2, -3], r2: [2, -3], ball: [4.2, 0.6, 6],
+      opts: ['Esperar el rebote y jugar al centro', 'Pegarle de volea antes', 'Darla por perdida'], why: 'Lo que rebota en la reja sale lento y bajo: paciencia y al centro.', shot: [0, -6, 1.4] },
+    { q: 'Tenés una pelota alta cerca de la red y los rivales están atrás.', me: [1.6, 2.4], mate: [-2, 3], r1: [-2, -8], r2: [2, -8], ball: [1.8, 3.2, 2],
+      opts: ['Remate por tres', 'Bandeja', 'Globo'], why: 'Pelota alta, cerca de la red y con los rivales atrás: es el momento de definir.', shot: [3.5, -4, 0.6] },
+    { q: 'El rival remata mal y la pelota te queda a media altura, sin fuerza.', me: [2, 7], mate: [-2, 7], r1: [-2, -3], r2: [2, -3], ball: [2.3, 1.3, 6.4],
+      opts: ['Contraatacar al medio', 'Globo defensivo', 'Dejada'], why: 'Una pelota sin fuerza se aprovecha: atacá al medio antes de que se acomoden.', shot: [0, -3.6, 0.8] },
+    { q: 'Están en el tie-break y sentís la presión.', me: [2, 8], mate: [-2, 8], r1: [-2, -3], r2: [2, -3], ball: [2.3, 1.1, 7.5],
+      opts: ['Jugar profundo y al medio', 'Buscar el golpe espectacular', 'Pegar todo fuerte'], why: 'En los puntos importantes gana la pareja que comete menos errores.', shot: [0, -8.4, 1.4] },
+    { q: 'Estás en la red y la pelota viene muy rápida al cuerpo.', me: [2, 2.8], mate: [-2, 3], r1: [-2, -3], r2: [2, -3], ball: [2, 1.2, 2.5],
+      opts: ['Bloquear con la paleta adelante', 'Correrte y pegar fuerte', 'Dejarla pasar'], why: 'Al cuerpo no hay tiempo de armar el golpe: paleta adelante y bloqueo.', shot: [0, -5, 1.0] },
+    { q: 'Los rivales están cansados y les cuesta moverse.', me: [2, 8], mate: [-2, 8], r1: [-2, -8], r2: [2, -8], ball: [2.3, 1, 7.5],
+      opts: ['Alternar chiquitas y globos', 'Pegar siempre fuerte', 'Jugarle siempre al mismo'], why: 'Mover al rival adelante y atrás castiga el cansancio más que la fuerza.', shot: [-1.5, -3, 1.3] }
   ];
 
   // Tienda: en esta demo los pagos son simulados. Los SKU son los que usaría la pasarela real.

@@ -56,7 +56,9 @@ Los perfectos y buenos cargan el **especial** (botón redondo o barra espaciador
 
 Modo de entrenamiento táctico y visual, con un "IQ de pádel" que sube con la mejor marca de cada ejercicio:
 
-- **Leé la jugada:** se congela un punto de dobles y hay que elegir el golpe correcto (globo, bandeja, chiquita, al medio).
+- **Leé la jugada:** se congela un punto de dobles y hay que elegir el golpe correcto. Es por etapas y casi infinito:
+  5 jugadas por etapa, cada etapa con menos segundos (10, 8,5, 7, 6, 5… hasta 2,5) y la pelota más rápida; 3 vidas,
+  puntos multiplicados por etapa y bonus por racha. 40 jugadas en `PP.PLAYS` dentro de `js/data.js`; para sumar una alcanza con agregar un objeto.
   Las jugadas están en `PP.PLAYS` dentro de `js/data.js`; para sumar una alcanza con agregar un objeto.
 - **Anticipación** (oculto por ahora, no funcionaba bien; se reactiva quitando `hidden: true` en `PP.DRILLS`): la pelota desaparece en el aire y hay que tocar dónde va a picar.
 - **Tablero de luces:** tocar las verdes, no tocar las rojas, mirando el centro.
