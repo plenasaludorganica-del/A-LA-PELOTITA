@@ -334,3 +334,35 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.ranking_list(text), public.search_players(text), public.tournaments_open(), public.tournament_find(text), public.tournament_detail(uuid) from public, anon;
 grant execute on function public.ranking_list(text), public.search_players(text), public.tournaments_open(), public.tournament_find(text), public.tournament_detail(uuid) to authenticated;
+
+-- =====================================================================
+-- Cobro Pro con Mercado Pago (pago único de 30 días). El precio en pesos va en app_settings.
+-- La función de servidor "mp-webhook" llama a apply_pro_payment con permisos de servidor.
+-- =====================================================================
+create table if not exists app_settings (key text primary key, value text);
+alter table app_settings enable row level security;
+drop policy if exists app_settings_public_read on app_settings; create policy app_settings_public_read on app_settings for select to anon, authenticated using (true);
+revoke all on app_settings from anon, authenticated; grant select on app_settings to anon, authenticated;
+insert into app_settings (key, value) values ('pro_price_ars', '') on conflict (key) do nothing;
+
+create table if not exists payments (id uuid primary key default gen_random_uuid(), mp_payment_id text unique not null, user_id uuid, amount numeric, status text, created_at timestamptz default now());
+alter table payments enable row level security;
+revoke all on payments from anon, authenticated;
+
+create or replace function public.apply_pro_payment(p_mp_payment_id text, p_user_id uuid, p_amount numeric, p_status text, p_currency text) returns boolean
+language plpgsql security invoker set search_path = public as $$
+declare configured_price text; price numeric; inserted_id uuid;
+begin
+  select value into configured_price from public.app_settings where key = 'pro_price_ars' for share;
+  if configured_price is null or btrim(configured_price) = '' or configured_price !~ '^[0-9]+([.][0-9]+)?$' then return false; end if;
+  price := configured_price::numeric;
+  if price <= 0 or p_amount is null or p_amount < price or p_status is distinct from 'approved' or p_currency is distinct from 'ARS' or p_mp_payment_id is null or p_mp_payment_id !~ '^[0-9]+$' then return false; end if;
+  perform id from public.profiles where id = p_user_id for update;
+  if not found then return false; end if;
+  insert into public.payments (mp_payment_id, user_id, amount, status) values (p_mp_payment_id, p_user_id, p_amount, p_status) on conflict (mp_payment_id) do nothing returning id into inserted_id;
+  if inserted_id is null then return false; end if;
+  update public.profiles set vip_until = greatest(coalesce(vip_until, now()), now()) + interval '30 days' where id = p_user_id;
+  return true;
+end $$;
+revoke all on function public.apply_pro_payment(text, uuid, numeric, text, text) from public, anon, authenticated;
+grant execute on function public.apply_pro_payment(text, uuid, numeric, text, text) to service_role;
