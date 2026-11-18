@@ -300,17 +300,75 @@
       el.preload = 'metadata'; el.onloadedmetadata = function () { done(res, el.duration); }; el.onerror = function () { done(rej, new Error('No pudimos leer ese video. Probá con otro archivo.')); }; el.src = url;
     });
   }
+  // Achica el video en el mismo celular antes de subirlo: lo reproduce en una pantalla oculta a 720p
+  // y lo graba de nuevo con menos peso (unos 2,5 Mbps: 20 segundos quedan en 6 a 7 MB). No usa ningún servicio pago.
+  var SMALL_MB = 8;
+  function compressVideo(file, onp, host) {
+    return new Promise(function (res, rej) {
+      if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) return rej(new Error('Este navegador no puede achicar el video. Probá desde Chrome o Safari actualizados, o grabalo en 720p.'));
+      var url = URL.createObjectURL(file), v = document.createElement('video'), ac = null, rec = null, stopped = false;
+      v.src = url; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'auto';
+      // El video tiene que estar a la vista: el navegador no dibuja bien los videos escondidos
+      v.style.cssText = 'width:100%;max-height:34vh;border-radius:12px;background:#000;display:block;margin:8px 0';
+      (host || document.body).appendChild(v);
+      PP.busy = true;
+      var fin = function () { PP.busy = false; try { URL.revokeObjectURL(url); v.remove(); if (ac) ac.close(); } catch (e) {} };
+      v.onerror = function () { fin(); rej(new Error('No pudimos leer ese video. Probá con otro archivo.')); };
+      v.onloadedmetadata = function () {
+        var w = v.videoWidth || 1280, h = v.videoHeight || 720, k = Math.min(1, 1280 / Math.max(w, h));
+        w = Math.round(w * k / 2) * 2; h = Math.round(h * k / 2) * 2;
+        var cv = document.createElement('canvas'); cv.width = w; cv.height = h; var cx = cv.getContext('2d'), stream = cv.captureStream(0), vtrack = stream.getVideoTracks()[0], lastT = -1;
+        try {
+          var AC = window.AudioContext || window.webkitAudioContext; ac = new AC();
+          var src = ac.createMediaElementSource(v), dst = ac.createMediaStreamDestination(); src.connect(dst);
+          dst.stream.getAudioTracks().forEach(function (t) { stream.addTrack(t); }); if (ac.resume) ac.resume();
+        } catch (e) { v.muted = true; }
+        var type = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a', 'video/mp4;codecs=avc1', 'video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm', 'video/mp4'].filter(function (t) { return MediaRecorder.isTypeSupported(t); })[0] || '';
+        try { rec = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 2500000, audioBitsPerSecond: 96000 }); } catch (e) { fin(); return rej(new Error('Este navegador no puede achicar el video.')); }
+        var chunks = [];
+        rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+        rec.onstop = function () { fin(); var out = new Blob(chunks, { type: (type || 'video/webm').split(';')[0] }); out.size ? res(out) : rej(new Error('No se pudo achicar el video.')); };
+        var stop = function () { if (stopped) return; stopped = true; try { cx.drawImage(v, 0, 0, w, h); } catch (e) {} setTimeout(function () { if (rec.state !== 'inactive') rec.stop(); }, 150); };
+        var draw = function () {
+          if (stopped) return;
+          // Se graba un cuadro nuevo solo cuando el video avanzó
+          if (v.currentTime !== lastT) { lastT = v.currentTime; try { cx.drawImage(v, 0, 0, w, h); if (vtrack && vtrack.requestFrame) vtrack.requestFrame(); } catch (e) {} }
+          if (v.duration) onp(Math.min(1, v.currentTime / v.duration));
+          requestAnimationFrame(draw);
+        };
+        v.onended = stop;
+        rec.start(1000);
+        v.play().then(draw, function () { v.muted = true; v.play().then(draw, function () { stop(); fin(); rej(new Error('No se pudo preparar el video. Tocá de nuevo "Subir mi video".')); }); });
+      };
+    });
+  }
+  So.compressVideo = compressVideo;
+  function sendVideo(f) {
+    U.modal('<h2>Subiendo tu video…</h2><p>No cierres el juego. Puede tardar un poco según tu conexión.</p>');
+    return DB.uploadVideo(f, proCh).then(function () {
+      U.closeModal(); U.modal('<h2>¡Video recibido!</h2><p>Lo revisamos y, si cumple con la jugada, lo publicamos. Lo ves en "Mis videos".</p><div class="row"><button class="btn lime" id="vOk">Listo</button></div>', function () { U.on($('vOk'), function () { U.closeModal(); So.render(); }); });
+    });
+  }
   function pickVideo() {
     var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'video/mp4,video/quicktime,video/webm,video/*';
     inp.onchange = function () {
       var f = inp.files && inp.files[0]; if (!f) return;
       if (!/^video\//.test(f.type)) return U.toast('Elegí un archivo de video.');
-      if (f.size > DB.VIDEO_MAX_MB * 1048576) return U.modal('<h2>El video pesa mucho</h2><p>Pesa ' + Math.round(f.size / 1048576) + ' MB y el máximo es ' + DB.VIDEO_MAX_MB + ' MB. Grabalo en calidad más baja (720p) o más corto.</p><div class="row"><button class="btn lime" id="vOk">Entendido</button></div>', function () { U.on($('vOk'), U.closeModal); });
       duration(f).then(function (d) {
-        if (d > DB.VIDEO_MAX_S + 0.6) throw new Error('El video dura ' + Math.round(d) + ' segundos. El máximo es ' + DB.VIDEO_MAX_S + '.');
-        U.modal('<h2>Subiendo tu video…</h2><p>No cierres el juego. Puede tardar un poco según tu conexión.</p>');
-        return DB.uploadVideo(f, proCh).then(function () {
-          U.closeModal(); U.modal('<h2>¡Video recibido!</h2><p>Lo revisamos y, si cumple con la jugada, lo publicamos. Lo ves en "Mis videos".</p><div class="row"><button class="btn lime" id="vOk">Listo</button></div>', function () { U.on($('vOk'), function () { U.closeModal(); So.render(); }); });
+        if (d > DB.VIDEO_MAX_S + 0.6) throw new Error('El video dura ' + Math.round(d) + ' segundos. El máximo es ' + DB.VIDEO_MAX_S + '. Recortalo en la galería del celular y volvé a elegirlo.');
+        if (f.size <= SMALL_MB * 1048576) return sendVideo(f);
+        // Video pesado: se achica en el celular. Hace falta un toque para que el navegador deje reproducirlo con sonido.
+        U.modal('<h2>Preparamos tu video</h2><p>Pesa ' + Math.round(f.size / 1048576) + ' MB. Lo achicamos a 720p antes de subirlo para que cargue rápido. Tarda lo mismo que dura el video: dejá el juego abierto.</p>' +
+          '<div class="row"><button class="btn ghost" id="cNo">Cancelar</button><button class="btn lime big" id="cGo">Preparar y subir</button></div>', function () {
+          U.on($('cNo'), U.closeModal);
+          U.on($('cGo'), function () {
+            U.modal('<h2>Preparando tu video…</h2><p>No cierres el juego ni cambies de pantalla.</p><div id="cPrev"></div><div style="height:12px;border-radius:6px;background:rgba(255,255,255,.16);overflow:hidden;width:100%"><i id="cBar" style="display:block;height:100%;width:0;background:linear-gradient(90deg,#22E1FF,#D8FF3A)"></i></div><p id="cPct">0 %</p>');
+            compressVideo(f, function (x) { var b = $('cBar'), t = $('cPct'); if (b) b.style.width = Math.round(x * 100) + '%'; if (t) t.textContent = Math.round(x * 100) + ' %'; }, $('cPrev'))
+              .then(function (small) {
+                if (small.size > DB.VIDEO_MAX_MB * 1048576) throw new Error('Aun achicado pesa ' + Math.round(small.size / 1048576) + ' MB. Probá con un video más corto.');
+                return sendVideo(small);
+              }).catch(function (e) { U.closeModal(); err(e); });
+          });
         });
       }).catch(function (e) { U.closeModal(); err(e); });
     };

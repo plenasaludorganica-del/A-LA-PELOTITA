@@ -90,7 +90,8 @@ Pantalla con cuatro pestañas: **Ranking** (estrellas, IQ de pádel, pronóstico
 Botón "Jugadas PRO" en el inicio y pestaña **Jugadas** en Comunidad.
 
 - **Gratis:** cualquiera ve las 50 jugadas con su indicación, de la más fácil a la más difícil (`PP.CHALLENGES` en `js/data.js`).
-- **Con suscripción Pro:** subir hasta 12 videos por mes (máximo 20 segundos y 15 MB cada uno), ver los videos de los demás
+- **Con suscripción Pro:** subir hasta 12 videos por mes (máximo 20 segundos). Si el video pesa más de 8 MB, el juego lo
+  achica en el mismo celular a 720p antes de subirlo (unos 3 a 7 MB), sin servicios pagos; el servidor acepta hasta 15 MB, ver los videos de los demás
   y votar con me gusta. Cada video queda en revisión hasta que la administración lo aprueba.
 - **Administración** (cuentas con `is_admin` en la tabla `profiles`): en la misma pantalla aparecen "Revisar videos"
   (aprobar o rechazar) y "Usuarios": buscador por nombre o mail, estado Pro de cada cuenta y botones para dar un mes o quitar el Pro.

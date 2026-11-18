@@ -1139,6 +1139,7 @@
   var last = 0, evBuf = [];
   function frame(now) {
     requestAnimationFrame(frame);
+    if (PP.busy) { last = now; return; }   // mientras se prepara un video, la cancha 3D no se dibuja para no quitarle fuerza al celular
     var dt = Math.min(0.05, (now - last) / 1000 || 0.016) * (PP.timeMul || 1); last = now;
     var gdt = 0;
     if (G && !G.paused) {
