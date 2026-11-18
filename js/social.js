@@ -31,7 +31,7 @@
   function checkHash() {
     if (location.hash === '#pro-pago') {   // vuelta de Mercado Pago: el alta puede tardar unos segundos en llegar
       history.replaceState(null, '', location.pathname); So.open('pro'); U.go('social');
-      var tries = 0, again = function () { DB.refreshMe().then(function () { if (DB.isVip()) { So.render(); U.toast('¡Ya sos PRO!'); } else if (++tries < 6) setTimeout(again, 4000); else U.toast('Si pagaste, tu alta llega en unos minutos. Tocá "Ya pagué: actualizar".'); }, noop); };
+      var tries = 0, again = function () { DB.refreshMe().then(function () { if (DB.isVip()) { So.render(); U.toast('¡Ya sos PRO!'); } else if (++tries < 15) setTimeout(again, 4000); else U.toast('Tu pago se está acreditando. El Pro se activa solo en unos minutos.'); }, noop); };
       again(); return;
     }
     var m = /^#torneo-([A-Z0-9]{6})$/.exec(location.hash || ''); if (!m) return;
@@ -185,7 +185,7 @@
         (proPrice ? '<p style="color:#fff;font-size:20px"><b>$ ' + proPrice.toLocaleString('es-AR') + '</b> por 30 días · pagás con Mercado Pago</p><button class="btn lime" data-act="propay">Quiero ser PRO</button>'
           : (CFG.proPrice ? '<p style="color:#fff;font-size:18px"><b>' + esc(CFG.proPrice) + '</b></p>' : '') +
             (CFG.proLink ? '<a class="btn lime" href="' + esc(CFG.proLink) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Quiero ser PRO</a>' : '<p>Pedile tu alta Pro a la organización con el mail de tu cuenta: <b style="color:#fff">' + esc(u.email || '') + '</b></p>')) +
-        ' <button class="btn small ghost" data-act="provip">Ya pagué: actualizar</button></div>';
+        '</div>';
       return h;
     }
     h = '<div class="card"><h3 class="disp" style="color:#FFD23A;font-size:20px">Sos PRO' + (u.is_admin ? ' · Administración' : ' hasta el ' + fecha(u.vip_until)) + '</h3><p id="proCount"></p><div class="row" style="justify-content:flex-start;flex-wrap:wrap">' +
@@ -194,7 +194,14 @@
     return h;
   }
   function paintCount() { if (!DB.isVip()) return; DB.monthCount().then(function (n) { var el = $('proCount'); if (el) el.textContent = 'Este mes subiste ' + n + ' de ' + DB.VIDEOS_PER_MONTH + ' videos.'; }, noop); }
+  var lastCheck = 0;
+  function quietCheck() {
+    if (!DB.user || !DB.online || DB.isVip() || Date.now() - lastCheck < 15000) return;
+    lastCheck = Date.now();
+    DB.refreshMe().then(function () { if (DB.isVip()) { So.render(); U.toast('¡Ya sos PRO!'); } }, noop);
+  }
   function renderPro() {
+    quietCheck();
     if (proCh) return renderChallenge();
     if (proView === 'mine') return renderVideoList('Mis videos', DB.myVideos(), 'mine');
     if (proView === 'rev') return renderVideoList('Videos para revisar', DB.pendingVideos(), 'rev');
@@ -315,7 +322,6 @@
     else if (a === 'gopro') { So.open('pro'); So.render(); }
     else if (a === 'prousers') { proView = 'users'; So.render(); }
     else if (a === 'usvip') { b.disabled = true; DB.setVip(b.dataset.mail, +b.dataset.days).then(function (msg) { U.toast(String(msg)); paintUsers(); }, function (e) { b.disabled = false; err(e); }); }
-    else if (a === 'provip') DB.refreshMe().then(function () { So.render(); U.toast(DB.isVip() ? '¡Ya sos PRO!' : 'Tu alta Pro todavía no está activa.'); }, err);
     else if (a === 'propay') { b.disabled = true; b.textContent = 'Abriendo Mercado Pago…'; DB.proCheckout().then(function (url) { location.href = url; }, function (e) { b.disabled = false; b.textContent = 'Quiero ser PRO'; err(e); }); }
     else if (a === 'vup') pickVideo();
     else if (a === 'vplay') playVideo(id, b);
@@ -361,6 +367,7 @@
   /* ---------- Cuenta ---------- */
   var mode = 'up';
   function renderAcc() {
+    quietCheck();
     var u = DB.user, h;
     if (u) {
       h = '<div class="card" style="text-align:center">' + avatar(u.name).replace('class="av"', 'class="av big"') + '<h3 class="disp" style="font-size:26px">' + esc(u.name) + '</h3><p>' + esc(u.email || '') + '</p><p>' + esc(u.cat || '') + ' · ' + esc(u.side || '') + '</p>' +
@@ -368,7 +375,7 @@
         '<button class="btn ghost" data-act="out">Cerrar sesión</button></div>' +
         (DB.online ? '<div class="card" id="accPro" style="border-color:#FFD23A">' + (DB.isVip()
           ? '<h3 class="disp" style="color:#FFD23A;font-size:20px">Sos PRO' + (u.is_admin ? ' · Administración' : ' hasta el ' + fecha(u.vip_until)) + '</h3><button class="btn small" data-act="gopro">Ir a Jugadas PRO</button>'
-          : '<h3 class="disp" style="color:#FFD23A;font-size:20px">Hacete PRO</h3><p>Subí tus videos copiando las 50 jugadas, mirá los de todos y votá.</p><p id="accPrice"></p><button class="btn lime" data-act="propay">Pagar con Mercado Pago</button> <button class="btn small ghost" data-act="provip">Ya pagué: actualizar</button>') + '</div>' : '');
+          : '<h3 class="disp" style="color:#FFD23A;font-size:20px">Hacete PRO</h3><p>Subí tus videos copiando las 50 jugadas, mirá los de todos y votá.</p><p id="accPrice"></p><button class="btn lime" data-act="propay">Pagar con Mercado Pago</button>') + '</div>' : '');
     } else {
       var up = mode === 'up';
       h = '<div class="card"><div class="row" style="margin-bottom:10px"><button class="btn small ' + (up ? 'lime' : 'ghost') + '" data-act="mup">Crear cuenta</button><button class="btn small ' + (up ? 'ghost' : 'lime') + '" data-act="min">Ya tengo cuenta</button></div>' +
