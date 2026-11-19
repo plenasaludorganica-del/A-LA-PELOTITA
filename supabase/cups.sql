@@ -96,7 +96,7 @@ $$;
 
 -- Hora real de cierre (la programada o la del cierre anticipado, la que llegue primero)
 create or replace function cup_end(c cups) returns timestamptz
-language sql immutable as $$ select least(c.end_at, coalesce(c.closed_at, c.end_at)); $$;
+language sql immutable set search_path = public as $$ select least(c.end_at, coalesce(c.closed_at, c.end_at)); $$;
 
 -- Al terminar la Copa elige al ganador (más puntos; si empatan, el que llegó primero) y le da un código de 6 caracteres
 create or replace function cup_finalize(p_cup uuid) returns void

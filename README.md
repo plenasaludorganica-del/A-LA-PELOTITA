@@ -190,8 +190,9 @@ Botón propio en el inicio. El nombre se cambia en un solo lugar: `PP.CUP.name` 
   y no se leen ni se escriben directo: todo pasa por funciones `security definer`. El puntaje entra solo por `cup_submit`, que valida
   jugador aprobado, Copa en curso, juego válido, 0 <= puntaje <= tope, que mejore la marca anterior y 15 segundos entre envíos.
   Igual que en el resto del juego, el puntaje lo calcula el celular: las reglas acotan cuánto se puede inflar, no lo hacen imposible.
-- **Para activarla:** pegar `supabase/cups.sql` en Supabase → SQL Editor → Run, y cargar tu mail en la tabla `admins`
-  (`insert into admins (email) values ('tu-mail') on conflict do nothing;`, en minúsculas).
+- **Estado:** `supabase/cups.sql` ya está aplicado en el servidor (19/11/2026) y `padelcoach.ar@gmail.com` está en `admins`.
+  Para sumar otra administradora: `insert into admins (email) values ('mail-en-minusculas') on conflict do nothing;`.
+  Si cambia `cups.sql`, volver a ejecutarlo entero en el SQL Editor (es idempotente).
 - **Modo demo:** funciona sin servidor (todo en el dispositivo, mismas reglas). La administración en demo es la cuenta
   `admin@demo.com` (se cambia con `cupDemoAdmins` en `js/config.js`).
 
