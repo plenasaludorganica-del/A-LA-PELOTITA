@@ -227,6 +227,10 @@ Botón propio en el inicio. El nombre se cambia en un solo lugar: `PP.CUP.name` 
 - **Modo demo:** funciona sin servidor (todo en el dispositivo, mismas reglas). La administración en demo es la cuenta
   `admin@demo.com` (se cambia con `cupDemoAdmins` en `js/config.js`).
 
+**Barrita de la Copa en el inicio:** mientras haya una Copa próxima o en juego, arriba del inicio pasa una barrita con el nombre,
+el premio, la cuenta regresiva y el top 3 en vivo (se actualiza cada minuto). La ve todo el mundo, con o sin cuenta; al tocarla
+se abre la Copa. Cuando termina, muestra al ganador. Está en `js/cup.js` (función `paintBar`).
+
 **Cartel de novedades:** al abrir el juego, una vez por día, aparece "¡Estamos creando algo increíble para vos!" con un botón
 para compartir (WhatsApp o el menú de compartir del celular). Está en `js/cup.js` (función `news`).
 

@@ -79,7 +79,9 @@
     U = PP.ui;
     $('bCup').textContent = CFG.name; $('cupTitle').textContent = CFG.name;
     $('cupBody').addEventListener('click', onClick);
-    load().then(function () { flush(); paintHomeBtn(); }, noop);
+    $('cupBar').addEventListener('click', function () { C.open(); });
+    load().then(function () { flush(); paintHomeBtn(); paintBar(); }, noop);
+    setInterval(function () { if (!$('home').hidden) load().then(function () { paintHomeBtn(); paintBar(); }, noop); }, 60000);
     news();
   };
   function paintHomeBtn() {
@@ -87,13 +89,33 @@
     var live = state && state.cup && state.status === 'live';
     b.textContent = CFG.name + (live ? ' 🔥' : '');   // corto: comparte la fila con "Con amigos"
   }
+  /* ---------- Barrita del inicio: la Copa en vivo para todos (con o sin cuenta) ---------- */
+  function paintBar() {
+    var bar = $('cupBar'); if (!bar) return;
+    var s = state, c = s && s.cup;
+    if (!c || s.status === 'done' && !c.winner_name) { bar.hidden = true; return; }
+    var head = function (top) {
+      var en = new Date(c.end_at) - Date.now(), st = new Date(c.start_at) - Date.now(), parts = [];
+      parts.push('<b>' + esc(c.name) + '</b>' + (c.prize ? ' · premio: ' + esc(c.prize) : ''));
+      if (s.status === 'soon') parts.push('empieza en ' + left(st));
+      else if (s.status === 'live') parts.push('cierra en ' + left(en));
+      if (s.status === 'done') parts.push('🏆 ganó <b>' + esc(c.winner_name) + '</b> con ' + c.winner_total + ' puntos');
+      else if (top && top.length) parts.push(top.slice(0, 3).map(function (p, i) { return ['🥇', '🥈', '🥉'][i] + ' ' + esc(p.name) + ' <b>' + p.total + '</b>'; }).join('  '));
+      else parts.push('¡todavía no hay nadie, sé el primero!');
+      if (s.status !== 'done') parts.push('<i>' + (+c.price_ars > 0 ? 'Inscripción ' + money(c.price_ars) : 'Gratis') + ' · tocá para sumarte</i>');
+      $('cupBarTx').innerHTML = parts.join('   ·   ');
+      bar.hidden = false;
+    };
+    if (s.status === 'done') return head(null);
+    DB.cupRanking(c.id).then(head, function () { head(null); });
+  }
   C.render = function () {
     if (tick) { clearInterval(tick); tick = null; }
     $('cupTitle').textContent = CFG.name;
     $('cupBody').innerHTML = '<p class="note">Cargando…</p>';
     if (view === 'admin') return renderAdmin();
     if (view === 'entries') return renderEntries();
-    load().then(function () { paintHomeBtn(); renderMain(); }, function (e) { $('cupBody').innerHTML = '<p class="note">' + esc(e.message) + '</p>'; });
+    load().then(function () { paintHomeBtn(); paintBar(); renderMain(); }, function (e) { $('cupBody').innerHTML = '<p class="note">' + esc(e.message) + '</p>'; });
   };
   C.open = function () { view = 'main'; U.go('cup'); };
 

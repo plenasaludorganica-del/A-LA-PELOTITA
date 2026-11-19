@@ -272,6 +272,23 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
   #modalBox { max-height: 92vh; overflow-y: auto; }
 }
 [data-user] { cursor: pointer; } [data-user]:active { filter: brightness(1.15); }
+
+/* Barrita de la Copa en el inicio: ranking en vivo, para todos */
+.cupbar { position: relative; width: 100%; max-width: 520px; flex: none; box-sizing: border-box; z-index: 3; display: flex; align-items: center; gap: 8px;
+  height: 40px; padding: 0 12px; border-radius: 14px; border: 2px solid #FFD23A; background: linear-gradient(90deg, rgba(60, 30, 0, .92), rgba(24, 13, 66, .92)); color: #fff;
+  font-family: var(--body); font-weight: 900; font-size: 14px; cursor: pointer; box-shadow: 0 0 18px rgba(255, 210, 58, .45); overflow: hidden; animation: cbGlow 2.4s ease-in-out infinite; }
+.cupbar .cbT { font-size: 18px; flex: none; }
+.cupbar .cbM { flex: 1; overflow: hidden; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+.cupbar .cbIn { display: inline-block; padding-left: 100%; animation: cbRun 18s linear infinite; }
+.cupbar .cbIn b { color: #FFD23A; font-weight: 900; } .cupbar .cbIn i { font-style: normal; color: #7CFF4D; }
+@keyframes cbRun { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+@keyframes cbGlow { 50% { box-shadow: 0 0 28px rgba(255, 210, 58, .8); } }
+@media (prefers-reduced-motion: reduce) { .cupbar .cbIn { animation: none; padding-left: 0; } .cupbar { animation: none; } }
+@media (orientation: landscape) and (max-height: 560px) { .cupbar { position: absolute; left: var(--gutter-l); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); width: min(44%, 380px); } }
+.cupbar { margin-top: auto; margin-bottom: 4px; } #home:has(#cupBar:not([hidden])) .logo { margin-top: 0; }
+/* En celulares bajitos la barrita ocupa el lugar del muñequito grande */
+@media (orientation: portrait) and (max-height: 760px) { #home:has(#cupBar:not([hidden])) #hero { display: none; } }
+@media (orientation: portrait) and (max-height: 700px) { #home:has(#cupBar:not([hidden])) { gap: 5px; } #home:has(#cupBar:not([hidden])) .logo { font-size: 27px; } .cupbar { height: 34px; font-size: 13px; } #home:has(#cupBar:not([hidden])) .logo small { margin-top: .3em; } }
 </style>
 <!--/PAGE-->
 </head>
@@ -328,6 +345,7 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
   <section id="home" class="layer screen">
     <button class="chip" id="accBtn" aria-label="Entrar o crear cuenta"><svg class="ic"><use href="#i-user"/></svg><span id="accLbl">Entrar</span></button>
     <button class="chip" id="rank"><span>Categoría <b id="vRank">8va</b></span><div class="bar"><i id="vXp"></i></div></button>
+    <button id="cupBar" class="cupbar" hidden aria-label="Ver la Copa"><b class="cbT">🏆</b><span class="cbM"><span class="cbIn" id="cupBarTx"></span></span></button>
     <h1 class="logo"><span class="br">[</span>A LA<br>PEL<span class="o"></span>TITA<span class="br">]</span><small>PÁDEL ARCADE</small></h1>
     <img id="hero" alt="">
     <button class="btn big lime pulse" id="playBtn">Jugar</button>
@@ -394,7 +412,7 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 <script src="js/data.js?v=69071532bb"></script>
 <script src="js/backend.js?v=7bdd622bf7"></script>
 <script src="js/social.js?v=ee56ee37f7"></script>
-<script src="js/cup.js?v=8ddcca6950"></script>
+<script src="js/cup.js?v=8ee24b4e32"></script>
 <script src="js/duel.js?v=36ef165daf"></script>
 <script src="js/audio.js?v=a6951ea3dd"></script>
 <script src="js/scene.js?v=2f950be3a6"></script>
