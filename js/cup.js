@@ -170,7 +170,7 @@
       if (!list || !list.length) { el.innerHTML = '<div class="card"><p>Todavía no hay nadie en el ranking. ¡Sé el primero!</p></div>'; return; }
       el.innerHTML = list.map(function (p, i) {
         var mine = DB.user && p.user_id === DB.user.id, medal = ['#FFD23A', '#C9D3E6', '#E0915A'][i];
-        return '<div class="rk' + (mine ? ' me' : '') + '" style="' + (medal ? '--mc:' + medal : '') + '"><b class="pos">' + (i + 1) + '</b>' + avatar(p.name) +
+        return '<div class="rk' + (mine ? ' me' : '') + '" data-user="' + esc(p.user_id) + '" style="' + (medal ? '--mc:' + medal : '') + '"><b class="pos">' + (i + 1) + '</b>' + avatar(p.name) +
           '<div class="tx"><h3>' + esc(p.name) + (mine ? ' (vos)' : '') + '</h3></div><div class="val"><b>' + p.total + '</b><small>puntos</small></div></div>';
       }).join('') + (state && state.me && state.me.rank > list.length ? '<p class="note">Tu puesto: ' + state.me.rank + ' · ' + state.me.total + ' puntos</p>' : '');
     }, function (e) { var el = $('cupRank'); if (el) el.innerHTML = '<p class="note">' + esc(e.message) + '</p>'; });

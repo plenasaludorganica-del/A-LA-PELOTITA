@@ -166,6 +166,12 @@ Pendiente, en orden sugerido:
 - **Próximo:** @usuario único, recuperar contraseña, progreso en la cuenta, planillas de pagos y opiniones, cobro internacional.
 - **Plan:** seguir en el plan gratis de Supabase hasta tener ingresos; después pasar a Pro (USD 25 por mes).
 
+## Panel de cada jugador
+
+Tocando a cualquier jugador (ranking, Siguiendo, torneos, Copa, desafíos o el autor de un video) se abre su panel: categoría,
+lado, estrellas, nivel, IQ, aciertos, seguidores, videos y me gusta, con botones **Seguir** y **Desafiar** (crea un 1 contra 1 y lo
+invita). Los PRO ven ahí **sus videos publicados** y los votan con ♥. Servidor: función `player_profile` (`supabase/schema.sql`).
+
 ## Jugar con amigos (Desafíos)
 
 Botón **Con amigos** en el inicio (muestra cuántas invitaciones o turnos pendientes tenés). Etapa 1: **por turnos**.

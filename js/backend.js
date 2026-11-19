@@ -187,6 +187,8 @@
   // Desafíos: necesitan el servidor (se juega entre celulares distintos)
   var NODUEL = 'Los desafíos con amigos necesitan el servidor de la comunidad.';
   Local.duelMine = Local.duelOpen = function () { return ok([]); };
+  Local.playerProfile = function (id) { var d = load(), u = Object.keys(d.users || {}).map(function (k) { return d.users[k]; }).filter(function (x) { return x.id === id; })[0]; return ok(u ? Object.assign(pub(u), { followers: 0, following: 0, videos: 0, likes: 0, me: DB.user && DB.user.id === id }) : null); };
+  Local.userVideos = function () { return ok([]); };
   ['duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit'].forEach(function (k) { Local[k] = function () { return fail(NODUEL); }; });
   // Contraseñas en modo demo
   Local.recoverStart = function () { var e = new Error('En modo demo no se mandan mails.'); e.help = true; return Promise.reject(e); };
@@ -263,6 +265,9 @@
     refreshMe: function () { if (!sess || !sess.user) return ok(null); return profile(sess.user.id).then(function (p) { if (p) DB.user = Object.assign({ email: sess.user.email }, p); return DB.user; }); },
     videos: function (ch) { return rest('GET', '/rest/v1/videos?challenge=eq.' + (+ch) + '&status=eq.approved&select=' + VSEL + '&order=created_at.desc&limit=60').then(vmap).then(function (l) { return l.sort(function (a, b) { return b.likes - a.likes; }); }); },
     videoCounts: function () { return rest('GET', '/rest/v1/videos?status=eq.approved&select=challenge&limit=2000').then(function (rows) { var c = {}; (rows || []).forEach(function (r) { c[r.challenge] = (c[r.challenge] || 0) + 1; }); return c; }); },
+    // Panel de un jugador y sus videos publicados (los videos solo los ven los PRO, por las reglas del servidor)
+    playerProfile: function (id) { return rest('POST', '/rest/v1/rpc/player_profile', { p_id: id }); },
+    userVideos: function (id) { return rest('GET', '/rest/v1/videos?user_id=eq.' + encodeURIComponent(id) + '&status=eq.approved&select=' + VSEL + '&order=created_at.desc&limit=30').then(vmap); },
     myVideos: function () { return rest('GET', '/rest/v1/videos?user_id=eq.' + DB.user.id + '&select=' + VSEL + '&order=created_at.desc&limit=60').then(vmap); },
     monthCount: function () { return rest('POST', '/rest/v1/rpc/videos_this_month', {}); },
     uploadVideo: function (file, ch) {
@@ -438,7 +443,7 @@
   };
 
   var impl = DB.online ? Supa : Local;
-  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin', 'recoverStart', 'setPassword', 'adminSetPassword', 'duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit', 'duelMine', 'duelOpen'].forEach(function (k) {
+  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin', 'recoverStart', 'setPassword', 'adminSetPassword', 'duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit', 'duelMine', 'duelOpen', 'playerProfile', 'userVideos'].forEach(function (k) {
     DB[k] = function () { try { return impl[k].apply(impl, arguments); } catch (e) { return Promise.reject(e); } };
   });
   DB.signUp = function (f) {

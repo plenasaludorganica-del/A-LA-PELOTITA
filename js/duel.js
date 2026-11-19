@@ -121,7 +121,7 @@
       var tot = t === 1 ? d.total1 : d.total2, mineT = d.my_team === t;
       h += '<div class="card" style="' + (mineT ? 'border-color:#7CFF4D' : '') + '"><div class="row" style="justify-content:space-between;align-items:center"><h3 class="disp" style="font-size:20px;margin:0">Equipo ' + t + (mineT ? ' · el tuyo' : '') + '</h3><b class="disp" style="font-size:24px;color:#FFD23A">' + tot + '</b></div>';
       ps.forEach(function (p) {
-        h += '<div class="rk' + (p.me ? ' me' : '') + '" style="margin:8px 0 0">' + avatar(p.name) + '<div class="tx"><h3>' + esc(p.name) + (p.me ? ' (vos)' : '') + '</h3><p>' + (p.best == null ? 'Todavía no jugó' : 'Ya jugó') + '</p></div><div class="val"><b>' + (p.best == null ? '—' : p.best) + '</b><small>puntos</small></div></div>';
+        h += '<div class="rk' + (p.me ? ' me' : '') + '" data-user="' + esc(p.user_id) + '" style="margin:8px 0 0">' + avatar(p.name) + '<div class="tx"><h3>' + esc(p.name) + (p.me ? ' (vos)' : '') + '</h3><p>' + (p.best == null ? 'Todavía no jugó' : 'Ya jugó') + '</p></div><div class="val"><b>' + (p.best == null ? '—' : p.best) + '</b><small>puntos</small></div></div>';
       });
       inv.forEach(function (i) { h += '<div class="rk" style="margin:8px 0 0;opacity:.75">' + avatar(i.name) + '<div class="tx"><h3>' + esc(i.name) + '</h3><p>Invitado, todavía no aceptó</p></div></div>'; });
       for (var k = ps.length + inv.length; k < per; k++) {

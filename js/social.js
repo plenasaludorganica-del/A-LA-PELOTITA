@@ -97,7 +97,7 @@
   }
   function rkRow(p, pos, k, medal, extra) {
     var unit = { stars: 'estrellas', iq: 'IQ', picks: 'aciertos', follow: 'estrellas' }, mine = DB.user && p.id === DB.user.id, f = k === 'follow' ? 'stars' : k;
-    return '<div class="rk' + (mine ? ' me' : '') + '" style="' + (medal ? '--mc:' + medal : '') + '"><b class="pos">' + (pos || '') + '</b>' + avatar(p.name) + '<div class="tx"><h3>' + esc(p.name) + (mine ? ' (vos)' : '') + '</h3><p>' + esc(p.cat || '') + ' · ' + esc(p.side || '') + ' · nivel ' + (p.level || 1) + (extra || '') + '</p></div><div class="val"><b>' + (p[f] || 0) + '</b><small>' + unit[k] + '</small></div>' + folBtn(p) + '</div>';
+    return '<div class="rk' + (mine ? ' me' : '') + '" data-user="' + esc(p.id) + '" style="' + (medal ? '--mc:' + medal : '') + '"><b class="pos">' + (pos || '') + '</b>' + avatar(p.name) + '<div class="tx"><h3>' + esc(p.name) + (mine ? ' (vos)' : '') + '</h3><p>' + esc(p.cat || '') + ' · ' + esc(p.side || '') + ' · nivel ' + (p.level || 1) + (extra || '') + '</p></div><div class="val"><b>' + (p[f] || 0) + '</b><small>' + unit[k] + '</small></div>' + folBtn(p) + '</div>';
   }
   function paintRank() {
     var q = rankQ, k = rankKind, search = q.length >= 2;
@@ -196,7 +196,7 @@
     if (!t.players.length) h += '<div class="card"><p>Todavía no hay inscriptos. Compartí el cartel para que se sumen.</p></div>';
     t.players.slice().sort(function (a, b) { return b.score - a.score; }).forEach(function (p, i) {
       var n = t.bets.filter(function (b) { return b.pick === p.user_id; }).length, mine = t.myBet && t.myBet.pick === p.user_id;
-      h += '<div class="rk' + (mine ? ' me' : '') + '"><b class="pos">' + (ph === 'open' || ph === 'closed' ? '' : i + 1) + '</b>' + avatar(p.name) + '<div class="tx"><h3>' + esc(p.name) + '</h3><p>' + (total ? Math.round(n / total * 100) + ' % de los pronósticos' : 'Sin pronósticos todavía') + (mine ? ' · tu elegido' : '') + '</p></div>' +
+      h += '<div class="rk' + (mine ? ' me' : '') + '" data-user="' + esc(p.user_id) + '"><b class="pos">' + (ph === 'open' || ph === 'closed' ? '' : i + 1) + '</b>' + avatar(p.name) + '<div class="tx"><h3>' + esc(p.name) + '</h3><p>' + (total ? Math.round(n / total * 100) + ' % de los pronósticos' : 'Sin pronósticos todavía') + (mine ? ' · tu elegido' : '') + '</p></div>' +
         (ph === 'open' ? '<button class="btn small ' + (mine ? 'lime' : 'ghost') + '" data-pick="' + esc(p.user_id) + '">' + (mine ? 'Elegido' : 'Elegir') + '</button>' : '<div class="val"><b>' + p.score + '</b><small>puntos</small></div>') + '</div>';
     });
     $('soBody').innerHTML = h + '<p class="note">Pronóstico gratis y por diversión, sin plata. Cierra 5 minutos antes del inicio.</p>';
@@ -338,7 +338,7 @@
   }
   function videoCard(v, mode) {
     var c = PP.CHALLENGES[v.challenge - 1] || [1, 'Jugada', ''], st = { pending: ['EN REVISIÓN', '#FFB020'], approved: ['PUBLICADO', '#7CFF4D'], rejected: ['NO APROBADO', '#FF8A8A'] }[v.status];
-    return '<div class="card" data-vid="' + esc(v.id) + '"><div class="row" style="justify-content:flex-start;align-items:center;gap:10px">' + avatar(v.name) + '<div class="tx" style="flex:1;text-align:left"><h3>' + esc(v.name) + '</h3><p>' + (mode ? esc(v.challenge + '. ' + c[1]) + ' · ' : '') + fecha(v.created_at) + '</p></div>' +
+    return '<div class="card" data-vid="' + esc(v.id) + '"><div class="row" data-user="' + esc(v.user_id) + '" style="justify-content:flex-start;align-items:center;gap:10px">' + avatar(v.name) + '<div class="tx" style="flex:1;text-align:left"><h3>' + esc(v.name) + '</h3><p>' + (mode ? esc(v.challenge + '. ' + c[1]) + ' · ' : '') + fecha(v.created_at) + '</p></div>' +
       (mode && st ? '<span class="chipst" style="--c:' + st[1] + '">' + st[0] + '</span>' : '') + '</div>' +
       '<div class="vbox" style="margin:10px 0">' + (v.status === 'rejected' ? '<p>Este video no se publicó.</p>' : '<button class="btn ghost" data-act="vplay" data-id="' + esc(v.id) + '" style="width:100%">▶ Ver video</button>') + '</div>' +
       '<div class="row" style="justify-content:flex-start;flex-wrap:wrap">' +
@@ -387,7 +387,8 @@
       }).join('') : '<div class="card"><p>No hay usuarios' + (q ? ' con "' + esc(q) + '"' : '') + '.</p></div>';
     }, function (e) { var el = $('usList'); if (el) el.innerHTML = '<p class="note">' + esc(e.message) + '</p>'; });
   }
-  function byId(id) { return proList.filter(function (v) { return v.id === id; })[0]; }
+  var profList = [];
+  function byId(id) { return proList.concat(profList).filter(function (v) { return v.id === id; })[0]; }
   function playVideo(id, btn) {
     var v = byId(id); if (!v) return; btn.disabled = true; btn.textContent = 'Cargando…';
     DB.videoUrl(v.path).then(function (url) {
@@ -540,6 +541,56 @@
     });
   }
 
+
+
+  /* ---------- Panel de un jugador: se abre al tocar su nombre en cualquier lista ---------- */
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-user]'); if (!el || !el.dataset.user) return;
+    var btn = e.target.closest('button,a'); if (btn && btn !== el && el.contains(btn)) return;   // los botones de la fila hacen lo suyo
+    So.profile(el.dataset.user);
+  });
+  So.profile = function (id) {
+    if (!DB.online) { U.toast('Los perfiles necesitan el servidor de la comunidad.'); return; }
+    if (!DB.user) { tab = 'acc'; U.go('social'); U.toast('Entrá con tu cuenta para ver a los jugadores'); return; }
+    DB.playerProfile(id).then(function (p) {
+      if (!p) { U.toast('No encontramos a ese jugador.'); return; }
+      var vip = DB.isVip(), st = function (v, l) { return '<span><b style="color:#fff">' + v + '</b> ' + l + '</span>'; };
+      U.modal('<div style="width:100%;max-height:78vh;overflow:auto;text-align:center">' + avatar(p.name).replace('class="av"', 'class="av big"') +
+        '<h2 style="margin:6px 0 0">' + esc(p.name) + (p.pro ? ' <span class="chipst" style="--c:#FFD23A;vertical-align:middle">PRO</span>' : '') + '</h2>' +
+        '<p style="margin:2px 0">' + esc(p.cat || '') + ' · ' + esc(p.side || '') + (p.follows_me && !p.me ? ' · <b style="color:#7CFF4D">te sigue</b>' : '') + '</p>' +
+        '<div class="rew" style="margin:8px 0;flex-wrap:wrap">' + st(p.stars, 'estrellas') + st('Nivel ' + p.level, '') + st('IQ ' + p.iq, '') + st(p.picks, 'aciertos') + '</div>' +
+        '<p style="margin:4px 0">' + p.followers + ' seguidores · sigue a ' + p.following + ' · ' + p.videos + ' videos · ' + p.likes + ' me gusta</p>' +
+        (p.me ? '' : '<div class="row" style="margin:8px 0"><button class="btn small ' + (p.i_follow ? 'ghost' : 'lime') + '" id="pfFol">' + (p.i_follow ? 'Siguiendo' : 'Seguir') + '</button><button class="btn small" id="pfDuel">Desafiar</button></div>') +
+        '<h3 class="disp" style="margin:12px 0 6px;text-align:left">Sus videos</h3><div id="pfVids" style="text-align:left">' +
+        (p.videos ? (vip ? '<p class="note">Cargando…</p>' : '<div class="card" style="border-color:#FFD23A"><p style="color:#fff">' + (p.me ? 'Hacete PRO para ver tus videos publicados.' : 'Hacete PRO para ver sus videos y votarlos.') + '</p><button class="btn lime small" id="pfPro">Quiero ser PRO</button></div>')
+          : '<p class="note">Todavía no publicó videos.</p>') + '</div></div>' +
+        '<button class="btn ghost" id="pfClose" style="margin-top:8px">Cerrar</button>', function (box) {
+        U.on($('pfClose'), U.closeModal);
+        U.on($('pfPro'), function () { U.closeModal(); So.offerPro(); });
+        U.on($('pfFol'), function () {
+          var b = $('pfFol'), on = !p.i_follow; b.disabled = true;
+          DB.follow(p.id, on).then(function () { p.i_follow = on; b.disabled = false; b.className = 'btn small ' + (on ? 'ghost' : 'lime'); b.textContent = on ? 'Siguiendo' : 'Seguir'; U.toast(on ? 'Ahora seguís a ' + p.name : 'Dejaste de seguir a ' + p.name); }, function (e) { b.disabled = false; err(e); });
+        });
+        U.on($('pfDuel'), function () {
+          var b = $('pfDuel'); b.disabled = true; b.textContent = 'Creando…';
+          DB.duelCreate(2, 'peloteo', false, 24).then(function (d) {
+            return DB.duelInvite(d.id, p.id, 2).then(function () { U.closeModal(); U.toast('Le mandaste un desafío a ' + p.name); PP.Duel.show(d.code); });
+          }).catch(function (e) { b.disabled = false; b.textContent = 'Desafiar'; err(e); });
+        });
+        if (p.videos && vip) DB.userVideos(p.id).then(function (list) {
+          profList = list; var el = $('pfVids'); if (!el) return;
+          el.innerHTML = list.length ? list.map(function (v) { return videoCard(v, null).replace(' data-user="' + esc(v.user_id) + '"', ''); }).join('') : '<p class="note">Todavía no publicó videos.</p>';
+        }, function (e) { var el = $('pfVids'); if (el) el.innerHTML = '<p class="note">' + esc(e.message) + '</p>'; });
+        // Ver y votar sus videos desde el panel
+        box.addEventListener('click', function (e) {
+          var b = e.target.closest('[data-act]'); if (!b || !$('pfVids') || !$('pfVids').contains(b)) return;
+          var vid = b.dataset.id, v = byId(vid);
+          if (b.dataset.act === 'vplay') playVideo(vid, b);
+          else if (b.dataset.act === 'vlike' && v) { b.disabled = true; DB.like(vid, !v.liked).then(function () { v.liked = !v.liked; v.likes += v.liked ? 1 : -1; b.disabled = false; b.className = 'btn small ' + (v.liked ? 'lime' : 'ghost'); b.textContent = '♥ ' + v.likes; }, function (er) { b.disabled = false; err(er); }); }
+        });
+      });
+    }, err);
+  };
 
   /* ---------- Contraseñas ---------- */
   function pwField(id, ac, ph) {

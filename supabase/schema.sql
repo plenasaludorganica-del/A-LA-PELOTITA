@@ -451,3 +451,25 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.user_id_by_email(text) from public, anon, authenticated;
 grant execute on function public.user_id_by_email(text) to service_role;
+
+-- =====================================================================
+-- Panel de un jugador: lo que se ve al tocar su nombre (datos de juego, seguidores y cuántos videos publicó).
+-- Los videos se leen aparte con las reglas de siempre (solo PRO).
+-- =====================================================================
+create or replace function public.player_profile(p_id uuid) returns json
+language sql stable security definer set search_path = public as $$
+  select case when auth.uid() is null then null else (
+    select json_build_object(
+      'id', p.id, 'name', p.name, 'cat', p.cat, 'side', p.side, 'stars', p.stars, 'level', p.level, 'iq', p.iq, 'picks', p.picks,
+      'pro', p.is_admin or (p.vip_until is not null and p.vip_until > now()),
+      'followers', (select count(*) from public.follows where followed = p.id),
+      'following', (select count(*) from public.follows where follower = p.id),
+      'i_follow', exists (select 1 from public.follows where follower = auth.uid() and followed = p.id),
+      'follows_me', exists (select 1 from public.follows where follower = p.id and followed = auth.uid()),
+      'videos', (select count(*) from public.videos v where v.user_id = p.id and v.status = 'approved'),
+      'likes', (select count(*) from public.video_likes l join public.videos v on v.id = l.video_id where v.user_id = p.id and v.status = 'approved'),
+      'me', p.id = auth.uid())
+    from public.profiles p where p.id = p_id) end;
+$$;
+revoke all on function public.player_profile(uuid) from public, anon;
+grant execute on function public.player_profile(uuid) to authenticated;
