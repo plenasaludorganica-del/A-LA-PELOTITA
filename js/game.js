@@ -1446,7 +1446,8 @@
       pop: pop, wantLandscape: wantLandscape,
       move: function () { return { x: mvIn.x + (keys.r ? 1 : 0) - (keys.l ? 1 : 0), z: mvIn.z + (keys.d ? 1 : 0) - (keys.u ? 1 : 0) }; } };
     ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); PP.Duel.init(); PP.Track.init(); PP.Live.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
-    if (!save.intro && location.search.indexOf('nodaily') < 0) showHelp(startShow); else if (location.search.indexOf('nodaily') < 0) showDaily();
+    // Al abrir se ve siempre el inicio con los botones (no la cancha). La primera vez sale solo el cartel de bienvenida (js/cup.js, news).
+    if (!save.intro) { save.intro = true; persist(); } else if (location.search.indexOf('nodaily') < 0) showDaily();
     requestAnimationFrame(frame);
   }
   // Ganchos de prueba e integración (Padel Coach puede usar window.Pelotita)
