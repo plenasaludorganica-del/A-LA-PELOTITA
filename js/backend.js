@@ -197,6 +197,7 @@
     u.pass = hash(pw); store(d); return ok(true);
   };
   Local.adminSetPassword = function () { return fail('Necesita el servidor de la comunidad.'); };
+  Local.googleStart = function () { return fail('Entrar con Google necesita el servidor de la comunidad.'); };
   function find(d, id) { return (d.tours || []).filter(function (x) { return x.id === id; })[0]; }
   function pub(u) { return { id: u.id, email: u.email, name: u.name, cat: u.cat, side: u.side, stars: u.stars || 0, level: u.level || 1, iq: u.iq || 70, picks: u.picks || 0 }; }
 
@@ -230,6 +231,15 @@
   function refresh() {
     return fetch(CFG.supabaseUrl + '/auth/v1/token?grant_type=refresh_token', { method: 'POST', headers: { apikey: CFG.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: sess.refresh_token }) })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) { setSess(null); DB.user = null; throw new Error('Tu sesión venció. Volvé a entrar.'); } setSess(j); }); });
+  }
+  // Perfil del jugador; si no existe (primera vez), se crea con los datos de la cuenta (nombre del registro o de Google)
+  function ensureProfile(email) {
+    return profile(sess.user.id).then(function (p) {
+      if (p) { DB.user = Object.assign({ email: email }, p); return DB.user; }
+      var meta = sess.user.user_metadata || {}, nm = String(meta.name || meta.full_name || meta.given_name || String(email || 'jugador').split('@')[0]).trim().slice(0, 40);
+      if (nm.length < 2) nm = 'Jugador';
+      return rest('POST', '/rest/v1/profiles', { id: sess.user.id, name: nm, cat: meta.cat || '8va', side: meta.side || 'Drive' }, 'resolution=merge-duplicates,return=representation').then(function (rows) { DB.user = Object.assign({ email: email }, rows[0]); return DB.user; });
+    });
   }
   function profile(id) { return rest('GET', '/rest/v1/profiles?id=eq.' + id + '&select=*').then(function (rows) { return rows && rows[0]; }); }
   // Inscriptos, puntajes y pronósticos de un torneo. El servidor no muestra los pronósticos ajenos:
@@ -327,8 +337,22 @@
           .then(function (usr) { tmp.user = usr; setSess(tmp); DB.recovery = true; return profile(usr.id); })
           .then(function (p) { DB.user = p ? Object.assign({ email: sess.user.email }, p) : null; return DB.user; }, function (e) { DB.recoveryError = e.message; return null; });
       }
+      // Vuelta desde "Entrar con Google": la dirección trae la sesión (#access_token=...). Si es la primera vez, se crea el perfil.
+      if (hp.get('access_token') && hp.get('refresh_token')) {
+        history.replaceState(null, '', location.pathname + location.search);
+        var gs = { access_token: hp.get('access_token'), refresh_token: hp.get('refresh_token'), token_type: 'bearer' };
+        return fetch(CFG.supabaseUrl + '/auth/v1/user', { headers: { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + gs.access_token } })
+          .then(function (r) { if (!r.ok) throw new Error('No se pudo entrar con Google. Probá de nuevo.'); return r.json(); })
+          .then(function (usr) { gs.user = usr; setSess(gs); return ensureProfile(usr.email); })
+          .then(function (u) { DB.justLogged = true; return u; }, function (e) { DB.recoveryError = e.message; return null; });
+      }
       if (!sess || !sess.user) return ok(null);
       return profile(sess.user.id).then(function (p) { DB.user = p ? Object.assign({ email: sess.user.email }, p) : null; return DB.user; }, function () { return null; });
+    },
+    // Entrar con Google (se activa con googleLogin: true en js/config.js, después de configurar Google en Supabase)
+    googleStart: function () {
+      location.href = CFG.supabaseUrl + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(location.origin + location.pathname);
+      return new Promise(function () {});
     },
     // Recuperar contraseña por mail. Necesita un servicio de mail propio configurado en Supabase (SMTP):
     // sin eso, Supabase solo manda mails al equipo del proyecto y acá se devuelve help=true para pedir ayuda a la administración.
@@ -373,12 +397,7 @@
     signIn: function (f) {
       return fetch(CFG.supabaseUrl + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: CFG.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.email, password: f.password }) })
         .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(human(j.error_description || j.msg || j.message || 'No se pudo entrar.')); return j; }); })
-        .then(function (j) { setSess(j); return profile(j.user.id); })
-        .then(function (p) {
-          if (p) { DB.user = Object.assign({ email: f.email }, p); return DB.user; }
-          var meta = sess.user.user_metadata || {};
-          return rest('POST', '/rest/v1/profiles', { id: sess.user.id, name: meta.name || f.email.split('@')[0], cat: meta.cat || '8va', side: meta.side || 'Drive' }, 'resolution=merge-duplicates,return=representation').then(function (rows) { DB.user = Object.assign({ email: f.email }, rows[0]); return DB.user; });
-        });
+        .then(function (j) { setSess(j); return ensureProfile(f.email); });
     },
     signOut: function () { setSess(null); DB.user = null; return ok(); },
     pushStats: function (s) {
@@ -443,7 +462,7 @@
   };
 
   var impl = DB.online ? Supa : Local;
-  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin', 'recoverStart', 'setPassword', 'adminSetPassword', 'duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit', 'duelMine', 'duelOpen', 'playerProfile', 'userVideos'].forEach(function (k) {
+  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin', 'recoverStart', 'setPassword', 'adminSetPassword', 'duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit', 'duelMine', 'duelOpen', 'playerProfile', 'userVideos', 'googleStart'].forEach(function (k) {
     DB[k] = function () { try { return impl[k].apply(impl, arguments); } catch (e) { return Promise.reject(e); } };
   });
   DB.signUp = function (f) {

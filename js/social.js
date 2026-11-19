@@ -26,6 +26,7 @@
     DB.init().then(function () {
       So.sync(); So.paintAcc(); checkHash();
       if (DB.recovery) { tab = 'acc'; U.go('social'); newPassword(true); }
+      else if (DB.justLogged && DB.user) { DB.justLogged = false; U.toast('¡Hola, ' + DB.user.name + '!'); So.offerPro(); }
       else if (DB.recoveryError) U.toast(DB.recoveryError);
     }, noop);
     // Ojito: mostrar u ocultar la contraseña (en la pantalla y en las ventanas)
@@ -659,7 +660,8 @@
           : '<h3 class="disp" style="color:#FFD23A;font-size:20px">Hacete PRO</h3><p>Sumate a la comunidad que entrena la cabeza antes de la cancha.</p><p id="accPrice"></p><button class="btn lime" data-act="proinfo">Quiero ser PRO</button>') + '</div>' : '');
     } else {
       var up = mode === 'up';
-      h = '<div class="card"><div class="row" style="margin-bottom:10px"><button class="btn small ' + (up ? 'lime' : 'ghost') + '" data-act="mup">Crear cuenta</button><button class="btn small ' + (up ? 'ghost' : 'lime') + '" data-act="min">Ya tengo cuenta</button></div>' +
+      h = (DB.online && CFG.googleLogin ? '<div class="card"><button class="btn" data-act="google" style="width:100%;background:#fff;color:#1f1f1f;text-transform:none;box-shadow:0 6px 0 #bbb"><b style="font-size:22px;color:#4285F4;margin-right:6px">G</b> Entrar con Google</button><p class="note" style="margin:8px 0 0">o con tu mail:</p></div>' : '') +
+        '<div class="card"><div class="row" style="margin-bottom:10px"><button class="btn small ' + (up ? 'lime' : 'ghost') + '" data-act="mup">Crear cuenta</button><button class="btn small ' + (up ? 'ghost' : 'lime') + '" data-act="min">Ya tengo cuenta</button></div>' +
         (up ? '<input class="fld" id="aName" maxlength="40" autocomplete="nickname" placeholder="Tu nombre o apodo">' : '') +
         '<input class="fld" id="aMail" type="email" autocomplete="email" inputmode="email" placeholder="Tu mail">' +
         pwField('aPass', up ? 'new-password' : 'current-password', 'Contraseña (6 caracteres o más)') +
@@ -690,6 +692,7 @@
     else if (a === 'mup' || a === 'min') { mode = a === 'mup' ? 'up' : 'in'; So.render(); }
     else if (a === 'auth') auth();
     else if (a === 'out') DB.signOut().then(So.render);
+    else if (a === 'google') { b.disabled = true; DB.googleStart().catch(function (e) { b.disabled = false; err(e); }); }
     else if (a === 'forgot') forgot();
     else if (a === 'chpass') newPassword(false);
     else if (a === 'newtour') needLogin(formTour);

@@ -13,6 +13,8 @@
     proCheckout: 'https://lldifserfqgnjowgrfej.supabase.co/functions/v1/pro-checkout',
     // Alternativa manual: texto del precio y enlace o WhatsApp donde se paga. Vacío = "pedí tu alta".
     proPrice: '',
-    proLink: ''
+    proLink: '',
+    // Entrar con Google: poner true recién cuando Google esté configurado en Supabase (Authentication → Sign In / Providers → Google)
+    googleLogin: false
   };
 })();

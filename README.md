@@ -230,6 +230,17 @@ Botón propio en el inicio. El nombre se cambia en un solo lugar: `PP.CUP.name` 
 **Cartel de novedades:** al abrir el juego, una vez por día, aparece "¡Estamos creando algo increíble para vos!" con un botón
 para compartir (WhatsApp o el menú de compartir del celular). Está en `js/cup.js` (función `news`).
 
+## Entrar con Google (listo en el juego, falta activarlo)
+
+El botón "Entrar con Google" aparece cuando `googleLogin: true` en `js/config.js`. La primera vez crea el perfil con el nombre
+de Google. Antes hay que configurarlo (una sola vez):
+1. Google Cloud Console → crear un proyecto → **Pantalla de consentimiento OAuth** (externa, nombre "A la Pelotita") →
+   **Credenciales → Crear ID de cliente OAuth** tipo "Aplicación web", con URI de redireccionamiento autorizado
+   `https://lldifserfqgnjowgrfej.supabase.co/auth/v1/callback`.
+2. Supabase → Authentication → Sign In / Providers → **Google**: activar y pegar el ID de cliente y el secreto.
+3. Supabase → Authentication → URL Configuration: Site URL `https://alapelotita.com` y en Redirect URLs `https://alapelotita.com/**`.
+4. Poner `googleLogin: true` en `js/config.js`.
+
 ## Contraseñas
 
 - **Ojito** para ver u ocultar la contraseña al entrar, al crear la cuenta, al cambiarla y en el panel de administración.
