@@ -69,13 +69,18 @@
   /* ---------- Lista ---------- */
   function renderList() {
     var body = $('duelBody');
-    var top = '<div class="card" style="border-color:#7CFF4D"><h3 class="disp" style="font-size:22px;color:#7CFF4D">Desafiá a tus amigos</h3>' +
-      '<p style="color:#fff">1 contra 1 o 2 contra 2. Cada uno juega <b>un turno</b> en su celu cuando puede, y gana el equipo que suma más puntos.</p>' +
+    var live = '<div class="card" style="border-color:#FF3D8B;box-shadow:0 0 22px rgba(255,61,139,.45)"><h3 class="disp" style="font-size:24px;color:#FF3D8B">🔴 Partido EN VIVO</h3>' +
+      '<p style="color:#fff">Todos en la misma cancha al mismo tiempo, cada uno desde su celu. A ' + 5 + ' puntos.</p>' +
+      '<p style="margin:6px 0 2px">Con cualquiera, ya:</p><div class="row"><button class="btn lime" data-act="lq2">1 contra 1</button><button class="btn lime" data-act="lq4">2 contra 2</button></div>' +
+      '<p style="margin:10px 0 2px">Con tus amigos (sala con código):</p><div class="row"><button class="btn pink" data-act="lc2">Sala 1 vs 1</button><button class="btn pink" data-act="lc4">Sala 2 vs 2</button></div>' +
+      '<div class="row" style="margin-top:8px"><button class="btn small ghost" data-act="lcode">Tengo un código de sala</button></div></div>';
+    var top = live + '<div class="card" style="border-color:#7CFF4D"><h3 class="disp" style="font-size:20px;color:#7CFF4D">Desafío por turnos</h3>' +
+      '<p style="color:#fff">Si no pueden jugar al mismo tiempo: cada uno juega <b>un turno</b> en su celu cuando puede, y gana el equipo que suma más puntos.</p>' +
       '<div class="row"><button class="btn lime" data-act="new">Crear desafío</button><button class="btn ghost" data-act="code">Tengo un código</button></div>' +
       '<div class="row" style="margin-top:8px"><button class="btn small ghost" data-act="solo">Prefiero jugar solo</button></div></div>';
     if (!DB.online) { body.innerHTML = top + '<p class="note">Los desafíos necesitan el servidor de la comunidad.</p>'; return; }
     if (!DB.user) {
-      body.innerHTML = '<div class="card" style="border-color:#D8FF3A"><h3 class="disp" style="font-size:22px">Creá tu cuenta para jugar con amigos</h3><p>Es gratis. Con tu cuenta desafiás a tus amigos, armás equipos de a 2 o jugás con cualquiera.</p><button class="btn lime" data-act="login">Crear mi cuenta</button></div>' +
+      body.innerHTML = live + '<div class="card" style="border-color:#D8FF3A"><h3 class="disp" style="font-size:20px">Desafíos por turnos</h3><p>El partido en vivo de arriba se juega sin cuenta. Para los desafíos por turnos (cada uno juega cuando puede) creá tu cuenta gratis.</p><button class="btn lime" data-act="login">Crear mi cuenta</button></div>' +
         '<div class="row"><button class="btn small ghost" data-act="solo">Jugar solo</button></div>';
       return;
     }
@@ -253,6 +258,9 @@
     var b = e.target.closest('[data-act],[data-duel]'); if (!b) return;
     if (b.dataset.duel) { D.show(b.dataset.duel); return; }
     var a = b.dataset.act;
+    if (a === 'lq2' || a === 'lq4') { PP.Live.quick(a === 'lq4' ? 4 : 2); return; }
+    if (a === 'lc2' || a === 'lc4') { PP.Live.create(a === 'lc4' ? 4 : 2); return; }
+    if (a === 'lcode') { PP.Live.codeForm(); return; }
     if (a === 'login') { PP.Social.open('acc'); U.go('social'); }
     else if (a === 'solo') U.go('map');
     else if (a === 'new') createForm();

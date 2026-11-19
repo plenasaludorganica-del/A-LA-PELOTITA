@@ -289,6 +289,10 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 /* En celulares bajitos la barrita ocupa el lugar del muñequito grande */
 @media (orientation: portrait) and (max-height: 760px) { #home:has(#cupBar:not([hidden])) #hero { display: none; } }
 @media (orientation: portrait) and (max-height: 700px) { #home:has(#cupBar:not([hidden])) { gap: 5px; } #home:has(#cupBar:not([hidden])) .logo { font-size: 27px; } .cupbar { height: 34px; font-size: 13px; } #home:has(#cupBar:not([hidden])) .logo small { margin-top: .3em; } }
+.liveinfo { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); transform: translateX(-50%); background: rgba(0, 0, 0, .55); border-radius: 14px; padding: 6px 14px; font-family: var(--display); font-size: 20px; color: #fff; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
+.ltag { position: fixed; transform: translate(-50%, -100%); font-size: 12px; font-weight: 900; color: #fff; background: rgba(0, 0, 0, .55); padding: 2px 8px; border-radius: 10px; pointer-events: none; z-index: 5; white-space: nowrap; }
+.ltag.me { background: rgba(34, 225, 255, .85); color: #1a1036; }
+.spin { display: inline-block; animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 <!--/PAGE-->
 </head>
@@ -388,6 +392,11 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
     <div class="scroll" id="soBody"></div>
   </section>
 
+  <section id="live" class="layer screen sheet" hidden>
+    <header><button class="btn small ghost" onclick="PP.Live.leave()" aria-label="Salir"><svg class="ic"><use href="#i-back"/></svg></button><h2>Partido en vivo</h2></header>
+    <div class="scroll" id="liveBody"></div>
+  </section>
+
   <section id="duel" class="layer screen sheet" hidden>
     <header><button class="btn small ghost" data-go="home" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button><h2>Jugar con amigos</h2></header>
     <div class="scroll" id="duelBody"></div>
@@ -410,14 +419,15 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 <script src="vendor/three.min.js?v=ccabb6c3b0"></script>
 <script src="js/config.js?v=d2807f3a4f"></script>
 <script src="js/data.js?v=0da5430ae0"></script>
-<script src="js/backend.js?v=f125bb0cdc"></script>
+<script src="js/backend.js?v=ec1cce2c03"></script>
 <script src="js/social.js?v=a2aff4767b"></script>
 <script src="js/cup.js?v=372b6f1b5f"></script>
-<script src="js/duel.js?v=36ef165daf"></script>
+<script src="js/duel.js?v=8b730878d0"></script>
 <script src="js/track.js?v=eef41ebf0d"></script>
 <script src="js/audio.js?v=a6951ea3dd"></script>
 <script src="js/scene.js?v=2f950be3a6"></script>
-<script src="js/game.js?v=15c001c7db"></script>
+<script src="js/live.js?v=0287a495bf"></script>
+<script src="js/game.js?v=5c046fc49d"></script>
 <!--/PAGE-->
 </body>
 </html>

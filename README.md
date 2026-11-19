@@ -144,7 +144,7 @@ Pendiente, en orden sugerido:
 2. Mail de recuperación de contraseña (falta el servicio de mail propio) y pantalla para aprobar sponsors sin entrar a Supabase.
 3. Guardar el progreso del juego en la cuenta (hoy queda en el dispositivo).
 4. Cobros reales: pasarela de pago para gemas y Pase.
-5. Partido en vivo con amigos (etapa 2 de los desafíos), más ejercicios mentales y más jugadas para leer.
+5. Más ejercicios mentales y más jugadas para leer.
 6. Instalable como app y registro anónimo de uso.
 
 ## Estado de la mudanza al servidor propio (noviembre 2026)
@@ -199,6 +199,22 @@ Tocando a cualquier jugador (ranking, Siguiendo, torneos, Copa, desafíos o el a
 lado, estrellas, nivel, IQ, aciertos, seguidores, videos y me gusta, con botones **Seguir** y **Desafiar** (crea un 1 contra 1 y lo
 invita). Los PRO ven ahí **sus videos publicados** y los votan con ♥. Servidor: función `player_profile` (`supabase/schema.sql`).
 
+## Partido EN VIVO (1 contra 1 y 2 contra 2)
+
+En **Con amigos**, arriba: todos en la misma cancha al mismo tiempo, cada uno desde su celular, a 5 puntos. Se juega **sin cuenta**
+(pide un nombre) o con cuenta.
+- **Con cualquiera, ya:** "1 contra 1" o "2 contra 2" busca una sala abierta o crea una. Si en 25 s no se completa, arranca con
+  jugadores de la máquina. Las dos primeras personas quedan en equipos contrarios.
+- **Con amigos:** "Sala 1 vs 1" o "Sala 2 vs 2" da un **código de 5 letras** y un enlace `alapelotita.com/#vivo-CÓDIGO` para WhatsApp.
+  Arranca sola cuando están todos, o el anfitrión 👑 la empieza antes y completa con la máquina.
+- **Cómo se juega:** igual que el control fácil: el jugador corre solo; al que le toca le aparece "¡Te toca!" y el aro, y desliza
+  el dedo para pegar y apuntar. En 2 contra 2 cada uno cubre su mitad de la cancha. Cada uno ve la cancha desde su lado.
+- **Cómo se sincroniza:** solo viajan los golpes (desde dónde, hacia dónde, cuánto tarda y cuándo); cada celular calcula la pelota con
+  la misma física. Las posiciones se mandan ~6 veces por segundo. El anfitrión saca, decide los puntos (espera unas décimas antes de
+  cobrar un doble pique, por si el golpe del rival viene en camino) y maneja a la máquina. Si se va, toma su lugar el siguiente.
+- **Conexión:** consultas cortas al servidor (no WebSocket). Funciona bien con la demora normal de Argentina a São Paulo.
+- Archivos: `js/live.js` (juego) y `supabase/live.sql` (salas, latido y eventos; ya aplicado). Las salas se borran solas al día.
+
 ## Jugar con amigos (Desafíos)
 
 Botón **Con amigos** en el inicio (muestra cuántas invitaciones o turnos pendientes tenés). Etapa 1: **por turnos**.
@@ -209,7 +225,7 @@ Botón **Con amigos** en el inicio (muestra cuántas invitaciones o turnos pendi
   Termina cuando jugaron todos o al cierre. Después, botón **Revancha**.
 - **Servidor:** `supabase/duels.sql` (ya aplicado). Tablas `duels`, `duel_players`, `duel_invites` sin acceso directo; todo por funciones
   que validan cuenta, lugar en el equipo, un turno por jugador y el cierre. Pantalla: `js/duel.js`.
-- **Etapa 2 (pendiente):** partido **en vivo**, todos en la misma cancha al mismo tiempo desde su celular.
+- **Etapa 2 (hecha):** ver "Partido EN VIVO".
 
 ## Partidos y pantalla horizontal
 
@@ -306,6 +322,8 @@ de Google. Antes hay que configurarlo (una sola vez):
 | `supabase/cups.sql` | Copa de la Cancha: tablas, reglas y funciones (se pega aparte en el SQL Editor) |
 | `js/track.js` | Estadísticas anónimas: visitas, quién está en vivo y partidas |
 | `supabase/analytics.sql` | Estadísticas: tablas y funciones (solo la administración las lee) |
+| `js/live.js` | Partido en vivo: salas, sincronización, física compartida y máquina |
+| `supabase/live.sql` | Partido en vivo: tablas y funciones |
 | `js/duel.js` | Jugar con amigos: desafíos 1 contra 1 y 2 contra 2 por turnos |
 | `supabase/duels.sql` | Desafíos: tablas, reglas y funciones |
 | `js/cup.js` | Copa de la Cancha: pantalla, panel de administración, envío de puntajes y cartel de novedades |

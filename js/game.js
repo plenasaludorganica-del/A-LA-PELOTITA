@@ -71,7 +71,7 @@
   }
 
   /* ================= UI general ================= */
-  var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup', 'duel'], curScreen = 'home';
+  var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup', 'duel', 'live'], curScreen = 'home';
   function go(name) {
     curScreen = name; document.body.classList.remove('playing'); if (PP.Track && PP.Track.nav) PP.Track.nav();
     screens.forEach(function (s) { $(s).hidden = s !== name; });
@@ -85,6 +85,7 @@
     if (name === 'social') PP.Social.render();
     if (name === 'cup') PP.Cup.render();
     if (name === 'duel') PP.Duel.render();
+    if (name === 'live') PP.Live.render();
     refreshTop();
   }
   function refreshTop() {
@@ -480,6 +481,7 @@
     if (a <= wp) return 'perfect'; if (a <= 0.21 + stat('ref') * 0.006) return 'good'; if (a <= 0.38) return 'ok'; return 'bad';
   }
   function swipe(aim) {
+    if (PP.Live && PP.Live.active) { PP.Live.swipe(aim); return; }   // partido en vivo
     if (!G || G.paused || G.over) return;
     if (G.freeze) G.freeze = false;
     $('hand').hidden = true;
@@ -899,6 +901,7 @@
   }
   function isDuel(t) { return typeof t === 'string' && t.indexOf('duel:') === 0; }
   function pause() {
+    if (PP.Live && PP.Live.active) { PP.Live.menu(); return; }
     if (TR) {
       var wasTour = PP.tourCtx, trScore = TR.score || 0; PP.tourCtx = null; trClean(); S.mode = 'menu'; PP.Track.end('salio');
       if (isDuel(wasTour)) { PP.Social.tourDone(wasTour, trScore); return; }   // en un desafío, salir cuenta como turno jugado
@@ -1398,6 +1401,7 @@
     sctx.restore();
   }
   window.addEventListener('keydown', function (e) {
+    if (PP.Live && PP.Live.active) { var lk = e.key.toLowerCase(); if (lk === ' ' || lk === 'k') PP.Live.swipe({ x: 0, depth: 0.9, lob: false }); else if (lk === 'j') PP.Live.swipe({ x: -0.9, depth: 0.85 }); else if (lk === 'l') PP.Live.swipe({ x: 0.9, depth: 0.85 }); else if (lk === 'i') PP.Live.swipe({ x: 0, depth: 1, lob: true }); return; }
     if (!G || G.paused) return;
     var k = e.key.toLowerCase(), aim = null;
     if (MOVE_KEYS[k]) { keys[MOVE_KEYS[k]] = true; e.preventDefault(); return; }
@@ -1440,8 +1444,9 @@
     opp = S.makeSpriteChar(PP.LEVELS[Math.min(save.level, 39)].sprite, { accent: '#ffffff', scale: 1 }); opp.place(1.5, -6);
     PP.ui = { modal: modal, closeModal: closeModal, toast: toast, on: on, ic: ic, go: go, flash: flash, persist: persist, iq: iq, totalStars: totalStars,
       startLevel: startLevel, startDrill: startDrill, save: function () { return save; },
-      where: function () { return G ? 'partido' : TR ? 'gimnasio' : curScreen; } };
-    ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); PP.Duel.init(); PP.Track.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
+      where: function () { return PP.Live && PP.Live.active ? 'envivo' : G ? 'partido' : TR ? 'gimnasio' : curScreen; },
+      pop: pop, wantLandscape: wantLandscape };
+    ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); PP.Duel.init(); PP.Track.init(); PP.Live.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
     if (!save.intro && location.search.indexOf('nodaily') < 0) showHelp(startShow); else if (location.search.indexOf('nodaily') < 0) showDaily();
     requestAnimationFrame(frame);
   }

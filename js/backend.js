@@ -188,6 +188,7 @@
   var NODUEL = 'Los desafíos con amigos necesitan el servidor de la comunidad.';
   Local.duelMine = Local.duelOpen = function () { return ok([]); };
   Local.trackPing = Local.trackPlay = function () { return ok(); };
+  Local.liveRpc = function () { return fail('El partido en vivo necesita el servidor de la comunidad.'); };
   Local.playerProfile = function (id) { var d = load(), u = Object.keys(d.users || {}).map(function (k) { return d.users[k]; }).filter(function (x) { return x.id === id; })[0]; return ok(u ? Object.assign(pub(u), { followers: 0, following: 0, videos: 0, likes: 0, me: DB.user && DB.user.id === id }) : null); };
   Local.userVideos = function () { return ok([]); };
   ['duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit'].forEach(function (k) { Local[k] = function () { return fail(NODUEL); }; });
@@ -225,6 +226,7 @@
     if (/not confirmed/i.test(m)) return 'Falta confirmar el mail. Revisá tu casilla.';
     if (/cup_/.test(m) && /could not find|does not exist|schema cache/i.test(m)) return 'La Copa todavía no está activada en el servidor.';
     if (/duel_/.test(m) && /could not find|does not exist|schema cache/i.test(m)) return 'Los desafíos todavía no están activados en el servidor.';
+    if (/live_/.test(m) && /could not find|does not exist|schema cache/i.test(m)) return 'El partido en vivo todavía no está activado en el servidor.';
     if (/row-level security|violates/i.test(m)) return 'Esa acción ya no está permitida (puede haber cerrado el plazo).';
     return m;
   }
@@ -420,6 +422,8 @@
         .catch(function () { throw new Error('Para invitar tenés que organizar o estar inscripto en el torneo, y que todavía no haya empezado.'); });
     },
     myInvites: function () { if (!DB.user) return ok([]); return rest('POST', '/rest/v1/rpc/my_invites', {}); },
+    // Partido en vivo (supabase/live.sql): salas, latido y eventos
+    liveRpc: function (fn, args) { if (!/^live_[a-z]+$/.test(fn)) return fail('Función inválida.'); return rest('POST', '/rest/v1/rpc/' + fn, args || {}); },
     // Estadísticas anónimas (supabase/analytics.sql)
     trackPing: function (vid, screen, device) { return rest('POST', '/rest/v1/rpc/track_ping', { p_vid: vid, p_screen: screen, p_device: device }); },
     trackPlay: function (vid, game, result, secs) { return rest('POST', '/rest/v1/rpc/track_play', { p_vid: vid, p_game: game, p_result: result, p_secs: secs }); },
@@ -466,7 +470,7 @@
   };
 
   var impl = DB.online ? Supa : Local;
-  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin', 'recoverStart', 'setPassword', 'adminSetPassword', 'duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit', 'duelMine', 'duelOpen', 'playerProfile', 'userVideos', 'googleStart', 'trackPing', 'trackPlay'].forEach(function (k) {
+  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin', 'recoverStart', 'setPassword', 'adminSetPassword', 'duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit', 'duelMine', 'duelOpen', 'playerProfile', 'userVideos', 'googleStart', 'trackPing', 'trackPlay', 'liveRpc'].forEach(function (k) {
     DB[k] = function () { try { return impl[k].apply(impl, arguments); } catch (e) { return Promise.reject(e); } };
   });
   DB.signUp = function (f) {
