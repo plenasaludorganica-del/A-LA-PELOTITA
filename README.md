@@ -166,6 +166,25 @@ Pendiente, en orden sugerido:
 - **Próximo:** @usuario único, recuperar contraseña, progreso en la cuenta, planillas de pagos y opiniones, cobro internacional.
 - **Plan:** seguir en el plan gratis de Supabase hasta tener ingresos; después pasar a Pro (USD 25 por mes).
 
+## PLAN PARA EL LUNES: vidas pagas (anotado el 19/11/2026)
+
+**Hoy:** 5 vidas, se recupera 1 cada 15 minutos (`MAX_LIVES`, `LIFE_MS` en `js/game.js`). Sin vidas aparece `showNoLives`:
+recargar con 30 gemas, un "anuncio" de prueba (no muestra nada real) y el "Pase Pelotita" de prueba. **Ojo:** la tienda todavía es
+de prueba (`PP.Store.purchase` aprueba todo sin cobrar): hay que arreglarlo antes de cobrar cualquier cosa.
+
+**Lo que hay que hacer:**
+1. **Esperar o pagar:** sin vidas, elegir entre esperar (cuenta regresiva, recarga **1 vida cada 10 minutos**) o comprar vidas
+   por Mercado Pago: **5 vidas a ~$100** o **vidas infinitas por 24 h a ~$200** (precios a confirmar, guardados en `app_settings`).
+2. **Primero gratis:** las primeras 3 veces que alguien se queda sin vidas, la recarga es regalo (para que se enganche).
+3. **Para todos, gratis y PRO.** A definir: ¿el PRO tiene más vidas o recarga más rápido como beneficio?
+4. **Reglas de juego limpio (no negociables):** pagar da más intentos, **nunca** más suerte. No cambia la dificultad, la física,
+   al rival ni los puntos. Precio claro antes de pagar, nada que se cobre solo, nada de ofertas engañosas.
+5. **Copa y torneos:** las partidas de la Copa **no gastan vidas**, así comprar vidas no da ventaja para el premio.
+6. **Técnico:** las compras de vidas van al servidor (como el PRO: `pro-checkout` + `mp-webhook`), así no se pierden al cambiar
+   de celular y no se pueden inventar editando el celular. Las vidas no cuestan nada de servidor; solo la comisión de Mercado Pago
+   (~7,6% al instante: ~$8 de cada $100).
+7. Sacar el "anuncio" y el "Pase Pelotita" de prueba, o hacerlos reales.
+
 ## Panel de cada jugador
 
 Tocando a cualquier jugador (ranking, Siguiendo, torneos, Copa, desafíos o el autor de un video) se abre su panel: categoría,
