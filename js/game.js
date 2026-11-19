@@ -73,7 +73,7 @@
   /* ================= UI general ================= */
   var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup'], curScreen = 'home';
   function go(name) {
-    curScreen = name;
+    curScreen = name; document.body.classList.remove('playing');
     screens.forEach(function (s) { $(s).hidden = s !== name; });
     $('top').hidden = false; $('hud').hidden = true;
     if (name === 'home') { renderHome(); if (save.level >= 3 && !save.fbAsked && !G) { save.fbAsked = true; persist(); setTimeout(showFeedback, 400); } }
@@ -371,11 +371,28 @@
     return { t: G.t + samples[best], x: samples[best + 1], y: samples[best + 2], z: samples[best + 3], wall: wallAt >= 0 && wallAt < samples[best], t1: G.t + t1, t2: G.t + t2 };
   }
 
+  // Jugar en horizontal: en Android se pone pantalla completa y se gira sola; en iPhone (no se puede girar desde la web)
+  // aparece el cartel "Girá el celular" y el partido se pausa mientras el celular esté parado.
+  var TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+  function wantLandscape() {
+    if (!TOUCH) return;
+    document.body.classList.add('playing'); document.body.classList.toggle('vertical', !!save.vertical);
+    setTimeout(checkRotate, 1300);   // después de la presentación del rival
+    if (save.vertical || innerWidth > innerHeight) return;
+    try {
+      var el = document.documentElement, fs = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : null;
+      Promise.resolve(fs).then(function () { if (screen.orientation && screen.orientation.lock) return screen.orientation.lock('landscape'); }).catch(function () {});
+    } catch (e) {}
+  }
+  function portraitBlocked() { return TOUCH && !save.vertical && document.body.classList.contains('playing') && innerHeight > innerWidth; }
+  function checkRotate() { if (portraitBlocked() && G && !G.over && !G.paused && G.phase !== 'intro') pause(); }
+  window.addEventListener('resize', function () { setTimeout(checkRotate, 150); });
+  on($('rotNo'), function () { save.vertical = true; persist(); document.body.classList.add('vertical'); });
   function startLevel(idx) {
     tickLives();
     var lv = typeof idx === 'object' ? idx : PP.LEVELS[idx], c = curChar();
     if (!lv.train && !lv.show && !lv.tour && !save.pass && save.lives <= 0) { showNoLives(); return; }
-    trClean(); S.ballHide = false; $('hud').classList.remove('tr');
+    trClean(); S.ballHide = false; $('hud').classList.remove('tr'); wantLandscape();
     if (curWorld !== lv.world) { S.setWorld(lv.world); curWorld = lv.world; }
     A.setSong(lv.world);
     if (me) me.remove(); if (opp) opp.remove();

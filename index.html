@@ -240,6 +240,37 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 @media (max-height: 620px) { #hero { display: none; } .logo { font-size: 40px; } #home { gap: 8px; } }
 @media (max-height: 560px) { #hero { display: none; } .logo { font-size: 44px; } }
 .pw { position: relative; width: 100%; } .pw .fld { padding-right: 52px; } .pw .eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border: 0; border-radius: 12px; background: rgba(255,255,255,.1); color: #fff; font-size: 20px; cursor: pointer; padding: 0; }
+
+/* ---------- Horizontal: cartel para girar el celular y diseño acostado ---------- */
+#rotate { position: fixed; inset: 0; z-index: 60; background: rgba(12, 6, 38, .96); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; }
+#rotate h2 { font-size: 34px; color: var(--lime); } #rotate p { max-width: 30ch; color: var(--ink-soft); margin: 0; }
+#rotate .phone { width: 64px; height: 108px; border: 5px solid #fff; border-radius: 14px; position: relative; animation: rot 1.8s ease-in-out infinite; }
+#rotate .phone::after { content: ''; position: absolute; left: 50%; bottom: 7px; width: 14px; height: 4px; margin-left: -7px; border-radius: 2px; background: #fff; }
+@keyframes rot { 0%, 25% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+@media (orientation: portrait) and (pointer: coarse) { body.playing:not(.vertical) #rotate { display: flex; } }
+@media (orientation: landscape) and (max-height: 560px) {
+  #home { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-auto-rows: min-content; align-content: center; column-gap: 18px; row-gap: 9px;
+    justify-items: stretch; padding-top: calc(env(safe-area-inset-top, 0px) + 54px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    background: linear-gradient(90deg, rgba(18, 10, 51, .15) 0%, rgba(18, 10, 51, .8) 55%); }
+  #home .logo { grid-column: 1; grid-row: 1 / 4; font-size: clamp(34px, 11vh, 66px); margin: 0; align-self: end; justify-self: center; }
+  #home #hero { grid-column: 1; grid-row: 4 / 7; height: min(34vh, 150px); justify-self: center; align-self: start; margin: 0; }
+  #home > .btn, #home > .row { grid-column: 2; width: 100%; max-width: 420px; justify-self: center; }
+  #home > .row { gap: 8px; }
+  #home .btn { min-height: 42px; font-size: 16px; padding: 6px 14px; box-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
+  #home .btn.big { font-size: 24px; min-height: 54px; }
+  #home .btn.small { min-height: 36px; font-size: 13px; padding: 4px 10px; }
+  #home .row.duo .btn { flex: 1; }
+  #rank { top: calc(env(safe-area-inset-top, 0px) + 54px); }
+  #accBtn { top: calc(env(safe-area-inset-top, 0px) + 10px); right: calc(var(--gutter-r) + 54px); z-index: 7; }
+  .sheet { padding-top: calc(env(safe-area-inset-top, 0px) + 56px); }
+  .sheet > header { margin-bottom: 6px; } .sheet > header h2 { font-size: 24px; }
+  #tq { top: calc(env(safe-area-inset-top, 0px) + 64px); font-size: 14px; padding: 6px 12px; width: min(70%, 560px); }
+  #opts { flex-direction: row; width: min(96%, 760px); gap: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+  #opts .btn { font-size: 15px; min-height: 52px; padding: 6px 10px; }
+  #superBtn { width: 84px; height: 84px; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); }
+  #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); }
+  #modalBox { max-height: 92vh; overflow-y: auto; }
+}
 </style>
 <!--/PAGE-->
 </head>
@@ -283,6 +314,7 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
   <div id="stick" hidden><div id="knob"></div></div>
   <div id="pops"></div>
   <div id="flash"></div>
+  <div id="rotate"><div class="phone"></div><h2>Girá el celular</h2><p>El juego se ve mejor en horizontal: los controles quedan en las esquinas y los jugadores se ven más grandes.</p><button class="btn small ghost" id="rotNo">Seguir en vertical</button></div>
 
   <div id="top">
     <button class="chip plus" id="cLives"><svg class="ic"><use href="#i-heart"/></svg><span id="vLives">5</span><small id="vLifeT"></small></button>
@@ -358,8 +390,8 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 <script src="js/social.js?v=a0c4b623bd"></script>
 <script src="js/cup.js?v=c8d99ec58b"></script>
 <script src="js/audio.js?v=a6951ea3dd"></script>
-<script src="js/scene.js?v=66492ff147"></script>
-<script src="js/game.js?v=fa4708ad77"></script>
+<script src="js/scene.js?v=2f950be3a6"></script>
+<script src="js/game.js?v=c25e1b7eed"></script>
 <!--/PAGE-->
 </body>
 </html>

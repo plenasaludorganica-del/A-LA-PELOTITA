@@ -166,6 +166,19 @@ Pendiente, en orden sugerido:
 - **Próximo:** @usuario único, recuperar contraseña, progreso en la cuenta, planillas de pagos y opiniones, cobro internacional.
 - **Plan:** seguir en el plan gratis de Supabase hasta tener ingresos; después pasar a Pro (USD 25 por mes).
 
+## Partidos y pantalla horizontal
+
+- **Movimiento real:** los jugadores ya no se quedan en el fondo. Con el saque, un buen globo o una bandeja suben a la red;
+  con un golpe flojo vuelven a defender; en la red **volean** la pelota en el aire (`predict` en `js/game.js` busca la volea
+  cuando el jugador está cerca de la red). Posiciones: `NET_Z` (red), `BACK_Z` (fondo).
+- **Cada rival tiene su juego** (`rivalStyle`): **atacante** (vive en la red), **defensor** (espera atrás) o **mixto**. Se muestra
+  junto al objetivo del nivel. El rival elige el golpe según dónde estás: si estás en la red te tira **globos** o te pasa por
+  el costado; si estás atrás y él en la red, te tira **dejadas**. Se puede fijar el estilo de un nivel con `style` en `PP.LEVELS`.
+- **Horizontal:** al empezar un partido en el celular se pide jugar acostado. En Android se pone pantalla completa y se gira sola;
+  en iPhone (la web no puede girarla) aparece "Girá el celular" y el partido se pausa hasta girarlo. Hay un botón
+  "Seguir en vertical" que queda guardado. En horizontal la cámara se acerca, el inicio va en dos columnas y los controles
+  quedan en las esquinas. Los ejercicios del Gimnasio mental funcionan en las dos posiciones.
+
 ## Copa de la Cancha
 
 Competencia con premio real (por ejemplo, "1 hora de cancha"), independiente del ranking general, la tienda y los torneos.

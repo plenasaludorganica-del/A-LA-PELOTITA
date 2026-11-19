@@ -58,8 +58,9 @@
       var d3 = Math.min(22, 5.4 / Math.tan(hf));
       camBase.set(0, d3 * 0.655, 8 + d3 * 0.755); camLook.set(0, 0, -0.5);
     } else {
-      var d = Math.min(26, Math.max(10.5, 5.9 / Math.tan(hf)));
-      camBase.set(0, 3.2 + d * 0.22, 8 + d * 0.95); camLook.set(0, 1, -4);
+      // Horizontal: cámara más cerca y más baja, para que la cancha llene la pantalla y los jugadores se vean grandes
+      var d = Math.min(24, Math.max(8.2, 4.7 / Math.tan(hf)));
+      camBase.set(0, 3.4 + d * 0.3, 7.4 + d * 0.86); camLook.set(0, 0.2, -2.6);
     }
     camera.aspect = a; camera.fov = baseFov; camera.updateProjectionMatrix();
   };
