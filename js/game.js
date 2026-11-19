@@ -71,7 +71,7 @@
   }
 
   /* ================= UI general ================= */
-  var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup'], curScreen = 'home';
+  var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup', 'duel'], curScreen = 'home';
   function go(name) {
     curScreen = name; document.body.classList.remove('playing');
     screens.forEach(function (s) { $(s).hidden = s !== name; });
@@ -84,6 +84,7 @@
     if (name === 'train') renderTrain();
     if (name === 'social') PP.Social.render();
     if (name === 'cup') PP.Cup.render();
+    if (name === 'duel') PP.Duel.render();
     refreshTop();
   }
   function refreshTop() {
@@ -894,8 +895,13 @@
     if (me) { me.place(-1.5, 6); me.setMood('idle'); me.aura = 0; } if (opp) { opp.place(1.5, -6); opp.setMood('idle'); opp.g.visible = true; }
     $('lines').style.opacity = 0; $('pops').innerHTML = ''; $('hand').hidden = true; stickEnd();
   }
+  function isDuel(t) { return typeof t === 'string' && t.indexOf('duel:') === 0; }
   function pause() {
-    if (TR) { var wasTour = PP.tourCtx; PP.tourCtx = null; trClean(); S.mode = 'menu'; go(wasTour ? 'social' : 'train'); return; }
+    if (TR) {
+      var wasTour = PP.tourCtx, trScore = TR.score || 0; PP.tourCtx = null; trClean(); S.mode = 'menu';
+      if (isDuel(wasTour)) { PP.Social.tourDone(wasTour, trScore); return; }   // en un desafío, salir cuenta como turno jugado
+      go(wasTour ? 'social' : 'train'); return;
+    }
     if (!G || G.over) return; G.paused = true;
     modal('<h2>Pausa</h2><p>' + G.lv.goal + '</p><div class="row"><button class="btn ghost" id="pQuit">Salir</button><button class="btn lime big" id="pGo">Seguir</button></div>' + (G.lv.train ? '' : '<p style="font-size:13px">Si salís ahora perdés una vida.</p>') + '', function () {
       var mb = document.createElement('button'); mb.className = 'btn small ghost';
@@ -904,6 +910,7 @@
       on($('pGo'), function () { closeModal(); if (G) G.paused = false; });
       on($('pQuit'), function () {
         closeModal(); if (G && G.lv.train) { leaveMatch(); go('train'); return; }
+        if (G && isDuel(G.lv.tour)) { var dt0 = G.lv.tour, ds0 = G.score; leaveMatch(); PP.Social.tourDone(dt0, ds0); return; }
         if (G && G.lv.tour) { leaveMatch(); go('social'); return; }
         if (!save.pass) { save.lives = Math.max(0, save.lives - 1); if (!save.lifeAt) save.lifeAt = Date.now() + LIFE_MS; persist(); }
         leaveMatch(); go('map');
@@ -1404,6 +1411,7 @@
   on($('playBtn'), function () { preLevel(Math.min(save.level, PP.LEVELS.length - 1)); });
   on($('bSocial'), function () { go('social'); });
   on($('bCup'), function () { PP.Cup.open(); });
+  on($('bDuel'), function () { PP.Duel.open(); });
   on($('bPro'), function () { PP.Social.open('pro'); go('social'); });
   on($('bHelp'), function () { showHelp(); });
   on($('bOpina'), function () { showFeedback(); });
@@ -1427,7 +1435,7 @@
     opp = S.makeSpriteChar(PP.LEVELS[Math.min(save.level, 39)].sprite, { accent: '#ffffff', scale: 1 }); opp.place(1.5, -6);
     PP.ui = { modal: modal, closeModal: closeModal, toast: toast, on: on, ic: ic, go: go, flash: flash, persist: persist, iq: iq, totalStars: totalStars,
       startLevel: startLevel, startDrill: startDrill, save: function () { return save; } };
-    ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
+    ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); PP.Duel.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
     if (!save.intro && location.search.indexOf('nodaily') < 0) showHelp(startShow); else if (location.search.indexOf('nodaily') < 0) showDaily();
     requestAnimationFrame(frame);
   }

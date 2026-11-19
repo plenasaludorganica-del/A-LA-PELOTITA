@@ -184,6 +184,10 @@
     if (fn === 'redeem') { var cr = cupGet(d, a.p_cup); if (cr) cr.redeemed_at = a.p_done === false ? null : new Date().toISOString(); store(d); return ok(); }
     return fail('Acción desconocida.');
   };
+  // Desafíos: necesitan el servidor (se juega entre celulares distintos)
+  var NODUEL = 'Los desafíos con amigos necesitan el servidor de la comunidad.';
+  Local.duelMine = Local.duelOpen = function () { return ok([]); };
+  ['duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit'].forEach(function (k) { Local[k] = function () { return fail(NODUEL); }; });
   // Contraseñas en modo demo
   Local.recoverStart = function () { var e = new Error('En modo demo no se mandan mails.'); e.help = true; return Promise.reject(e); };
   Local.setPassword = function (pw) {
@@ -216,6 +220,7 @@
     if (/password/i.test(m) && /6|short|weak/i.test(m)) return 'La contraseña tiene que tener al menos 6 caracteres.';
     if (/not confirmed/i.test(m)) return 'Falta confirmar el mail. Revisá tu casilla.';
     if (/cup_/.test(m) && /could not find|does not exist|schema cache/i.test(m)) return 'La Copa todavía no está activada en el servidor.';
+    if (/duel_/.test(m) && /could not find|does not exist|schema cache/i.test(m)) return 'Los desafíos todavía no están activados en el servidor.';
     if (/row-level security|violates/i.test(m)) return 'Esa acción ya no está permitida (puede haber cerrado el plazo).';
     return m;
   }
@@ -390,6 +395,15 @@
         .catch(function () { throw new Error('Para invitar tenés que organizar o estar inscripto en el torneo, y que todavía no haya empezado.'); });
     },
     myInvites: function () { if (!DB.user) return ok([]); return rest('POST', '/rest/v1/rpc/my_invites', {}); },
+    // Desafíos con amigos (supabase/duels.sql): 1 contra 1 o 2 contra 2, un turno por jugador
+    duelCreate: function (size, game, open, hours) { return rest('POST', '/rest/v1/rpc/duel_create', { p_size: size, p_game: game, p_open: !!open, p_hours: hours }); },
+    duelJoin: function (ref, team) { return rest('POST', '/rest/v1/rpc/duel_join', { p_ref: String(ref), p_team: team || null }); },
+    duelDetail: function (ref) { return rest('POST', '/rest/v1/rpc/duel_detail', { p_ref: String(ref) }); },
+    duelInvite: function (id, user, team) { return rest('POST', '/rest/v1/rpc/duel_invite', { p_duel: id, p_user: user, p_team: team }); },
+    duelUninvite: function (id, user) { return rest('POST', '/rest/v1/rpc/duel_uninvite', { p_duel: id, p_user: user || null }); },
+    duelSubmit: function (id, score) { return rest('POST', '/rest/v1/rpc/duel_submit', { p_duel: id, p_score: score }); },
+    duelMine: function () { if (!DB.user) return ok([]); return rest('POST', '/rest/v1/rpc/duel_list_mine', {}); },
+    duelOpen: function () { if (!DB.user) return ok([]); return rest('POST', '/rest/v1/rpc/duel_list_open', {}); },
     // Copa de la Cancha: todo pasa por funciones del servidor (supabase/cups.sql); el puntaje lo valida la base
     cupCurrent: function () { return rest('POST', '/rest/v1/rpc/cup_current', {}); },
     cupJoin: function (id) { return rest('POST', '/rest/v1/rpc/cup_join', { p_cup: id }); },
@@ -424,7 +438,7 @@
   };
 
   var impl = DB.online ? Supa : Local;
-  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin', 'recoverStart', 'setPassword', 'adminSetPassword'].forEach(function (k) {
+  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin', 'recoverStart', 'setPassword', 'adminSetPassword', 'duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit', 'duelMine', 'duelOpen'].forEach(function (k) {
     DB[k] = function () { try { return impl[k].apply(impl, arguments); } catch (e) { return Promise.reject(e); } };
   });
   DB.signUp = function (f) {

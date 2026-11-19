@@ -144,7 +144,7 @@ Pendiente, en orden sugerido:
 2. Mail de recuperación de contraseña (falta el servicio de mail propio) y pantalla para aprobar sponsors sin entrar a Supabase.
 3. Guardar el progreso del juego en la cuenta (hoy queda en el dispositivo).
 4. Cobros reales: pasarela de pago para gemas y Pase.
-5. Dobles 2 contra 2, más ejercicios mentales y más jugadas para leer.
+5. Partido en vivo con amigos (etapa 2 de los desafíos), más ejercicios mentales y más jugadas para leer.
 6. Instalable como app y registro anónimo de uso.
 
 ## Estado de la mudanza al servidor propio (noviembre 2026)
@@ -165,6 +165,18 @@ Pendiente, en orden sugerido:
 - **Antes de cada publicación:** correr `python3 tools/stamp.py` para que los celulares bajen los archivos nuevos.
 - **Próximo:** @usuario único, recuperar contraseña, progreso en la cuenta, planillas de pagos y opiniones, cobro internacional.
 - **Plan:** seguir en el plan gratis de Supabase hasta tener ingresos; después pasar a Pro (USD 25 por mes).
+
+## Jugar con amigos (Desafíos)
+
+Botón **Con amigos** en el inicio (muestra cuántas invitaciones o turnos pendientes tenés). Etapa 1: **por turnos**.
+- **Formatos:** 1 contra 1 o 2 contra 2. **Juegos:** Peloteo por puntos, Leé la jugada o Tablero de luces. Duración: 1 hora, 1 día o 3 días.
+- **Con quién:** con amigos (se invita a quienes seguís; en 2 contra 2 elegís **compañero** y **rivales**), **abierto a cualquiera**
+  (aparece en "Abiertos a cualquiera") o pasando el **código** / el enlace `alapelotita.com/#desafio-CÓDIGO` por WhatsApp. **Solo:** el circuito de siempre.
+- **Reglas:** cada jugador tiene **un solo turno** (si sale antes de terminar, cuenta lo que hizo). Gana el equipo que suma más.
+  Termina cuando jugaron todos o al cierre. Después, botón **Revancha**.
+- **Servidor:** `supabase/duels.sql` (ya aplicado). Tablas `duels`, `duel_players`, `duel_invites` sin acceso directo; todo por funciones
+  que validan cuenta, lugar en el equipo, un turno por jugador y el cierre. Pantalla: `js/duel.js`.
+- **Etapa 2 (pendiente):** partido **en vivo**, todos en la misma cancha al mismo tiempo desde su celular.
 
 ## Partidos y pantalla horizontal
 
@@ -240,6 +252,8 @@ para compartir (WhatsApp o el menú de compartir del celular). Está en `js/cup.
 | `js/config.js` | URL y clave pública del servidor (vacío = modo demo) |
 | `supabase/schema.sql` | Tablas y reglas de seguridad del servidor |
 | `supabase/cups.sql` | Copa de la Cancha: tablas, reglas y funciones (se pega aparte en el SQL Editor) |
+| `js/duel.js` | Jugar con amigos: desafíos 1 contra 1 y 2 contra 2 por turnos |
+| `supabase/duels.sql` | Desafíos: tablas, reglas y funciones |
 | `js/cup.js` | Copa de la Cancha: pantalla, panel de administración, envío de puntajes y cartel de novedades |
 | `js/audio.js` | Sonidos y música sintetizados (sin archivos de audio). Cuatro temas, uno por mundo, que rotan solos |
 | `assets/` | Arte pixel art de jugadores, jefes y fondos de cada mundo |

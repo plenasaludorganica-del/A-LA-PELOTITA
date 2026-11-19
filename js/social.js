@@ -252,6 +252,7 @@
     $('nMe').textContent = 'Puntos'; $('nOp').textContent = 'Torneo';
   };
   So.tourDone = function (id, score) {
+    if (typeof id === 'string' && id.indexOf('duel:') === 0) { PP.Duel.done(id.slice(5), score); return; }
     U.go('social');
     DB.submitScore(id, Math.round(score)).then(function (best) {
       U.modal('<h2>¡Turno jugado!</h2><div class="iq">' + Math.round(score) + '</div><p style="color:#fff;font-size:17px">Tu mejor marca en este torneo: <b>' + best + '</b> puntos.</p><p>Podés volver a jugar las veces que quieras mientras el torneo esté abierto. Cuenta tu mejor turno.</p>' +

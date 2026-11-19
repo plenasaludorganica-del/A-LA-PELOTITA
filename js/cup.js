@@ -85,7 +85,7 @@
   function paintHomeBtn() {
     var b = $('bCup'); if (!b) return;
     var live = state && state.cup && state.status === 'live';
-    b.textContent = CFG.name + (live ? ' · en juego' : state && state.cup && state.status === 'soon' ? ' · pronto' : '');
+    b.textContent = CFG.name + (live ? ' 🔥' : '');   // corto: comparte la fila con "Con amigos"
   }
   C.render = function () {
     if (tick) { clearInterval(tick); tick = null; }

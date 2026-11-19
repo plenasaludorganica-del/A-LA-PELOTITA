@@ -332,7 +332,7 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
     <button class="btn big lime pulse" id="playBtn">Jugar</button>
     <div class="row duo"><button class="btn pink" id="bSocial">Comunidad</button><button class="btn" id="bPro" style="background:#FFD23A;color:#1a1036">Jugadas PRO</button></div>
     <button class="btn cyan" id="bTrain" style="font-size:19px">Gimnasio mental · IQ <span id="vIq">70</span></button>
-    <button class="btn" id="bCup" style="font-size:19px;background:linear-gradient(90deg,#FFD23A,#FF7A3D);color:#1a1036;box-shadow:0 0 18px rgba(255,210,58,.5)">&nbsp;</button>
+    <div class="row duo"><button class="btn" id="bDuel" style="background:#7CFF4D;color:#1a1036;box-shadow:0 6px 0 #3f9a1c">Con amigos</button><button class="btn" id="bCup" style="background:linear-gradient(90deg,#FFD23A,#FF7A3D);color:#1a1036;box-shadow:0 0 18px rgba(255,210,58,.5)">&nbsp;</button></div>
     <div class="row">
       <button class="btn small ghost" id="bMap">Circuito</button>
       <button class="btn small ghost" id="bChars">Jugadores</button>
@@ -369,6 +369,11 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
     <div class="scroll" id="soBody"></div>
   </section>
 
+  <section id="duel" class="layer screen sheet" hidden>
+    <header><button class="btn small ghost" data-go="home" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button><h2>Jugar con amigos</h2></header>
+    <div class="scroll" id="duelBody"></div>
+  </section>
+
   <section id="cup" class="layer screen sheet" hidden>
     <header><button class="btn small ghost" data-go="home" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button><h2 id="cupTitle"></h2></header>
     <div class="scroll" id="cupBody"></div>
@@ -386,12 +391,13 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 <script src="vendor/three.min.js?v=ccabb6c3b0"></script>
 <script src="js/config.js?v=e5ee2f38c0"></script>
 <script src="js/data.js?v=69071532bb"></script>
-<script src="js/backend.js?v=8080ee3dab"></script>
-<script src="js/social.js?v=a0c4b623bd"></script>
-<script src="js/cup.js?v=c8d99ec58b"></script>
+<script src="js/backend.js?v=61b3d827c8"></script>
+<script src="js/social.js?v=eca89eae5d"></script>
+<script src="js/cup.js?v=5170fdb272"></script>
+<script src="js/duel.js?v=fe6af5cb63"></script>
 <script src="js/audio.js?v=a6951ea3dd"></script>
 <script src="js/scene.js?v=2f950be3a6"></script>
-<script src="js/game.js?v=c25e1b7eed"></script>
+<script src="js/game.js?v=6f340429e9"></script>
 <!--/PAGE-->
 </body>
 </html>
