@@ -303,6 +303,15 @@
   /* ================= Partido ================= */
   var G = null, me = null, opp = null, curWorld = -1;
   var GR = 11, HOME_ME = 7.6, HOME_OP = -7.4;
+  // Posiciones de juego reales: red (volea), media cancha y fondo (defensa). El rival usa las mismas en negativo.
+  var NET_Z = 3.3, BACK_Z = 7.9, NET_ZONE = 4.8;
+  // Cada rival juega a su manera: el atacante vive en la red, el defensor espera atrás y el mixto cambia según la jugada.
+  var STYLES = { atacante: 'Atacante: sube a la red', defensor: 'Defensor: juega desde el fondo', mixto: 'Mixto: cambia el juego' };
+  function rivalStyle(lv) {
+    if (lv.style) return lv.style;
+    if (lv.type === 'boss') return ['mixto', 'atacante', 'defensor', 'atacante'][lv.world % 4];
+    return ['defensor', 'atacante', 'mixto'][(lv.n || 0) % 3];
+  }
 
   function newBall() { return { x: 0, y: 1, z: 0, vx: 0, vy: 0, vz: 0, bounces: 0, walls: 0, last: null, live: false, side: '', x3: false, willX3: false, net: false }; }
   function stepBall(b, dt, ev) {
@@ -330,11 +339,17 @@
     b.bounces = 0; b.walls = 0; b.last = who; b.live = true; b.net = false; b.x3 = false; b.willX3 = false; b.side = '';
   }
   // Simula hacia adelante y elige el momento ideal de golpe para quien recibe
-  function predict(b, side) {
+  function predict(b, side, stand) {
     var c = {}; for (var k in b) c[k] = b[k];
-    var ev = [], dt = 1 / 90, t = 0, t1 = -1, t2 = -1, samples = [], wallAt = -1;
+    var ev = [], dt = 1 / 90, t = 0, t1 = -1, t2 = -1, samples = [], wallAt = -1, sg = side === 'me' ? 1 : -1, vb = null, vd = 1e9;
+    var netter = stand && Math.abs(stand.z) < NET_ZONE;
     while (t < 5) {
       ev.length = 0; stepBall(c, dt, ev); t += dt;
+      // Volea: antes del pique, la pelota pasa cerca del jugador que está en la red y a una altura cómoda
+      if (netter && c.bounces === 0 && t > 0.32 && c.z * sg > 1.2 && c.z * sg < 5.2 && c.vz * sg > 0 && c.y > 0.55 && c.y < 2.5) {
+        var vdd = Math.abs(c.z - stand.z) + Math.abs(c.x - stand.x) * 0.45;
+        if (vdd < vd) { vd = vdd; vb = { t: G.t + t, x: c.x, y: c.y, z: c.z, wall: false, volley: true }; }
+      }
       for (var i = 0; i < ev.length; i++) {
         if (ev[i] === 'net') return null;
         if (ev[i] === 'wall') { if (c.bounces === 0) return null; if (wallAt < 0) wallAt = t; }
@@ -343,6 +358,7 @@
       if (t1 >= 0) samples.push(t, c.x, c.y, c.z);
       if (t2 >= 0) break;
     }
+    if (vb && vd < 2.6) return vb;
     if (t1 < 0) return null;
     if (t2 < 0) t2 = t;
     var a = t1 + (t2 - t1) * 0.28, z = t1 + (t2 - t1) * 0.74, best = -1, bd = 1e9;
@@ -372,14 +388,16 @@
     G = { lv: lv, idx: idx, type: lv.type, me: 0, opp: 0, toWin: lv.toWin || 0, phase: 'intro', t: 0, rt: 0, rally: 0, combo: 0, bestCombo: 0, bestRally: 0,
       perfects: 0, hits: 0, x3: 0, supers: 0, meter: 0, armed: false, shield: 0, slow: 0, ball: newBall(), plan: null, queued: null, oppPlan: null,
       hitStop: 0, slowmo: 0, timers: [], ballsLeft: lv.balls || 0, targetsHit: 0, misses: 0, targets: [], over: false, serveT: 0, cool: 0, pointDone: false,
-      paused: false, fire: false, fireHits: 0, gift: false, oppShots: 0, tutHits: 0, freeze: false, char: c, score: 0, continued: false };
+      paused: false, fire: false, fireHits: 0, gift: false, oppShots: 0, tutHits: 0, freeze: false, char: c, score: 0, continued: false,
+      style: rivalStyle(lv), netPops: 0, sway: 0 };
     G.meSpeed = me.speed;
     for (var i = 0; i < 3; i++) S.setTarget(i, null);
     if (G.type === 'targets') for (var j = 0; j < 3; j++) placeTarget(j);
     S.mode = 'play'; S.setBall(G.ball, false); S.ring(null);
     screens.forEach(function (s) { $(s).hidden = true; }); $('top').hidden = true; $('hud').hidden = false;
     $('nMe').textContent = lv.type === 'targets' ? 'Blancos' : lv.type === 'rally' ? 'Golpes' : c.name;
-    $('nOp').textContent = lv.type === 'targets' || lv.type === 'rally' ? 'Meta' : lv.rival; $('goal').textContent = lv.goal;
+    $('nOp').textContent = lv.type === 'targets' || lv.type === 'rally' ? 'Meta' : lv.rival;
+    $('goal').textContent = lv.goal + (lv.type === 'match' || lv.type === 'boss' ? ' · ' + STYLES[G.style] : '');
     $('superBtn').style.setProperty('--ac', c.accent);
     hud(); setHint('');
     pop(lv.type === 'boss' ? '¡' + lv.boss.name + '!' : (G.type === 'targets' ? '¡Puntería!' : G.type === 'rally' ? '¡Peloteo!' : 'VS ' + lv.rival), 'big ' + (lv.type === 'boss' ? 'pink' : 'gold'));
@@ -432,7 +450,7 @@
   }
 
   function setPlanForMe() {
-    G.plan = predict(G.ball, 'me'); G.queued = null;
+    G.plan = predict(G.ball, 'me', isAuto() ? { x: me.tx, z: me.tz } : { x: me.x, z: me.z }); G.queued = null;
     if (G.plan) { if (isAuto()) me.goTo(clamp(G.plan.x - 0.55, -4.4, 4.4), clamp(G.plan.z + 0.1, 1.4, 9.5)); if (PP.auto) G.plan.auto = PP.auto.jitter ? rnd(-PP.auto.jitter, PP.auto.jitter) : 0; }
   }
 
@@ -520,14 +538,38 @@
     if (save.tut < 1 && !serve) { G.tutHits++; if (G.tutHits >= 3) { save.tut = 1; persist(); setHint(''); } }
     if (serve) setHint(save.tut < 1 ? moveHint() : '');
     G.queued = null; G.plan = null; G.phase = 'toOpp'; S.ring(null);
-    if (isAuto()) me.goTo(clamp(me.x * 0.4, -2, 2), HOME_ME); hud();
+    if (isAuto()) meRecover(aim, q, serve, high, tx); hud();
     if (G.type === 'rally' && G.hits >= G.lv.need) { after(0.5, function () { endLevel(true); }); }
     if (G.type !== 'targets') planOpp(q, stretch);
   }
 
+  // Táctica del jugador (control fácil): con el saque o un buen globo sube a la red; con un golpe flojo vuelve a defender
+  function meRecover(aim, q, serve, high, tx) {
+    var z, x = clamp((tx || 0) * 0.32, -2.2, 2.2), wasBack = me.z > NET_ZONE + 0.6;
+    if (G.type === 'targets' || G.type === 'rally') z = HOME_ME;
+    else if (q === 'bad' || q === 'ok') z = BACK_Z;                         // golpe flojo: atrás a defender
+    else if (serve) z = Math.random() < 0.75 ? NET_Z : BACK_Z;               // saque y red (casi siempre)
+    else if (aim.lob) z = Math.random() < 0.7 ? NET_Z : BACK_Z;              // buen globo: la llave de la red
+    else if (high) z = me.z < 6.2 ? NET_Z : 5.6;                             // bandeja o remate: no regalar la red
+    else if (!wasBack) z = Math.random() < 0.8 ? NET_Z : 5.6;               // en la red se queda, a veces da un paso atrás
+    else z = aim.depth < 0.4 ? NET_Z : (Math.random() < 0.35 ? NET_Z : BACK_Z);
+    me.goTo(x, z);
+    if (z === NET_Z && wasBack && G.netPops < 3) { G.netPops++; pop('¡A LA RED!', 'good', { x: me.x, y: 2.6, z: me.z }); }
+  }
+  // Táctica del rival según su estilo
+  function oppRecover(lob, tx) {
+    var st = G.style, x = clamp((tx || 0) * 0.3, -1.8, 1.8), z;
+    if (G.type === 'rally' || G.type === 'targets') z = HOME_OP;
+    else if (lob) z = -NET_Z;
+    else if (st === 'atacante') z = Math.random() < 0.85 ? -NET_Z : -BACK_Z;
+    else if (st === 'defensor') z = Math.random() < 0.85 ? -BACK_Z : -NET_Z - 1.2;
+    else z = me.z < NET_ZONE ? -BACK_Z : (Math.random() < 0.5 ? -NET_Z : -BACK_Z);
+    opp.goTo(x, z);
+  }
+
   /* ---------- Rival ---------- */
   function planOpp(q, stretch) {
-    var b = G.ball, d = G.lv.diff, boss = G.type === 'boss', p = predict(b, 'opp');
+    var b = G.ball, d = G.lv.diff, boss = G.type === 'boss', p = predict(b, 'opp', { x: opp.tx, z: opp.tz });
     G.oppPlan = null; if (!p) return;
     var sx = clamp(p.x + 0.55, -4.4, 4.4), sz = clamp(p.z - 0.1, -9.5, -1.4);
     opp.speed = 3.6 + d * 0.11 + (boss ? 0.6 : 0);
@@ -554,16 +596,23 @@
     var T = (Math.max(0.74, 1.3 - d * 0.014) - (boss ? 0.06 : 0)) * Math.max(0.84, 1 - G.rally * 0.02), spread = Math.min(4, 1.5 + d * 0.065);
     var smart = Math.random() < 0.3 + d * 0.017, tx = smart ? -Math.sign(me.x || (Math.random() - 0.5)) * rnd(1.2, spread) : rnd(-spread, spread);
     var tz = 4.6 + Math.random() * (1.4 + Math.min(2.8, d * 0.07)), lobP = boss ? G.lv.boss.lob : Math.max(0.05, 0.13 - d * 0.002), fire = false;
+    var drop = false, meNet = me.z < NET_ZONE;
+    if (G.type === 'match' || boss) {
+      if (meNet) { lobP = Math.max(lobP, 0.24 + d * 0.004 + (G.style === 'defensor' ? 0.12 : 0)); tx = -Math.sign(me.x || (Math.random() - 0.5)) * rnd(1.6, 3.6); tz = rnd(4.4, 6.2); }
+      else if (opp.z > -NET_ZONE && G.rally > 0 && Math.random() < 0.2 + d * 0.004 + (G.style === 'atacante' ? 0.1 : 0)) { drop = true; tz = rnd(1.5, 2.6); T = Math.max(T, 1.15); tx = rnd(-2.6, 2.6); }
+    }
     if (G.type === 'rally') { T = Math.max(0.95, 1.5 - G.hits * 0.022); tx = rnd(-3, 3) * Math.min(1, 0.4 + G.hits * 0.04); lobP = 0.1; }
     if (save.tut < 1 && G.tutHits < 2) { T = 1.55; tx = rnd(-1.5, 1.5); tz = 5.5; lobP = 0; }
     // Regalo de bienvenida: en los primeros niveles el rival deja un globo corto para que el jugador pruebe el remate
     if (!G.gift && G.oppShots === 2 && (G.lv.show || G.idx < 3) && !boss0()) { G.gift = true; lobP = 0; T = 2.0; tz = 5.0; tx = clamp(me.x + 0.6, -3, 3); pop('¡Globo corto! ¡Rematala!', 'gold', { x: hp.x, y: hp.y + 1.8, z: hp.z }); A.play('ready'); }
-    if (Math.random() < lobP) { T = 2.05; tz = rnd(6.6, 7.8); }
+    var olob = false;
+    if (!drop && Math.random() < lobP) { olob = true; T = 2.05; tz = meNet ? rnd(7.6, 8.6) : rnd(6.6, 7.8); if (meNet) pop('¡GLOBO!', 'bad', { x: hp.x, y: hp.y + 1.6, z: hp.z }); }
+    else if (drop) pop('¡DEJADA!', 'bad', { x: hp.x, y: hp.y + 1.6, z: hp.z });
     else if (boss && G.oppShots % 4 === 0) { fire = true; T *= 0.8; A.play('warn'); pop('¡CUIDADO!', 'bad', { x: hp.x, y: hp.y + 1.6, z: hp.z }); }
     launch(b, tx, tz, T, 'opp');
     A.play(fire ? 'smash' : 'hit'); S.burst(hp, fire ? '#FF5252' : '#ffffff', fire ? 30 : 10, fire ? 8 : 4, 0.4); if (fire) S.shake(0.4);
     S.setBallStyle(fire ? '#FF5252' : '#D8FF3A', fire ? 1.6 : 0);
-    G.phase = 'toMe'; opp.goTo(clamp(opp.x * 0.3, -1.5, 1.5), HOME_OP); setPlanForMe();
+    G.phase = 'toMe'; oppRecover(olob, tx); setPlanForMe();
   }
 
   /* ---------- Eventos de la pelota y puntos ---------- */
@@ -1367,7 +1416,7 @@
   }
   // Ganchos de prueba e integración (Padel Coach puede usar window.Pelotita)
   window.Pelotita = PP.api = {
-    move: function (x, z) { mvIn.x = x; mvIn.z = z; }, me: function () { return me; },
+    move: function (x, z) { mvIn.x = x; mvIn.z = z; }, me: function () { return me; }, opp: function () { return opp; },
     start: startLevel, getSave: function () { return save; }, state: function () { return G; }, go: go, swipe: swipe, useSuper: useSuper,
     reset: function () { save = defaults(); persist(); location.reload(); }
   };
