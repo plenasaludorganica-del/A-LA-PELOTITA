@@ -166,7 +166,7 @@
   function startMatch() {
     L.active = true; R.ended = false;
     if (U.wantLandscape) U.wantLandscape();
-    ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup', 'duel', 'live'].forEach(function (x) { var el = $(x); if (el) el.hidden = true; });
+    ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup', 'duel', 'live', 'vis'].forEach(function (x) { var el = $(x); if (el) el.hidden = true; });
     $('top').hidden = true; $('hud').hidden = false; $('hud').classList.add('tr');
     var api = PP.api; if (api.me()) api.me().g.visible = false; if (api.opp && api.opp()) api.opp().g.visible = false;
     S.mode = 'play'; S.setBall({ x: 0, y: 0, z: 0 }, false); S.ring(null);
