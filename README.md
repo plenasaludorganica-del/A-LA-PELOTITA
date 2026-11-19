@@ -166,6 +166,14 @@ Pendiente, en orden sugerido:
 - **Próximo:** @usuario único, recuperar contraseña, progreso en la cuenta, planillas de pagos y opiniones, cobro internacional.
 - **Plan:** seguir en el plan gratis de Supabase hasta tener ingresos; después pasar a Pro (USD 25 por mes).
 
+## Estadísticas en el panel (en vivo y anónimas)
+
+Panel → arriba **🟢 En vivo ahora** (se actualiza cada 20 s: cuántos hay, con o sin cuenta y en qué pantalla) y la pestaña
+**Estadísticas**: visitantes de hoy (con y sin cuenta, nuevos), últimos 7 y 30 días, los que vuelven, partidas de hoy,
+visitantes por día (14 días), **juegos que más se juegan** (partidas, jugadores, duración, % que ganó y % que abandonó) y
+desde qué dispositivo. Cada navegador tiene un número al azar (`pelotita.vid`): no se guarda nombre, mail ni IP.
+Juego: `js/track.js` (`PP.Track.start/end` al empezar y terminar cada partida). Servidor: `supabase/analytics.sql` (ya aplicado).
+
 ## PLAN PARA EL LUNES: vidas pagas (anotado el 19/11/2026)
 
 **Hoy:** 5 vidas, se recupera 1 cada 15 minutos (`MAX_LIVES`, `LIFE_MS` en `js/game.js`). Sin vidas aparece `showNoLives`:
@@ -296,6 +304,8 @@ de Google. Antes hay que configurarlo (una sola vez):
 | `js/config.js` | URL y clave pública del servidor (vacío = modo demo) |
 | `supabase/schema.sql` | Tablas y reglas de seguridad del servidor |
 | `supabase/cups.sql` | Copa de la Cancha: tablas, reglas y funciones (se pega aparte en el SQL Editor) |
+| `js/track.js` | Estadísticas anónimas: visitas, quién está en vivo y partidas |
+| `supabase/analytics.sql` | Estadísticas: tablas y funciones (solo la administración las lee) |
 | `js/duel.js` | Jugar con amigos: desafíos 1 contra 1 y 2 contra 2 por turnos |
 | `supabase/duels.sql` | Desafíos: tablas, reglas y funciones |
 | `js/cup.js` | Copa de la Cancha: pantalla, panel de administración, envío de puntajes y cartel de novedades |

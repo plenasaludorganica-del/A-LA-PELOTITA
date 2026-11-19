@@ -72,6 +72,7 @@ td.wrap { white-space: normal; min-width: 180px; }
 #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #fff; color: #1b1033; padding: 10px 16px; border-radius: 12px; font-weight: 900; box-shadow: 0 8px 30px rgba(0, 0, 0, .4); }
 @media (max-width: 600px) { header.top h1 { font-size: 22px; } .stat b { font-size: 26px; } }
 .pw { position: relative; width: 100%; } .pw .fld { padding-right: 52px; } .pw .eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border: 0; border-radius: 12px; background: rgba(255,255,255,.1); color: #fff; font-size: 20px; cursor: pointer; padding: 0; }
+.live { margin-bottom: 16px; border-color: #7CFF4D; } .live b { color: #7CFF4D; }
 </style>
 </head>
 <body>
@@ -93,6 +94,7 @@ td.wrap { white-space: normal; min-width: 180px; }
   </div>
 
   <main id="app" hidden>
+    <section class="card live" id="live"><b>🟢 En vivo ahora</b> <span class="note">Cargando…</span></section>
     <section class="stats" id="stats"></section>
     <section class="card" style="margin-bottom:16px">
       <b>Cuentas nuevas por semana</b> <span class="note">(últimas 12 semanas)</span>
@@ -106,12 +108,12 @@ td.wrap { white-space: normal; min-width: 180px; }
 
 <script src="js/config.js?v=d2807f3a4f"></script>
 <script src="js/data.js?v=0da5430ae0"></script>
-<script src="js/backend.js?v=7bdd622bf7"></script>
+<script src="js/backend.js?v=f125bb0cdc"></script>
 <script>
 (function () {
   'use strict';
   var DB = PP.DB, $ = function (id) { return document.getElementById(id); };
-  var tab = 'fb', stats = null, users = [], fbOnlyUnread = true, uFilter = 'all', uQ = '', vids = [];
+  var tab = 'an', stats = null, users = [], fbOnlyUnread = true, uFilter = 'all', uQ = '', vids = [];
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function money(n) { return '$ ' + Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 }); }
   function day(d) { return d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—'; }
@@ -140,7 +142,40 @@ td.wrap { white-space: normal; min-width: 180px; }
   /* ---------- Datos ---------- */
   function loadAll() {
     DB.admin('admin_stats').then(function (s) { stats = s; paintStats(); paintTabs(); }, fail);
-    render();
+    render(); loadLive();
+    if (!liveT) liveT = setInterval(function () { if (!document.hidden) loadLive(); }, 20000);
+  }
+  /* ---------- En vivo y estadísticas (anónimas: supabase/analytics.sql) ---------- */
+  var liveT = null, SCREENS = { home: 'inicio', inicio: 'inicio', partido: 'jugando un partido', gimnasio: 'en el Gimnasio mental', social: 'en Comunidad', cup: 'mirando la Copa', duel: 'en Con amigos', map: 'en el Circuito', shop: 'en la Tienda', chars: 'eligiendo jugador', missions: 'en Misiones', train: 'en el Gimnasio mental' };
+  function gname(g) {
+    var m = /^lv(\d+)$/.exec(g); if (m) return 'Nivel ' + m[1];
+    return { read: 'Leé la jugada', lights: 'Tablero de luces', ghost: 'Pelota fantasma', antic: 'Anticipación', torneo: 'Turno de torneo', desafio: 'Turno de desafío', exhibicion: 'Partido de bienvenida' }[g] || g;
+  }
+  function secs(n) { n = +n || 0; return n >= 60 ? Math.floor(n / 60) + ' min ' + (n % 60) + ' s' : n + ' s'; }
+  function loadLive() {
+    DB.admin('admin_analytics').then(function (a) {
+      var l = a.live || {}, sc = (l.screens || []).map(function (x) { return x.n + ' ' + (SCREENS[x.screen] || x.screen); }).join(' · ');
+      $('live').innerHTML = '<b>🟢 En vivo ahora: ' + (l.total || 0) + (l.total === 1 ? ' persona' : ' personas') + '</b> <span class="note">' + (l.registered || 0) + ' con cuenta · ' + ((l.total || 0) - (l.registered || 0)) + ' sin registrarse' +
+        (sc ? ' — ' + esc(sc) : '') + ' · se actualiza solo cada 20 segundos</span>';
+      if (tab === 'an') paintAn(a);
+    }, function (e) { $('live').innerHTML = '<b>🟢 En vivo ahora</b> <span class="note">' + esc(e.message) + '</span>'; });
+  }
+  function renderAn() { DB.admin('admin_analytics').then(paintAn, function (e) { $('view').innerHTML = '<p class="err">' + esc(e.message) + '</p>'; }); }
+  function paintAn(a) {
+    var t = a.today || {}, d = a.daily || [], mx = Math.max.apply(null, d.map(function (x) { return x.visitors; }).concat([1])), g = a.games || [], dev = a.devices || [];
+    var card = function (k, v, sub) { return '<div class="stat"><span>' + k + '</span><b>' + esc(v) + '</b><em>' + esc(sub) + '</em></div>'; };
+    var h = '<p class="note">Estadísticas anónimas: se cuenta cada navegador una vez por día, tenga o no cuenta. No se guarda nombre, mail ni IP de los que no se registran. Empezó a contar el 19/11/2026.</p>' +
+      '<section class="stats">' + card('Visitantes hoy', t.visitors || 0, (t.registered || 0) + ' con cuenta · ' + ((t.visitors || 0) - (t.registered || 0)) + ' sin registrarse') +
+      card('Nuevos hoy', t.new || 0, 'entraron por primera vez') + card('Últimos 7 días', a.week || 0, 'visitantes distintos') + card('Últimos 30 días', a.month || 0, (a.reg_month || 0) + ' con cuenta · ' + (a.anon_month || 0) + ' sin registrarse') +
+      card('Vuelven', a.returning || 0, 'entraron más de un día (30 días)') + card('Partidas hoy', a.plays_today || 0, 'niveles, ejercicios, torneos y desafíos') + '</section>' +
+      '<section class="card" style="margin-bottom:16px"><b>Visitantes por día</b> <span class="note">(últimos 14 días · en celeste, los que tienen cuenta)</span><div class="weeks">' +
+      d.map(function (x) { var dd = new Date(x.day + 'T12:00:00'); return '<div><b>' + x.visitors + '</b><i style="height:' + Math.max(2, x.visitors / mx * 80) + 'px;background:linear-gradient(0deg,var(--cyan) ' + (x.visitors ? Math.round(x.registered / x.visitors * 100) : 0) + '%,#7B4DFF 0)"></i>' + dd.getDate() + '/' + (dd.getMonth() + 1) + '</div>'; }).join('') + '</div></section>' +
+      '<section class="card" style="margin-bottom:16px"><b>Juegos que más se juegan</b> <span class="note">(últimos 30 días)</span>' +
+      (g.length ? '<div class="tablewrap"><table><thead><tr><th>Juego</th><th>Partidas</th><th>Jugadores</th><th>Duración promedio</th><th>Ganaron</th><th>Abandonaron</th></tr></thead><tbody>' +
+        g.map(function (x) { return '<tr><td>' + esc(gname(x.game)) + '</td><td>' + x.plays + '</td><td>' + x.players + '</td><td>' + secs(x.avg_secs) + '</td><td>' + (/^lv/.test(x.game) || x.game === 'exhibicion' ? x.win_pct + ' %' : '—') + '</td><td>' + x.quit_pct + ' %</td></tr>'; }).join('') + '</tbody></table></div>'
+        : '<p class="note">Todavía no hay partidas registradas. Aparecen a medida que la gente juega.</p>') + '</section>' +
+      '<section class="card"><b>Desde dónde juegan</b> <span class="note">(últimos 30 días)</span><p>' + (dev.length ? dev.map(function (x) { return esc(x.device) + ': <b>' + x.n + '</b>'; }).join(' · ') : 'Todavía no hay datos.') + '</p></section>';
+    $('view').innerHTML = h;
   }
   function paintStats() {
     var s = stats, cards = [
@@ -160,11 +195,11 @@ td.wrap { white-space: normal; min-width: 180px; }
     $('weeks').innerHTML = w.length ? w.map(function (x) { var d = new Date(x.week + 'T12:00:00'); return '<div><b>' + x.n + '</b><i style="height:' + Math.max(2, x.n / mx * 80) + 'px"></i>' + d.getDate() + '/' + (d.getMonth() + 1) + '</div>'; }).join('') : '<p class="note">Todavía no hay datos.</p>';
   }
   function paintTabs() {
-    var s = stats || {}, list = [['fb', 'Opiniones', s.feedback_unread], ['users', 'Usuarios'], ['pays', 'Pagos'], ['vids', 'Videos por revisar', s.videos_pending]];
+    var s = stats || {}, list = [['an', 'Estadísticas'], ['fb', 'Opiniones', s.feedback_unread], ['users', 'Usuarios'], ['pays', 'Pagos'], ['vids', 'Videos por revisar', s.videos_pending]];
     $('tabs').innerHTML = list.map(function (t) { return '<button class="tab' + (tab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + (t[2] ? '<span class="n">' + t[2] + '</span>' : '') + '</button>'; }).join('');
   }
   $('tabs').addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (!b) return; tab = b.dataset.tab; paintTabs(); render(); });
-  function render() { paintTabs(); $('view').innerHTML = '<p class="note">Cargando…</p>'; ({ fb: renderFb, users: renderUsers, pays: renderPays, vids: renderVids })[tab](); }
+  function render() { paintTabs(); $('view').innerHTML = '<p class="note">Cargando…</p>'; ({ an: renderAn, fb: renderFb, users: renderUsers, pays: renderPays, vids: renderVids })[tab](); }
 
   /* ---------- Opiniones ---------- */
   function renderFb() {

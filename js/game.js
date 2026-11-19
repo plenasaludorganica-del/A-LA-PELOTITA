@@ -73,7 +73,7 @@
   /* ================= UI general ================= */
   var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup', 'duel'], curScreen = 'home';
   function go(name) {
-    curScreen = name; document.body.classList.remove('playing');
+    curScreen = name; document.body.classList.remove('playing'); if (PP.Track && PP.Track.nav) PP.Track.nav();
     screens.forEach(function (s) { $(s).hidden = s !== name; });
     $('top').hidden = false; $('hud').hidden = true;
     if (name === 'home') { renderHome(); if (save.level >= 3 && !save.fbAsked && !G) { save.fbAsked = true; persist(); setTimeout(showFeedback, 400); } }
@@ -394,6 +394,7 @@
     var lv = typeof idx === 'object' ? idx : PP.LEVELS[idx], c = curChar();
     if (!lv.train && !lv.show && !lv.tour && !save.pass && save.lives <= 0) { showNoLives(); return; }
     trClean(); S.ballHide = false; $('hud').classList.remove('tr'); wantLandscape();
+    PP.Track.start(lv.tour ? (isDuel(lv.tour) ? 'desafio' : 'torneo') : lv.show ? 'exhibicion' : lv.train ? 'ghost' : 'lv' + lv.n);
     if (curWorld !== lv.world) { S.setWorld(lv.world); curWorld = lv.world; }
     A.setSong(lv.world);
     if (me) me.remove(); if (opp) opp.remove();
@@ -810,6 +811,7 @@
   /* ---------- Fin de nivel ---------- */
   function endLevel(win) {
     if (!G || G.over) return; G.over = true; G.phase = 'over'; S.ring(null); setHint('');
+    if (!G.lv.train) PP.Track.end(G.lv.tour ? 'fin' : (win ? 'gano' : 'perdio'));
     if (G.lv.tour) { var tid = G.lv.tour, tsc = G.score; setTimeout(function () { leaveMatch(); PP.Social.tourDone(tid, tsc); }, 1100); return; }
     if (G.lv.show) {
       if (win) { me.setMood('happy'); opp.setMood('sad'); S.confetti(240); A.play('win'); for (var fw = 0; fw < 8; fw++) setTimeout(S.firework, fw * 220); } else { opp.setMood('happy'); A.play('point'); }
@@ -898,7 +900,7 @@
   function isDuel(t) { return typeof t === 'string' && t.indexOf('duel:') === 0; }
   function pause() {
     if (TR) {
-      var wasTour = PP.tourCtx, trScore = TR.score || 0; PP.tourCtx = null; trClean(); S.mode = 'menu';
+      var wasTour = PP.tourCtx, trScore = TR.score || 0; PP.tourCtx = null; trClean(); S.mode = 'menu'; PP.Track.end('salio');
       if (isDuel(wasTour)) { PP.Social.tourDone(wasTour, trScore); return; }   // en un desafío, salir cuenta como turno jugado
       go(wasTour ? 'social' : 'train'); return;
     }
@@ -909,6 +911,7 @@
       on(mb, function () { save.ctrl = save.ctrl === 'pro' ? 'easy' : 'pro'; persist(); lab(); });
       on($('pGo'), function () { closeModal(); if (G) G.paused = false; });
       on($('pQuit'), function () {
+        PP.Track.end('salio');
         closeModal(); if (G && G.lv.train) { leaveMatch(); go('train'); return; }
         if (G && isDuel(G.lv.tour)) { var dt0 = G.lv.tour, ds0 = G.score; leaveMatch(); PP.Social.tourDone(dt0, ds0); return; }
         if (G && G.lv.tour) { leaveMatch(); go('social'); return; }
@@ -948,7 +951,7 @@
       startLevel({ train: true, type: 'rally', need: 12, misses: 3, strobe: true, rival: 'Sparring', goal: 'Pelota fantasma: 12 golpes, 3 errores máximo', world: Math.max(0, curWorld), sprite: 'assets/sprites/r1.png', diff: 6, n: 0 });
       return;
     }
-    trClean(); G = null;
+    trClean(); G = null; PP.Track.start(PP.tourCtx ? (isDuel(PP.tourCtx) ? 'desafio' : 'torneo') : id);
     if (me) me.remove(); if (opp) opp.remove();
     var c = curChar(), d = PP.DRILLS.filter(function (x) { return x.id === id; })[0];
     me = S.makeSpriteChar(c.sprite, { accent: c.accent }); opp = S.makeSpriteChar('assets/sprites/r2.png', { accent: '#ffffff' });
@@ -1219,6 +1222,7 @@
   }
   $('tq').addEventListener('click', function (e) { if (e.target.closest('[data-why]')) { A.unlock(); A.play('click'); showMind(); } });
   function trainFinish(id, pct) {
+    PP.Track.end('fin');
     trClean(); $('hud').hidden = true;
     if (PP.tourCtx) { var tc = PP.tourCtx; PP.tourCtx = null; S.mode = 'menu'; PP.Social.tourDone(tc, PP.lastDrillScore || 0); return; }
     pct = clamp(Math.round(pct), 0, 100);
@@ -1435,8 +1439,9 @@
     me = S.makeSpriteChar(c.sprite, { accent: c.accent, scale: 1 }); me.place(-1.5, 6);
     opp = S.makeSpriteChar(PP.LEVELS[Math.min(save.level, 39)].sprite, { accent: '#ffffff', scale: 1 }); opp.place(1.5, -6);
     PP.ui = { modal: modal, closeModal: closeModal, toast: toast, on: on, ic: ic, go: go, flash: flash, persist: persist, iq: iq, totalStars: totalStars,
-      startLevel: startLevel, startDrill: startDrill, save: function () { return save; } };
-    ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); PP.Duel.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
+      startLevel: startLevel, startDrill: startDrill, save: function () { return save; },
+      where: function () { return G ? 'partido' : TR ? 'gimnasio' : curScreen; } };
+    ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); PP.Duel.init(); PP.Track.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
     if (!save.intro && location.search.indexOf('nodaily') < 0) showHelp(startShow); else if (location.search.indexOf('nodaily') < 0) showDaily();
     requestAnimationFrame(frame);
   }

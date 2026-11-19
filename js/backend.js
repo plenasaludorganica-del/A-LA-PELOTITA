@@ -187,6 +187,7 @@
   // Desafíos: necesitan el servidor (se juega entre celulares distintos)
   var NODUEL = 'Los desafíos con amigos necesitan el servidor de la comunidad.';
   Local.duelMine = Local.duelOpen = function () { return ok([]); };
+  Local.trackPing = Local.trackPlay = function () { return ok(); };
   Local.playerProfile = function (id) { var d = load(), u = Object.keys(d.users || {}).map(function (k) { return d.users[k]; }).filter(function (x) { return x.id === id; })[0]; return ok(u ? Object.assign(pub(u), { followers: 0, following: 0, videos: 0, likes: 0, me: DB.user && DB.user.id === id }) : null); };
   Local.userVideos = function () { return ok([]); };
   ['duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit'].forEach(function (k) { Local[k] = function () { return fail(NODUEL); }; });
@@ -419,6 +420,9 @@
         .catch(function () { throw new Error('Para invitar tenés que organizar o estar inscripto en el torneo, y que todavía no haya empezado.'); });
     },
     myInvites: function () { if (!DB.user) return ok([]); return rest('POST', '/rest/v1/rpc/my_invites', {}); },
+    // Estadísticas anónimas (supabase/analytics.sql)
+    trackPing: function (vid, screen, device) { return rest('POST', '/rest/v1/rpc/track_ping', { p_vid: vid, p_screen: screen, p_device: device }); },
+    trackPlay: function (vid, game, result, secs) { return rest('POST', '/rest/v1/rpc/track_play', { p_vid: vid, p_game: game, p_result: result, p_secs: secs }); },
     // Desafíos con amigos (supabase/duels.sql): 1 contra 1 o 2 contra 2, un turno por jugador
     duelCreate: function (size, game, open, hours) { return rest('POST', '/rest/v1/rpc/duel_create', { p_size: size, p_game: game, p_open: !!open, p_hours: hours }); },
     duelJoin: function (ref, team) { return rest('POST', '/rest/v1/rpc/duel_join', { p_ref: String(ref), p_team: team || null }); },
@@ -462,7 +466,7 @@
   };
 
   var impl = DB.online ? Supa : Local;
-  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin', 'recoverStart', 'setPassword', 'adminSetPassword', 'duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit', 'duelMine', 'duelOpen', 'playerProfile', 'userVideos', 'googleStart'].forEach(function (k) {
+  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin', 'recoverStart', 'setPassword', 'adminSetPassword', 'duelCreate', 'duelJoin', 'duelDetail', 'duelInvite', 'duelUninvite', 'duelSubmit', 'duelMine', 'duelOpen', 'playerProfile', 'userVideos', 'googleStart', 'trackPing', 'trackPlay'].forEach(function (k) {
     DB[k] = function () { try { return impl[k].apply(impl, arguments); } catch (e) { return Promise.reject(e); } };
   });
   DB.signUp = function (f) {
