@@ -425,7 +425,7 @@
     after(0.9, beginPoint);
   }
   function after(sec, fn) { G.timers.push({ t: G.rt + sec, fn: fn }); }
-  function setHint(t) { $('hint').textContent = t; }
+  function setHint(t) { $('hint').textContent = ''; }   // sin textos abajo mientras se juega: la cancha se ve limpia
 
   function placeTarget(i) {
     var p = { x: rnd(-3.4, 3.4), z: -rnd(3.4, 8.2) }, tries = 0;
@@ -496,7 +496,7 @@
     G.queued = { aim: aim, q: quality(dtm), at: Math.max(G.t, G.plan.t) };
     me.swing(G.plan.y > 1.75 && !aim.lob ? 'smash' : (aim.lob ? 'lob' : 'drive'), G.plan.x < me.tx - 0.1);
   }
-  function isAuto() { return !!(save.ctrl !== 'pro' || PP.auto || (G && G.shield > 0)); }
+  function isAuto() { return !!(PP.auto || (G && G.shield > 0)); }   // siempre mueve el jugador (salvo pruebas y el especial Muro)
   function ez() { return G && ((typeof G.idx === 'number' && G.idx < 5) || G.lv.show) ? 1.5 : 1; }
   // Control manual: ¿la pelota está al alcance del jugador? Devuelve la calidad del golpe o null
   function reachQ() {
@@ -507,7 +507,6 @@
     return e <= wp ? 'perfect' : e <= 1.05 ? 'good' : 'ok';
   }
   function moveHint() {
-    if (save.ctrl !== 'pro') return 'Cuando el aro se cierra sobre la pelota, deslizá el dedo. La dirección apunta el tiro.';
     return window.matchMedia && matchMedia('(pointer: coarse)').matches
       ? 'Pulgar izquierdo: mové al jugador hasta el aro. Pulgar derecho: deslizá para pegar y apuntar.'
       : 'Movete con WASD o las flechas hasta el aro. Pegá deslizando el mouse, o con J K L.';
@@ -785,17 +784,10 @@
   function showHelp(next) {
     var step = function (n, t, d) { return '<div class="card item" style="--c:#22E1FF;text-align:left;width:100%;box-sizing:border-box;margin:0"><div class="gfx disp" style="font-size:30px;color:#1b1033">' + n + '</div><div class="tx"><h3>' + t + '</h3><p>' + d + '</p></div></div>'; };
     modal('<h2>¿Cómo se juega?</h2>' +
-      step(1, 'Deslizá para pegar', 'Pasá el dedo por la pantalla, de abajo hacia arriba. Derecho va al medio. Con eso sacás y devolvés.') +
-      step(2, 'Esperá el aro', 'Un aro se cierra sobre la pelota. Cuando se cierra del todo es el momento: sale PERFECTO.') +
-      step(3, 'Apuntá con el dedo', 'Hacia la izquierda o la derecha, la pelota va a ese lado. Hacia abajo sale un globo.') +
-      '<p>Elegí cómo jugar. Se cambia cuando quieras desde la pausa.</p><div class="row"><button class="btn small" id="cEasy">Fácil</button><button class="btn small" id="cPro">Pro</button></div><p id="cDesc" style="color:#fff"></p>' +
+      step(1, 'Movete vos', 'Con el pulgar izquierdo en la palanca de la esquina izquierda llevás al jugador hasta la pelota. En compu: WASD o flechas.') +
+      step(2, 'Deslizá para pegar', 'Con el otro dedo, en la mitad derecha, pasá el dedo de abajo hacia arriba cuando la pelota llega al aro.') +
+      step(3, 'Apuntá con el dedo', 'Derecho va al medio, inclinado abre hacia ese lado y hacia abajo sale un globo.') +
       '<button class="btn lime big" id="helpOk">¡A la cancha!</button>', function () {
-      function paint() {
-        var pro = save.ctrl === 'pro'; $('cEasy').className = 'btn small ' + (pro ? 'ghost' : 'lime'); $('cPro').className = 'btn small ' + (pro ? 'lime' : 'ghost');
-        $('cDesc').textContent = pro ? 'Pro: movés al jugador con el pulgar izquierdo y pegás con el derecho. Para quien ya le agarró la mano.' : 'Fácil: el jugador corre solo a la pelota. Vos pegás y apuntás con un dedo. Recomendado para empezar.';
-      }
-      paint();
-      on($('cEasy'), function () { save.ctrl = 'easy'; persist(); paint(); }); on($('cPro'), function () { save.ctrl = 'pro'; persist(); paint(); });
       on($('helpOk'), function () { closeModal(); if (next) next(); });
     });
   }
@@ -909,9 +901,6 @@
     }
     if (!G || G.over) return; G.paused = true;
     modal('<h2>Pausa</h2><p>' + G.lv.goal + '</p><div class="row"><button class="btn ghost" id="pQuit">Salir</button><button class="btn lime big" id="pGo">Seguir</button></div>' + (G.lv.train ? '' : '<p style="font-size:13px">Si salís ahora perdés una vida.</p>') + '', function () {
-      var mb = document.createElement('button'); mb.className = 'btn small ghost';
-      function lab() { mb.textContent = 'Control: ' + (save.ctrl === 'pro' ? 'Pro (movés vos)' : 'Fácil (corre solo)'); } lab(); $('modalBox').appendChild(mb);
-      on(mb, function () { save.ctrl = save.ctrl === 'pro' ? 'easy' : 'pro'; persist(); lab(); });
       on($('pGo'), function () { closeModal(); if (G) G.paused = false; });
       on($('pQuit'), function () {
         PP.Track.end('salio');
@@ -1257,6 +1246,7 @@
   var last = 0, evBuf = [];
   function frame(now) {
     requestAnimationFrame(frame);
+    stickShow();
     if (PP.busy) { last = now; return; }   // mientras se prepara un video, la cancha 3D no se dibuja para no quitarle fuerza al celular
     var dt = Math.min(0.05, (now - last) / 1000 || 0.016) * (PP.timeMul || 1); last = now;
     var gdt = 0;
@@ -1337,24 +1327,31 @@
     }
   }
   var gl = $('gl'), mvIn = { x: 0, z: 0 }, keys = {}, stick = null;
-  // Palanca flotante: aparece donde apoyás el pulgar, en el lado izquierdo de la pantalla
+  // Palanca fija en la esquina izquierda: se apoya el pulgar en cualquier lugar de la mitad izquierda
+  // y el jugador va hacia donde apunta el dedo visto desde el centro de la palanca.
+  function live() { return !!(PP.Live && PP.Live.active); }
+  function playing() { return live() || !!(G && !G.over && !G.paused); }
+  function touchDev() { return !!(window.matchMedia && matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in window; }
   function stickStart(e) {
-    if (e.pointerType === 'mouse' || !G || G.paused || isAuto() || stick || e.clientX > innerWidth * 0.46) return false;
-    stick = { id: e.pointerId, x: e.clientX, y: e.clientY };
-    var el = $('stick'); el.hidden = false; el.style.left = e.clientX + 'px'; el.style.top = e.clientY + 'px'; $('knob').style.transform = '';
+    if (e.pointerType === 'mouse' || !playing() || (G && isAuto()) || stick || e.clientX > innerWidth * 0.46) return false;
+    var r = $('stick').getBoundingClientRect();
+    stick = { id: e.pointerId, x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    $('stick').classList.add('on'); stickMove(e);
     try { gl.setPointerCapture(e.pointerId); } catch (er) {}
     return true;
   }
+  function stickShow() { var el = $('stick'), v = touchDev() && playing() && !TR && !(G && isAuto()); if (el.hidden === v) el.hidden = !v; }
   function stickMove(e) {
     if (!stick || e.pointerId !== stick.id) return false;
     var dx = e.clientX - stick.x, dy = e.clientY - stick.y, R = 70, l = Math.hypot(dx, dy);
     if (l > R) { dx *= R / l; dy *= R / l; }
+    if (l < 12) { dx = dy = 0; }   // zona muerta en el centro
     mvIn.x = dx / R; mvIn.z = dy / R; $('knob').style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
     return true;
   }
   function stickEnd(e) {
     if (!stick || (e && e.pointerId !== stick.id)) return false;
-    stick = null; mvIn.x = mvIn.z = 0; $('stick').hidden = true; return true;
+    stick = null; mvIn.x = mvIn.z = 0; $('stick').classList.remove('on'); $('knob').style.transform = ''; return true;
   }
   var MOVE_KEYS = { arrowleft: 'l', a: 'l', arrowright: 'r', d: 'r', arrowup: 'u', w: 'u', arrowdown: 'd', s: 'd' };
   window.addEventListener('keyup', function (e) { var m = MOVE_KEYS[e.key.toLowerCase()]; if (m) keys[m] = false; });
@@ -1383,7 +1380,7 @@
     var deg = Math.abs(Math.atan2(dx, -dy)) * 180 / Math.PI, k = clamp((deg - 16) / 46, 0, 1);
     k = k * k * (3 - 2 * k);
     var conf = clamp(0.4 + (len - 28) / (ref * 0.7) * 0.6, 0.4, 1), far = len / ref;
-    var depth = save.ctrl === 'pro' ? clamp(0.3 + far * 0.5, 0.3, 1) : clamp(0.55 + far * 0.3, 0.55, 0.95);
+    var depth = clamp(0.3 + far * 0.5, 0.3, 1);
     return { x: k * conf * (dx < 0 ? -1 : 1), depth: depth, lob: false };
   }
   var aimPrev = null;
@@ -1401,6 +1398,7 @@
     sctx.restore();
   }
   window.addEventListener('keydown', function (e) {
+    if (PP.Live && PP.Live.active && MOVE_KEYS[e.key.toLowerCase()]) { keys[MOVE_KEYS[e.key.toLowerCase()]] = true; e.preventDefault(); return; }
     if (PP.Live && PP.Live.active) { var lk = e.key.toLowerCase(); if (lk === ' ' || lk === 'k') PP.Live.swipe({ x: 0, depth: 0.9, lob: false }); else if (lk === 'j') PP.Live.swipe({ x: -0.9, depth: 0.85 }); else if (lk === 'l') PP.Live.swipe({ x: 0.9, depth: 0.85 }); else if (lk === 'i') PP.Live.swipe({ x: 0, depth: 1, lob: true }); return; }
     if (!G || G.paused) return;
     var k = e.key.toLowerCase(), aim = null;
@@ -1445,7 +1443,8 @@
     PP.ui = { modal: modal, closeModal: closeModal, toast: toast, on: on, ic: ic, go: go, flash: flash, persist: persist, iq: iq, totalStars: totalStars,
       startLevel: startLevel, startDrill: startDrill, save: function () { return save; },
       where: function () { return PP.Live && PP.Live.active ? 'envivo' : G ? 'partido' : TR ? 'gimnasio' : curScreen; },
-      pop: pop, wantLandscape: wantLandscape };
+      pop: pop, wantLandscape: wantLandscape,
+      move: function () { return { x: mvIn.x + (keys.r ? 1 : 0) - (keys.l ? 1 : 0), z: mvIn.z + (keys.d ? 1 : 0) - (keys.u ? 1 : 0) }; } };
     ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); PP.Duel.init(); PP.Track.init(); PP.Live.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
     if (!save.intro && location.search.indexOf('nodaily') < 0) showHelp(startShow); else if (location.search.indexOf('nodaily') < 0) showDaily();
     requestAnimationFrame(frame);

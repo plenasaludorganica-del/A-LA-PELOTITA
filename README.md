@@ -24,23 +24,18 @@ Después abrir `http://localhost:8080`. También funciona publicado en GitHub Pa
 
 ## Cómo se juega
 
-Hay dos formas de control. Se eligen en "¿Cómo se juega?" (inicio) o en la pausa.
+Un solo control: **el jugador lo movés siempre vos** (ya no existe el modo "Fácil" que corría solo; desde el 19/11/2026).
 
-**Fácil (por defecto):** el jugador corre solo a la pelota. Se juega con un dedo.
-
-- **Deslizar** de abajo hacia arriba para pegar. El golpe sale al soltar el dedo.
-- El **aro** en el piso se cierra sobre la pelota: pegar cuando se cierra da un **PERFECTO**.
-- La dirección del gesto apunta el tiro: derecho (o un toque) va **al medio**, inclinado abre hacia ese lado, **hacia abajo = globo**.
-  Mientras se arrastra el dedo, una marca en la cancha rival muestra dónde va a caer. Gesto largo = más profundo
-  (en modo Pro, gesto corto = dejada).
-
-**Pro:** además se mueve al jugador.
-
-- Pulgar izquierdo en la mitad izquierda de la pantalla: aparece una palanca. En compu, WASD o flechas.
-- Pulgar derecho (o mouse) para pegar. En compu también J K L, I globo, U O dejadas.
+- **Palanca fija en la esquina izquierda:** apoyás el pulgar en la mitad izquierda de la pantalla y el jugador va hacia donde apunta
+  el dedo visto desde el centro de la palanca. En compu, WASD o flechas.
+- **Pegar:** con el otro dedo, en la mitad derecha, deslizar de abajo hacia arriba. El **aro** en el piso marca dónde llega la pelota:
+  pegar cuando se cierra da un **PERFECTO**. Si no llegaste a la pelota, sale "¡Lejos!". En compu también J K L, I globo, U O dejadas.
+- La dirección del gesto apunta el tiro: derecho va **al medio**, inclinado abre hacia ese lado, **hacia abajo = globo**, gesto corto = dejada.
 - A la derecha del jugador sale drive, a la izquierda revés, antes del pique volea.
+- **Sin textos abajo mientras se juega** (`setHint` no muestra nada): la cancha se ve limpia. Cómo se juega está en "¿Cómo se juega?" del inicio.
+- Lo mismo en el **Partido EN VIVO**: cada uno mueve a su jugador; si no llega a la pelota (más de `REACH` = 2,4 m) sale "¡No llegás!".
 
-En los dos modos: si la pelota viene alta sale bandeja, víbora o remate, y un remate perfecto **la saca por 3**.
+Si la pelota viene alta sale bandeja, víbora o remate, y un remate perfecto **la saca por 3**.
 Los perfectos y buenos cargan el **especial** (botón redondo o barra espaciadora).
 
 ## Qué trae
@@ -207,8 +202,8 @@ En **Con amigos**, arriba: todos en la misma cancha al mismo tiempo, cada uno de
   jugadores de la máquina. Las dos primeras personas quedan en equipos contrarios.
 - **Con amigos:** "Sala 1 vs 1" o "Sala 2 vs 2" da un **código de 5 letras** y un enlace `alapelotita.com/#vivo-CÓDIGO` para WhatsApp.
   Arranca sola cuando están todos, o el anfitrión 👑 la empieza antes y completa con la máquina.
-- **Cómo se juega:** igual que el control fácil: el jugador corre solo; al que le toca le aparece "¡Te toca!" y el aro, y desliza
-  el dedo para pegar y apuntar. En 2 contra 2 cada uno cubre su mitad de la cancha. Cada uno ve la cancha desde su lado.
+- **Cómo se juega:** cada uno mueve a su jugador con la palanca de la esquina izquierda; al que le toca le aparece el aro, va hasta ahí y desliza
+  el dedo para pegar y apuntar. Después de cada punto cada uno vuelve a su lugar. En 2 contra 2 cada uno cubre su mitad de la cancha. Cada uno ve la cancha desde su lado.
 - **Cómo se sincroniza:** solo viajan los golpes (desde dónde, hacia dónde, cuánto tarda y cuándo); cada celular calcula la pelota con
   la misma física. Las posiciones se mandan ~6 veces por segundo. El anfitrión saca, decide los puntos (espera unas décimas antes de
   cobrar un doble pique, por si el golpe del rival viene en camino) y maneja a la máquina. Si se va, toma su lugar el siguiente.

@@ -8,7 +8,7 @@
   'use strict';
   var PP = window.PP, DB = PP.DB, S = PP.Scene, A = PP.Audio, U = null;
   var L = PP.Live = { active: false };
-  var GR = 11, DT = 1 / 120, SLOW = 1.22, TO_WIN = 5;
+  var GR = 11, DT = 1 / 120, SLOW = 1.22, TO_WIN = 5, REACH = 2.4;   // REACH: hasta qué distancia (m) llega mi jugador a la pelota
   var R = null, raf = 0, pollT = 0, inflight = false;
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -205,6 +205,7 @@
     } else if (e.kind === 'point') {
       R.dead = true; R.deadAt = Date.now(); R.applied = Math.max(R.applied, p.n); R.rally = p.n; R.plan = null; R.queued = null; R.botHit = null; S.ring(null);
       var mineWon = p.winner === R.myTeam;
+      setTimeout(function () { var mc = R && R.chars[R.slot]; if (mc && R.dead) { var h = homeOf(R.slot); mc.place(vx(h.x), vz(h.z)); R.wasMv = false; } }, 1000);   // cada uno vuelve a su lugar para el saque
       if (L.active) { A.play(mineWon ? 'perfect' : 'lose'); info(mineWon ? '¡PUNTO PARA TU EQUIPO!' : 'Punto rival', 1800); if (mineWon) { S.burst({ x: 0, y: 2, z: 4 }, '#7CFF4D', 40, 8, 0.8); S.shake(0.3); } }
     } else if (e.kind === 'leave') {
       var pl = R.players[p.slot]; if (pl && L.active) info((pl.name || 'Alguien') + ' se fue del partido', 2500);
@@ -219,7 +220,6 @@
     // ¿Hacia qué equipo va y quién tiene que pegarle?
     var to = R.lastTeam === 1 ? 2 : 1, pl = predict(b, to, at);
     R.plan = pl; R.hitter = pl ? hitterFor(to, pl.x) : -1;
-    if (L.active && pl && R.hitter === R.slot) info('¡Te toca!', 900);
     if (pl && R.host === R.slot && R.players[R.hitter] && R.players[R.hitter].bot) planBot(pl);
   }
   function planBot(pl) {
@@ -271,7 +271,12 @@
           else if (e === 'wall') { A.play('glass'); if (host) rules('wall'); }
           else if (e === 'net') { A.play('net'); if (host) rules('net'); }
         }
-        if (R.queued && R.simT >= R.queued.at) { var qd = R.queued; R.queued = null; sendHit(shot(R.slot, qd.aim, qd.q, false)); break; }
+        if (R.queued && R.simT >= R.queued.at) {
+          var qd = R.queued, mc = R.chars[R.slot]; R.queued = null;
+          // Le pega solo si llegó: el jugador lo mueve cada uno con la palanca
+          if (mc && Math.hypot(mc.x - vx(b.x), mc.z - vz(b.z)) > REACH) { if (U.pop) U.pop('¡No llegás!', 'bad', meWorldPos()); A.play('early'); continue; }
+          sendHit(shot(R.slot, qd.aim, qd.q, false)); break;
+        }
         if (R.botHit && host && R.simT >= R.botHit.at) { var bh = R.botHit; R.botHit = null; sendHit(shot(bh.by, bh.aim, bh.q, false)); break; }
       }
       b = R.ball;
@@ -283,10 +288,16 @@
     if (host && R.dead && R.status === 'playing' && !R.ended && Date.now() - R.deadAt > 2200 && !R.serving) serve();
     // Aro: mi turno
     if (R.plan && !R.dead && R.hitter === R.slot && !R.queued) S.ring({ x: vx(R.plan.x), z: vz(R.plan.z) }, clamp((R.plan.t - n) / 900, 0, 1), '#22E1FF'); else S.ring(null);
-    // Movimiento: yo (automático, como el control fácil), la máquina (si soy anfitrión)
+    // Movimiento: a mi jugador lo muevo yo con la palanca (o el teclado); a la máquina, el anfitrión
     Object.keys(R.chars).forEach(function (k) {
       var s = +k, c = R.chars[s], p = R.players[s] || {}, mine = s === R.slot, bot = p.bot && host;
-      if (mine || bot) {
+      if (mine) {
+        var mv = U.move ? U.move() : { x: 0, z: 0 }, ix = mv.x, iz = mv.z, il = Math.hypot(ix, iz);
+        if (il > 0.28) {
+          var pw = Math.min(1, (il - 0.28) / 0.6); if (il > 1) { ix /= il; iz /= il; }
+          c.speed = 7.5 * (0.3 + 0.7 * pw * pw); c.goTo(clamp(c.x + ix * 1.6, -4.5, 4.5), clamp(c.z + iz * 1.6, 0.9, 9.6)); R.wasMv = true;
+        } else if (R.wasMv) { c.goTo(c.x, c.z); R.wasMv = false; }
+      } else if (bot) {
         var tgt = (R.plan && !R.dead && R.hitter === s) ? { x: R.plan.x + (teamOf(s) === 1 ? -0.55 : 0.55), z: R.plan.z + (teamOf(s) === 1 ? 0.1 : -0.1) } : homeOf(s);
         if (!R.dead && R.lastTeam === teamOf(s) && R.hitter !== s) tgt = { x: tgt.x, z: teamOf(s) === 1 ? 4.6 : -4.6 };   // mi equipo pegó: subir a la red
         c.speed = 7.5; c.goTo(vx(clamp(tgt.x, -4.4, 4.4)), vz(tgt.z));

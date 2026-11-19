@@ -214,7 +214,7 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 #superBtn span { width: 78px; height: 78px; border-radius: 50%; background: #1b1033; display: grid; place-items: center; font-family: var(--display); font-size: 15px; color: #8d84b8; line-height: 1; text-align: center; }
 #superBtn.full { animation: pulse .6s ease-in-out infinite; box-shadow: 0 0 34px var(--ac, var(--cyan)); } #superBtn.full span { background: var(--ac, var(--cyan)); color: #1b1033; font-size: 19px; }
 #hint { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 30px); transform: translateX(-50%); background: rgba(0, 0, 0, .55); border: 2px solid rgba(255, 255, 255, .3); border-radius: 16px; padding: 10px 16px; font-size: 16px; text-align: center; max-width: min(70%, 380px); }
-#hint:empty { display: none; }
+#hint, #hint:empty { display: none; }
 #extra { position: absolute; left: var(--gutter-l); top: calc(env(safe-area-inset-top, 0px) + 104px); font-size: 18px; display: flex; gap: 4px; align-items: center; background: var(--panel); border-radius: 999px; padding: 6px 12px; }
 #extra:empty { display: none; }
 #pops { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 7; }
@@ -226,7 +226,9 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 #hand { position: absolute; left: 50%; bottom: 22%; width: 0; height: 0; pointer-events: none; z-index: 6; }
 #hand i { position: absolute; left: -29px; top: -29px; width: 58px; height: 58px; border-radius: 50%; background: rgba(255, 255, 255, .92); border: 4px solid var(--lime); box-shadow: 0 0 26px var(--lime), 0 60px 0 -22px rgba(216, 255, 58, .5), 0 110px 0 -26px rgba(216, 255, 58, .25); animation: handUp 1.1s ease-in-out infinite; }
 @keyframes handUp { 0% { transform: translateY(60px) scale(.9); opacity: 0; } 20% { opacity: 1; } 80% { transform: translateY(-130px) scale(1); opacity: 1; } 100% { transform: translateY(-150px) scale(1); opacity: 0; } }
-#stick { position: absolute; width: 160px; height: 160px; margin: -80px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .12); pointer-events: none; z-index: 6; }
+#stick { position: absolute; left: calc(var(--gutter-l) + 12px); bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); width: 150px; height: 150px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .4); background: rgba(255, 255, 255, .1); pointer-events: none; z-index: 6; opacity: .7; transition: opacity .15s; }
+#stick.on { opacity: 1; border-color: rgba(255, 255, 255, .7); } #stick[hidden] { display: none; }
+@media (orientation: landscape) and (max-height: 560px) { #stick { width: 128px; height: 128px; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); } }
 #knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 22px var(--lime); }
 #flash { position: absolute; inset: 0; pointer-events: none; background: #fff; opacity: 0; z-index: 8; }
 #lines { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 3; transition: opacity .25s;
@@ -289,7 +291,7 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 /* En celulares bajitos la barrita ocupa el lugar del muñequito grande */
 @media (orientation: portrait) and (max-height: 760px) { #home:has(#cupBar:not([hidden])) #hero { display: none; } }
 @media (orientation: portrait) and (max-height: 700px) { #home:has(#cupBar:not([hidden])) { gap: 5px; } #home:has(#cupBar:not([hidden])) .logo { font-size: 27px; } .cupbar { height: 34px; font-size: 13px; } #home:has(#cupBar:not([hidden])) .logo small { margin-top: .3em; } }
-.liveinfo { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); transform: translateX(-50%); background: rgba(0, 0, 0, .55); border-radius: 14px; padding: 6px 14px; font-family: var(--display); font-size: 20px; color: #fff; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
+.liveinfo { position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 72px); transform: translateX(-50%); background: rgba(0, 0, 0, .55); border-radius: 14px; padding: 6px 14px; font-family: var(--display); font-size: 20px; color: #fff; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
 .ltag { position: fixed; transform: translate(-50%, -100%); font-size: 12px; font-weight: 900; color: #fff; background: rgba(0, 0, 0, .55); padding: 2px 8px; border-radius: 10px; pointer-events: none; z-index: 5; white-space: nowrap; }
 .ltag.me { background: rgba(34, 225, 255, .85); color: #1a1036; }
 .spin { display: inline-block; animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
@@ -426,8 +428,8 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 <script src="js/track.js?v=eef41ebf0d"></script>
 <script src="js/audio.js?v=a6951ea3dd"></script>
 <script src="js/scene.js?v=2f950be3a6"></script>
-<script src="js/live.js?v=0287a495bf"></script>
-<script src="js/game.js?v=5c046fc49d"></script>
+<script src="js/live.js?v=c47ce7ae42"></script>
+<script src="js/game.js?v=67dad40fd1"></script>
 <!--/PAGE-->
 </body>
 </html>
