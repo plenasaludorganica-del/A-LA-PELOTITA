@@ -1222,7 +1222,8 @@
     trClean(); $('hud').hidden = true;
     if (PP.tourCtx) { var tc = PP.tourCtx; PP.tourCtx = null; S.mode = 'menu'; PP.Social.tourDone(tc, PP.lastDrillScore || 0); return; }
     pct = clamp(Math.round(pct), 0, 100);
-    PP.Cup.report(id, pct);   // Copa de la Cancha: 0 a 100
+    // Copa de la Cancha: luces = niveles superados, leé la jugada = jugadas bien, el resto = 0 a 100
+    PP.Cup.report(id, id === 'lights' && PP.lastLights ? PP.lastLights.stage - 1 : id === 'read' && PP.lastRead ? PP.lastRead.correct : pct);
     var before = iq(), prev = save.train.best[id] || 0, first = save.train.last !== today(), coins = Math.round(pct * 0.6) + (first ? 100 : 0);
     save.train.best[id] = Math.max(prev, pct); save.train.last = today(); save.coins += coins; var rankUp = addXp(20);
     var rd = id === 'read' ? PP.lastRead : id === 'lights' ? PP.lastLights : null, rdKey = id + 'Best', rdPrev = save.train[rdKey] || { stage: 0, score: 0 }, rdNew = false;

@@ -207,9 +207,11 @@ Botón propio en el inicio. El nombre se cambia en un solo lugar: `PP.CUP.name` 
 - **Jugador:** ve la Copa activa (cancha, premio, precio y cuenta regresiva), toca "Quiero participar" (necesita cuenta) y
   ve el precio y cómo pagar. Gratis = entra al instante; con precio = queda **pendiente** hasta que la administración la apruebe.
   Solo los aprobados suman al ranking de la Copa (top 100 y el puesto propio).
-- **Puntaje:** cuentan todos los juegos del registro central `PP.GAMES` (`js/data.js`): los 40 niveles (0 a 3 estrellas) y los
-  4 ejercicios del Gimnasio mental (0 a 100). Por cada juego vale la mejor marca durante la Copa, llevada a 0..tope
-  (por defecto 100). Total = suma de las mejores marcas. Desempate: gana quien llegó primero a ese total.
+- **Puntaje:** cuentan todos los juegos del registro central `PP.GAMES` (`js/data.js`). Por cada juego vale la mejor marca durante
+  la Copa. Total = suma de las mejores marcas. Desempate: gana quien llegó primero a ese total.
+  Con tope 100: los **niveles** valen según la dificultad (`weight`): el 1 hasta 50 puntos y el 40 hasta 100 (3 estrellas = el máximo
+  de ese nivel). **Tablero de luces:** 24 niveles superados = 100. **Leé la jugada:** 50 jugadas bien = 100. El resto, 0 a 100.
+  Máximo posible: 3400. El tope existe para que ningún juego decida solo la Copa y para limitar el efecto de una trampa.
   Cada juego avisa con `PP.Cup.report(id, puntajeCrudo)` al terminar; los envíos que fallan o llegan muy seguidos quedan en cola.
 - **Sumar un juego nuevo:** agregar un objeto `{ id, name, max }` a `PP.GAMES`, la misma `id` en la tabla `cup_games`
   (`supabase/cups.sql`, una línea) y llamar a `PP.Cup.report(id, puntaje)` cuando termina la partida.

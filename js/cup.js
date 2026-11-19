@@ -45,7 +45,7 @@
     var g = PP.gameById(gameId); if (!g || !DB.user) return;
     var go = function (s) {
       if (!s || !s.cup || s.status !== 'live' || !s.me || s.me.status !== 'approved') return;
-      var top = s.cup.max_points, sc = Math.max(0, Math.min(top, Math.round((+raw || 0) / g.max * top)));
+      var top = s.cup.max_points, sc = Math.max(0, Math.min(top, Math.round(Math.min(1, (+raw || 0) / g.max) * (g.weight || 1) * top)));
       if (sc <= 0) return;
       var q = loadQ(), k = s.cup.id + '|' + gameId, cur = q[k];
       if (!cur || cur.s < sc) q[k] = { s: sc, n: 0 };
@@ -135,7 +135,7 @@
       if (s.status === 'done') h += winnerCard(s);
       else h += meCard(s);
       h += '<div class="card"><h3 class="disp" style="font-size:18px">¿Cómo se suma?</h3><p>Cuentan <b>todos los juegos</b>: los 40 niveles y los ejercicios del Gimnasio mental. ' +
-        'Por cada juego vale tu <b>mejor marca</b> durante la Copa (hasta ' + c.max_points + ' puntos por juego): repetir un juego mejora tu marca, no suma de más. ' +
+        'Por cada juego vale tu <b>mejor marca</b> durante la Copa: repetir un juego mejora tu marca, no suma de más. Los <b>niveles más difíciles valen más</b> (el 1 hasta ' + Math.round(c.max_points / 2) + ' puntos, el 40 hasta ' + c.max_points + '), y en el Gimnasio mental llegar al máximo es para cracks. ' +
         'Gana el que tiene más puntos; si hay empate, el que llegó primero. <b>Participan solo los jugadores PRO.</b></p></div>';
       h += '<h3 class="disp" style="margin:8px 4px">Ranking de la Copa</h3><div id="cupRank"><p class="note">Cargando…</p></div>';
     }

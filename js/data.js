@@ -360,7 +360,10 @@
   // (lo que mide el juego: estrellas, porcentaje...). La Copa lo lleva a escala 0..tope de puntos.
   // Para sumar un juego nuevo: agregá un objeto acá y la misma id en supabase/cups.sql (tabla cup_games),
   // y cuando termine una partida llamá a PP.Cup.report(id, puntajeCrudo).
-  PP.GAMES = PP.LEVELS.map(function (lv) { return { id: 'lv' + lv.n, name: 'Nivel ' + lv.n, max: 3 }; })   // 40 niveles: 0 a 3 estrellas
-    .concat(PP.DRILLS.map(function (d) { return { id: d.id, name: d.name, max: 100 }; }));                // Gimnasio mental: 0 a 100
+  // weight = qué parte del tope vale el juego: los niveles difíciles valen más (nivel 1 = mitad del tope, nivel 40 = tope entero),
+  // así hay menos empates arriba del ranking. Los ejercicios valen el tope entero pero cuesta llegar.
+  var DRILL_MAX = { lights: 24, read: 50 };   // luces: niveles superados · leé la jugada: jugadas bien · el resto: 0 a 100
+  PP.GAMES = PP.LEVELS.map(function (lv) { return { id: 'lv' + lv.n, name: 'Nivel ' + lv.n, max: 3, weight: 0.5 + 0.5 * (lv.n - 1) / (PP.LEVELS.length - 1) }; })   // 0 a 3 estrellas
+    .concat(PP.DRILLS.map(function (d) { return { id: d.id, name: d.name, max: DRILL_MAX[d.id] || 100, weight: 1 }; }));
   PP.gameById = function (id) { for (var i = 0; i < PP.GAMES.length; i++) if (PP.GAMES[i].id === id) return PP.GAMES[i]; return null; };
 })();
