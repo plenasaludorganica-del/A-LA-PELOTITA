@@ -71,6 +71,7 @@ td.wrap { white-space: normal; min-width: 180px; }
 .empty { color: var(--soft); padding: 24px; text-align: center; }
 #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #fff; color: #1b1033; padding: 10px 16px; border-radius: 12px; font-weight: 900; box-shadow: 0 8px 30px rgba(0, 0, 0, .4); }
 @media (max-width: 600px) { header.top h1 { font-size: 22px; } .stat b { font-size: 26px; } }
+.pw { position: relative; width: 100%; } .pw .fld { padding-right: 52px; } .pw .eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border: 0; border-radius: 12px; background: rgba(255,255,255,.1); color: #fff; font-size: 20px; cursor: pointer; padding: 0; }
 </style>
 </head>
 <body>
@@ -86,7 +87,7 @@ td.wrap { white-space: normal; min-width: 180px; }
     <h2>Entrar</h2>
     <p class="note">Solo para la cuenta administradora. Es la misma cuenta del juego.</p>
     <input class="fld" id="lMail" type="email" autocomplete="email" placeholder="Mail">
-    <input class="fld" id="lPass" type="password" autocomplete="current-password" placeholder="Contraseña">
+    <div class="pw"><input class="fld" id="lPass" type="password" autocomplete="current-password" placeholder="Contraseña"><button type="button" class="eye" id="lEye" aria-label="Mostrar contraseña">👁</button></div>
     <p class="err" id="lErr"></p>
     <button class="btn lime" id="lGo" style="width:100%">Entrar</button>
   </div>
@@ -105,7 +106,7 @@ td.wrap { white-space: normal; min-width: 180px; }
 
 <script src="js/config.js?v=e5ee2f38c0"></script>
 <script src="js/data.js?v=69071532bb"></script>
-<script src="js/backend.js?v=b3dd6811ab"></script>
+<script src="js/backend.js?v=8080ee3dab"></script>
 <script>
 (function () {
   'use strict';
@@ -213,7 +214,7 @@ td.wrap { white-space: normal; min-width: 180px; }
       l.map(function (u) {
         var st = uState(u);
         return '<tr><td>' + esc(u.name || '(sin perfil)') + '</td><td>' + esc(u.email) + '</td><td><span class="tag ' + lab[st][1] + '">' + lab[st][0] + '</span></td>' +
-          '<td>' + (u.is_admin ? '' : '<button class="btn small lime" data-vip="' + esc(u.email) + '" data-d="30">+1 mes</button> ' + (st === 'pro' ? '<button class="btn small" data-vip="' + esc(u.email) + '" data-d="0">Quitar</button>' : '')) + '</td>' +
+          '<td>' + (u.is_admin ? '' : '<button class="btn small lime" data-vip="' + esc(u.email) + '" data-d="30">+1 mes</button> ' + (st === 'pro' ? '<button class="btn small" data-vip="' + esc(u.email) + '" data-d="0">Quitar</button>' : '')) + ' <button class="btn small" data-pw="' + esc(u.email) + '">Contraseña</button></td>' +
           '<td>' + day(u.vip_until) + '</td><td>' + u.pays + (u.pays ? ' · ' + money(u.paid) : '') + '</td><td>' + u.videos + '</td><td>' + u.stars + '</td><td>' + esc(u.cat || '') + '</td><td>' + day(u.created_at) + '</td><td>' + day(u.last_sign_in) + '</td></tr>';
       }).join('') + '</tbody></table>' : '<div class="empty">No hay usuarios con ese filtro.</div>';
   }
@@ -255,14 +256,24 @@ td.wrap { white-space: normal; min-width: 180px; }
     if (d.fbf) { fbOnlyUnread = d.fbf === '1'; renderFb(); }
     else if (d.fread) DB.admin('admin_feedback_set', { fid: d.fread, is_read: d.v === '1', remove: false }).then(function () { renderFb(); loadStatsOnly(); }, fail);
     else if (d.fdel) { if (confirm('¿Borrar esta opinión? No se puede deshacer.')) DB.admin('admin_feedback_set', { fid: d.fdel, is_read: true, remove: true }).then(function () { renderFb(); loadStatsOnly(); }, fail); }
+    else if (d.pw) newPass(d.pw, b);
     else if (d.vip) { b.disabled = true; DB.setVip(d.vip, +d.d).then(function (m) { toast(String(m)); renderUsers(); loadStatsOnly(); }, function (er) { b.disabled = false; fail(er); }); }
     else if (d.play) { var v = vids.filter(function (x) { return x.id === d.play; })[0]; b.disabled = true; DB.videoUrl(v.path).then(function (u) { var el = document.createElement('video'); el.src = u; el.controls = el.autoplay = true; el.playsInline = true; b.parentNode.replaceChild(el, b); }, function (er) { b.disabled = false; fail(er); }); }
     else if (d.ok || d.no) { var w = vids.filter(function (x) { return x.id === (d.ok || d.no); })[0]; DB.reviewVideo(w, d.ok ? 'approved' : 'rejected').then(function () { toast(d.ok ? 'Video publicado' : 'Video rechazado'); renderVids(); loadStatsOnly(); }, fail); }
   });
+  // Ponerle una contraseña nueva a un jugador (cuando se la olvidó). Se propone una al azar fácil de dictar.
+  function newPass(mail, b) {
+    var abc = 'abcdefghjkmnpqrstuvwxyz23456789', sug = ''; for (var i = 0; i < 8; i++) sug += abc[Math.floor(Math.random() * abc.length)];
+    var pw = prompt('Contraseña nueva para ' + mail + ' (mínimo 6 caracteres). Pasásela al jugador y que después la cambie desde Cuenta:', sug);
+    if (pw === null) return; pw = pw.trim();
+    if (pw.length < 6) { toast('Tiene que tener al menos 6 caracteres.'); return; }
+    b.disabled = true;
+    DB.adminSetPassword(mail, pw).then(function () { b.disabled = false; prompt('Listo. Copiá la contraseña nueva y mandásela a ' + mail + ':', pw); }, function (er) { b.disabled = false; fail(er); });
+  }
   function loadStatsOnly() { DB.admin('admin_stats').then(function (s) { stats = s; paintStats(); paintTabs(); }, function () {}); }
 
   DB.init().then(start, function () { showLogin(); });
 })();
-</script>
+<script>document.getElementById('lEye').addEventListener('click', function () { var f = document.getElementById('lPass'), sh = f.type === 'password'; f.type = sh ? 'text' : 'password'; this.textContent = sh ? '🙈' : '👁'; });</script>
 </body>
 </html>

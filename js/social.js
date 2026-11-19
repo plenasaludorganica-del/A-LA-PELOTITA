@@ -23,7 +23,17 @@
 
   So.init = function () {
     U = PP.ui;
-    DB.init().then(function () { So.sync(); So.paintAcc(); checkHash(); }, noop);
+    DB.init().then(function () {
+      So.sync(); So.paintAcc(); checkHash();
+      if (DB.recovery) { tab = 'acc'; U.go('social'); newPassword(true); }
+      else if (DB.recoveryError) U.toast(DB.recoveryError);
+    }, noop);
+    // Ojito: mostrar u ocultar la contraseña (en la pantalla y en las ventanas)
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-eye]'); if (!b) return; e.preventDefault();
+      var f = $(b.dataset.eye); if (!f) return; var show = f.type === 'password';
+      f.type = show ? 'text' : 'password'; b.textContent = show ? '🙈' : '👁'; b.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    });
     // Muñequito del inicio: sin sesión abre directo el formulario para crear la cuenta
     $('accBtn').addEventListener('click', function () { So.open('acc'); if (!DB.user) mode = 'up'; U.go('social'); });
     window.addEventListener('hashchange', checkHash);
@@ -529,6 +539,60 @@
     });
   }
 
+
+  /* ---------- Contraseñas ---------- */
+  function pwField(id, ac, ph) {
+    return '<div class="pw"><input class="fld" id="' + id + '" type="password" autocomplete="' + ac + '" placeholder="' + esc(ph) + '"><button type="button" class="eye" data-eye="' + id + '" aria-label="Mostrar contraseña">👁</button></div>';
+  }
+  // Recuperar: primero por mail; si el servidor no puede mandarlo, el pedido le llega a la administración (Opiniones)
+  function forgot() {
+    var mail = ($('aMail') && $('aMail').value.trim().toLowerCase()) || '';
+    U.modal('<h2>¿Te olvidaste la contraseña?</h2><p>Escribí el mail de tu cuenta.</p>' +
+      '<input class="fld" id="fMail" type="email" inputmode="email" autocomplete="email" placeholder="Tu mail" value="' + esc(mail) + '">' +
+      '<p id="fErr" style="color:#FF8A8A;margin:6px 0"></p><div class="row"><button class="btn ghost" id="fNo">Cancelar</button><button class="btn lime big" id="fOk">Recuperar</button></div>', function () {
+      U.on($('fNo'), U.closeModal);
+      U.on($('fOk'), function () {
+        var m = $('fMail').value.trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m)) { $('fErr').textContent = 'Escribí un mail válido.'; return; }
+        $('fOk').disabled = true;
+        DB.recoverStart(m).then(function () {
+          U.modal('<h2>Revisá tu mail</h2><p style="color:#fff">Si hay una cuenta con <b>' + esc(m) + '</b>, te mandamos un enlace para elegir una contraseña nueva. Mirá también en spam o correo no deseado.</p><button class="btn lime big" id="fDone">Listo</button>', function () { U.on($('fDone'), U.closeModal); });
+        }, function () { askHelp(m); });
+      });
+    });
+  }
+  function askHelp(m) {
+    U.modal('<h2>Te ayudamos</h2><p style="color:#fff">Ahora no pudimos mandarte el mail. Mandale el pedido a la administración y te ponemos una contraseña nueva.</p>' +
+      '<input class="fld" id="hMail" type="email" inputmode="email" placeholder="Tu mail" value="' + esc(m) + '">' +
+      '<textarea class="fld" id="hNote" rows="2" maxlength="300" placeholder="¿Cómo te avisamos? (WhatsApp o Instagram, opcional)"></textarea>' +
+      '<p id="hErr" style="color:#FF8A8A;margin:6px 0"></p><div class="row"><button class="btn ghost" id="hNo">Cancelar</button><button class="btn lime big" id="hOk">Pedir ayuda</button></div>', function () {
+      U.on($('hNo'), U.closeModal);
+      U.on($('hOk'), function () {
+        var mm = $('hMail').value.trim().toLowerCase(), note = $('hNote').value.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mm)) { $('hErr').textContent = 'Escribí un mail válido.'; return; }
+        $('hOk').disabled = true;
+        DB.sendFeedback({ name: 'Recuperar contraseña', rating: 0, message: 'PEDIDO DE CONTRASEÑA NUEVA para la cuenta: ' + mm + (note ? '\nAvisarle por: ' + note : ''), control: 'clave', device: String(navigator.userAgent || '').slice(0, 60) })
+          .then(function () { U.modal('<h2>¡Pedido enviado!</h2><p style="color:#fff">Te vamos a poner una contraseña nueva y te avisamos. Después la podés cambiar desde <b>Cuenta</b>.</p><button class="btn lime big" id="hDone">Listo</button>', function () { U.on($('hDone'), U.closeModal); }); },
+            function (e) { $('hOk').disabled = false; $('hErr').textContent = e.message; });
+      });
+    });
+  }
+  // Elegir contraseña nueva (desde Cuenta o al volver del mail de recuperación)
+  function newPassword(fromMail) {
+    U.modal('<h2>' + (fromMail ? 'Elegí tu contraseña nueva' : 'Cambiar contraseña') + '</h2>' + (fromMail ? '<p>Ya entraste con el enlace del mail. Elegí una contraseña nueva para la próxima vez.</p>' : '') +
+      pwField('nPass', 'new-password', 'Contraseña nueva (6 caracteres o más)') + pwField('nPass2', 'new-password', 'Repetila') +
+      '<p id="nErr" style="color:#FF8A8A;margin:6px 0"></p><div class="row"><button class="btn ghost" id="nNo">' + (fromMail ? 'Después' : 'Cancelar') + '</button><button class="btn lime big" id="nOk">Guardar</button></div>', function () {
+      U.on($('nNo'), U.closeModal);
+      U.on($('nOk'), function () {
+        var a = $('nPass').value, b = $('nPass2').value;
+        if (a.length < 6) { $('nErr').textContent = 'Tiene que tener al menos 6 caracteres.'; return; }
+        if (a !== b) { $('nErr').textContent = 'Las dos contraseñas no son iguales.'; return; }
+        $('nOk').disabled = true;
+        DB.setPassword(a).then(function () { U.closeModal(); U.toast('Listo: tu contraseña nueva quedó guardada'); So.render(); }, function (e) { $('nOk').disabled = false; $('nErr').textContent = e.message; });
+      });
+    });
+  }
+
   /* ---------- Cuenta ---------- */
   var mode = 'up';
   function renderAcc() {
@@ -537,7 +601,7 @@
     if (u) {
       h = '<div class="card" style="text-align:center">' + avatar(u.name).replace('class="av"', 'class="av big"') + '<h3 class="disp" style="font-size:26px">' + esc(u.name) + '</h3><p>' + esc(u.email || '') + '</p><p>' + esc(u.cat || '') + ' · ' + esc(u.side || '') + '</p>' +
         '<div class="rew" style="margin:10px 0"><span>' + U.ic('star', 'color:#FFD23A') + U.totalStars() + '</span><span>IQ ' + U.iq() + '</span><span>Aciertos ' + (U.save().picks || 0) + '</span></div>' +
-        '<button class="btn ghost" data-act="out">Cerrar sesión</button></div>' +
+        '<div class="row"><button class="btn small ghost" data-act="chpass">Cambiar contraseña</button><button class="btn small ghost" data-act="out">Cerrar sesión</button></div></div>' +
         (DB.online ? '<div class="card" id="accPro" style="border-color:#FFD23A">' + (DB.isVip()
           ? '<h3 class="disp" style="color:#FFD23A;font-size:20px">Sos PRO' + (u.is_admin ? ' · Administración' : ' hasta el ' + fecha(u.vip_until)) + '</h3><button class="btn small" data-act="gopro">Ir a Jugadas PRO</button>' + (u.is_admin ? ' <a class="btn small ghost" href="admin.html" target="_blank" rel="noopener" style="text-decoration:none">Panel de administración</a>' : '')
           : '<h3 class="disp" style="color:#FFD23A;font-size:20px">Hacete PRO</h3><p>Sumate a la comunidad que entrena la cabeza antes de la cancha.</p><p id="accPrice"></p><button class="btn lime" data-act="proinfo">Quiero ser PRO</button>') + '</div>' : '');
@@ -546,10 +610,11 @@
       h = '<div class="card"><div class="row" style="margin-bottom:10px"><button class="btn small ' + (up ? 'lime' : 'ghost') + '" data-act="mup">Crear cuenta</button><button class="btn small ' + (up ? 'ghost' : 'lime') + '" data-act="min">Ya tengo cuenta</button></div>' +
         (up ? '<input class="fld" id="aName" maxlength="40" autocomplete="nickname" placeholder="Tu nombre o apodo">' : '') +
         '<input class="fld" id="aMail" type="email" autocomplete="email" inputmode="email" placeholder="Tu mail">' +
-        '<input class="fld" id="aPass" type="password" autocomplete="' + (up ? 'new-password' : 'current-password') + '" placeholder="Contraseña (6 caracteres o más)">' +
+        pwField('aPass', up ? 'new-password' : 'current-password', 'Contraseña (6 caracteres o más)') +
         (up ? '<label class="lb">Tu categoría<select class="fld" id="aCat">' + ['No sé', '8va', '7ma', '6ta', '5ta', '4ta', '3ra', '2da', '1ra'].map(function (c) { return '<option>' + c + '</option>'; }).join('') + '</select></label>' +
           '<label class="lb">Tu lado<select class="fld" id="aSide"><option>Drive</option><option>Revés</option><option>Ambos</option></select></label>' : '') +
-        '<p id="aErr" style="color:#FF8A8A;margin:6px 0"></p><button class="btn lime big" data-act="auth" style="width:100%">' + (up ? 'Crear mi cuenta' : 'Entrar') + '</button></div>' +
+        '<p id="aErr" style="color:#FF8A8A;margin:6px 0"></p><button class="btn lime big" data-act="auth" style="width:100%">' + (up ? 'Crear mi cuenta' : 'Entrar') + '</button>' +
+        (up ? '' : '<button class="btn small ghost" data-act="forgot" style="width:100%;margin-top:8px">¿Te olvidaste la contraseña?</button>') + '</div>' +
         '<p class="note">Con tu cuenta aparecés en el ranking, creás torneos y hacés pronósticos.</p>';
     }
     $('soBody').innerHTML = h + demoNote();
@@ -573,6 +638,8 @@
     else if (a === 'mup' || a === 'min') { mode = a === 'mup' ? 'up' : 'in'; So.render(); }
     else if (a === 'auth') auth();
     else if (a === 'out') DB.signOut().then(So.render);
+    else if (a === 'forgot') forgot();
+    else if (a === 'chpass') newPassword(false);
     else if (a === 'newtour') needLogin(formTour);
     else if (a === 'newspon') needLogin(formSpon);
     else if (a === 'back') { cur = null; So.render(); }

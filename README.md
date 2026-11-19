@@ -141,7 +141,7 @@ Pendiente, en orden sugerido:
 1. Probar cuentas, ranking y un torneo entre dos celulares de verdad.
    Probar también Jugadas PRO con un video grabado desde un celular.
    Cargar la clave de producción de Mercado Pago y el precio, y probar un pago real de punta a punta.
-2. Recuperar contraseña y pantalla para aprobar sponsors sin entrar a Supabase.
+2. Mail de recuperación de contraseña (falta el servicio de mail propio) y pantalla para aprobar sponsors sin entrar a Supabase.
 3. Guardar el progreso del juego en la cuenta (hoy queda en el dispositivo).
 4. Cobros reales: pasarela de pago para gemas y Pase.
 5. Dobles 2 contra 2, más ejercicios mentales y más jugadas para leer.
@@ -198,6 +198,21 @@ Botón propio en el inicio. El nombre se cambia en un solo lugar: `PP.CUP.name` 
 
 **Cartel de novedades:** al abrir el juego, una vez por día, aparece "¡Estamos creando algo increíble para vos!" con un botón
 para compartir (WhatsApp o el menú de compartir del celular). Está en `js/cup.js` (función `news`).
+
+## Contraseñas
+
+- **Ojito** para ver u ocultar la contraseña al entrar, al crear la cuenta, al cambiarla y en el panel de administración.
+- **Cambiar contraseña:** en Comunidad → Cuenta, con la sesión abierta.
+- **¿Te olvidaste la contraseña?** (en "Ya tengo cuenta"): primero intenta mandar el mail de recuperación de Supabase; el enlace
+  vuelve al juego, que pide la contraseña nueva. **Hoy ese mail no les llega a los jugadores:** sin un servicio de mail propio
+  (SMTP), Supabase solo manda mails al equipo del proyecto. Mientras tanto, el juego ofrece "Pedir ayuda": el pedido llega a
+  la administración en **Opiniones** (nombre "Recuperar contraseña"), con el mail y cómo avisarle.
+- **La administración le pone una contraseña nueva:** panel → Usuarios → botón **Contraseña** en la fila del jugador (propone una
+  al azar). Lo hace la función del servidor `supabase/functions/admin-password` (solo para administradoras: `profiles.is_admin`
+  o el mail en `admins`), que usa `user_id_by_email` (solo la puede usar el servidor).
+- **Para que el mail de recuperación funcione** (pendiente): crear una cuenta en un servicio de mail (por ejemplo Resend, que tiene
+  plan gratis), verificar el dominio alapelotita.com en Cloudflare y cargar los datos SMTP en Supabase → Authentication → SMTP.
+  También en Authentication → URL Configuration: Site URL `https://alapelotita.com` y agregar `https://alapelotita.com/**` a Redirect URLs.
 
 ## Estructura
 

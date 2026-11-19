@@ -441,3 +441,13 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.my_rank(text), public.following_list(), public.follow_counts(), public.my_invites() from public, anon;
 grant execute on function public.my_rank(text), public.following_list(), public.follow_counts(), public.my_invites() to authenticated;
+
+-- =====================================================================
+-- Contraseñas: la función admin-password busca la cuenta por mail. Solo la usa el servidor (service_role).
+-- =====================================================================
+create or replace function public.user_id_by_email(p_email text) returns uuid
+language sql stable security definer set search_path = public as $$
+  select id from auth.users where lower(email) = lower(p_email) limit 1;
+$$;
+revoke all on function public.user_id_by_email(text) from public, anon, authenticated;
+grant execute on function public.user_id_by_email(text) to service_role;

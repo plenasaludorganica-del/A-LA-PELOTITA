@@ -184,6 +184,13 @@
     if (fn === 'redeem') { var cr = cupGet(d, a.p_cup); if (cr) cr.redeemed_at = a.p_done === false ? null : new Date().toISOString(); store(d); return ok(); }
     return fail('Acción desconocida.');
   };
+  // Contraseñas en modo demo
+  Local.recoverStart = function () { var e = new Error('En modo demo no se mandan mails.'); e.help = true; return Promise.reject(e); };
+  Local.setPassword = function (pw) {
+    var d = load(), u = d.users && d.users[d.session]; if (!u) return fail('Necesitás iniciar sesión.');
+    u.pass = hash(pw); store(d); return ok(true);
+  };
+  Local.adminSetPassword = function () { return fail('Necesita el servidor de la comunidad.'); };
   function find(d, id) { return (d.tours || []).filter(function (x) { return x.id === id; })[0]; }
   function pub(u) { return { id: u.id, email: u.email, name: u.name, cat: u.cat, side: u.side, stars: u.stars || 0, level: u.level || 1, iq: u.iq || 70, picks: u.picks || 0 }; }
 
@@ -300,8 +307,52 @@
     setVip: function (mail, days) { return rest('POST', '/rest/v1/rpc/set_vip', { mail: mail, dias: days }); },
     init: function () {
       try { sess = JSON.parse(localStorage.getItem(SKEY)); } catch (e) { sess = null; }
+      // Vuelta desde el mail de "recuperar contraseña": el enlace trae una sesión temporal en la dirección (#access_token=...&type=recovery)
+      var hp = new URLSearchParams(String(location.hash || '').replace(/^#/, ''));
+      if (hp.get('type') === 'recovery' && hp.get('access_token')) {
+        history.replaceState(null, '', location.pathname + location.search);
+        var tmp = { access_token: hp.get('access_token'), refresh_token: hp.get('refresh_token'), token_type: 'bearer' };
+        return fetch(CFG.supabaseUrl + '/auth/v1/user', { headers: { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + tmp.access_token } })
+          .then(function (r) { if (!r.ok) throw new Error('El enlace venció. Pedí uno nuevo.'); return r.json(); })
+          .then(function (usr) { tmp.user = usr; setSess(tmp); DB.recovery = true; return profile(usr.id); })
+          .then(function (p) { DB.user = p ? Object.assign({ email: sess.user.email }, p) : null; return DB.user; }, function (e) { DB.recoveryError = e.message; return null; });
+      }
       if (!sess || !sess.user) return ok(null);
       return profile(sess.user.id).then(function (p) { DB.user = p ? Object.assign({ email: sess.user.email }, p) : null; return DB.user; }, function () { return null; });
+    },
+    // Recuperar contraseña por mail. Necesita un servicio de mail propio configurado en Supabase (SMTP):
+    // sin eso, Supabase solo manda mails al equipo del proyecto y acá se devuelve help=true para pedir ayuda a la administración.
+    recoverStart: function (email) {
+      var back = location.origin + location.pathname;
+      return fetch(CFG.supabaseUrl + '/auth/v1/recover?redirect_to=' + encodeURIComponent(back), { method: 'POST', headers: { apikey: CFG.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) })
+        .then(function (r) {
+          if (r.ok) return true;
+          return r.json().catch(function () { return {}; }).then(function (j) {
+            var e = new Error(r.status === 429 ? 'Pediste muchos mails seguidos. Esperá un rato o pedí ayuda.' : 'No pudimos mandarte el mail.'); e.help = true; e.code = j.error_code || j.code || r.status; throw e;
+          });
+        }, function () { var e = new Error('No pudimos mandarte el mail.'); e.help = true; throw e; });
+    },
+    setPassword: function (pw) {
+      if (!sess) return fail('Necesitás iniciar sesión.');
+      var go = function (retried) {
+        return fetch(CFG.supabaseUrl + '/auth/v1/user', { method: 'PUT', headers: { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + sess.access_token, 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pw }) })
+          .then(function (r) {
+            if (r.status === 401 && !retried && sess.refresh_token) return refresh().then(function () { return go(true); });
+            return r.json().catch(function () { return {}; }).then(function (j) {
+              if (r.ok) { DB.recovery = false; return true; }
+              var m = String(j.msg || j.message || j.error_description || j.error || '');
+              if (/same/i.test(m)) throw new Error('Es igual a la que ya tenías. Elegí otra.');
+              throw new Error(human(m || 'No se pudo cambiar la contraseña.'));
+            });
+          });
+      };
+      return go(false);
+    },
+    // Administración: ponerle una contraseña nueva a un jugador (función del servidor admin-password)
+    adminSetPassword: function (email, pw) {
+      if (!sess) return fail('Necesitás iniciar sesión.');
+      return fetch(CFG.supabaseUrl + '/functions/v1/admin-password', { method: 'POST', headers: { Authorization: 'Bearer ' + sess.access_token, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, password: pw }) })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || 'No se pudo cambiar la contraseña.'); return true; }); });
     },
     signUp: function (f) {
       // Registro por la función del servidor: crea la cuenta ya confirmada (sin mail) y después entra con la contraseña
@@ -373,7 +424,7 @@
   };
 
   var impl = DB.online ? Supa : Local;
-  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin'].forEach(function (k) {
+  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin', 'recoverStart', 'setPassword', 'adminSetPassword'].forEach(function (k) {
     DB[k] = function () { try { return impl[k].apply(impl, arguments); } catch (e) { return Promise.reject(e); } };
   });
   DB.signUp = function (f) {
