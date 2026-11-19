@@ -312,6 +312,11 @@
     h = '<div class="card"><h3 class="disp" style="color:#FFD23A;font-size:20px">Sos PRO' + (u.is_admin ? ' · Administración' : ' hasta el ' + fecha(u.vip_until)) + '</h3><p id="proCount"></p><div class="row" style="justify-content:flex-start;flex-wrap:wrap">' +
       '<button class="btn small ghost" data-act="promine">Mis videos</button>' +
       (u.is_admin ? '<button class="btn small" data-act="prorev">Revisar videos</button><button class="btn small ghost" data-act="prousers">Usuarios</button>' : '') + '</div></div>';
+    // Cartel explicativo: para qué sirve este panel y cuál es el objetivo
+    h = '<div class="card" style="border-color:#FFD23A"><h3 class="disp" style="color:#FFD23A;font-size:20px">¿Para qué sirve?</h3>' +
+      '<p style="color:#fff">Acá tenés ' + PP.CHALLENGES.length + ' jugadas de pádel para hacer en la cancha de verdad, ordenadas de la más fácil a la más difícil.</p>' +
+      '<p>· Elegí una jugada y leé cómo se hace.<br>· Grabate haciéndola (hasta 20 segundos) y subí el video.<br>· Si cumple con la jugada, la publicamos y los demás la ven y la votan con ♥.</p>' +
+      '<p style="color:#7CFF4D"><b>Objetivo:</b> ir avanzando de Básica a Intermedia, Avanzada y Profesional, completando cada jugada para mejorar tu juego.</p></div>' + h;
     return h;
   }
   function paintCount() { if (!DB.isVip()) return; DB.monthCount().then(function (n) { var el = $('proCount'); if (el) el.textContent = 'Este mes subiste ' + n + ' de ' + DB.VIDEOS_PER_MONTH + ' videos.'; }, noop); }
