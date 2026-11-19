@@ -102,7 +102,7 @@
       if (s.status === 'done') parts.push('🏆 ganó <b>' + esc(c.winner_name) + '</b> con ' + c.winner_total + ' puntos');
       else if (top && top.length) parts.push(top.slice(0, 3).map(function (p, i) { return ['🥇', '🥈', '🥉'][i] + ' ' + esc(p.name) + ' <b>' + p.total + '</b>'; }).join('  '));
       else parts.push('¡todavía no hay nadie, sé el primero!');
-      if (s.status !== 'done') parts.push('<i>' + (+c.price_ars > 0 ? 'Inscripción ' + money(c.price_ars) : 'Gratis') + ' · tocá para sumarte</i>');
+      if (s.status !== 'done') parts.push('<i>Exclusivo PRO' + (+c.price_ars > 0 ? ' · inscripción ' + money(c.price_ars) : '') + ' · tocá para ver</i>');
       $('cupBarTx').innerHTML = parts.join('   ·   ');
       bar.hidden = false;
     };
@@ -136,7 +136,7 @@
       else h += meCard(s);
       h += '<div class="card"><h3 class="disp" style="font-size:18px">¿Cómo se suma?</h3><p>Cuentan <b>todos los juegos</b>: los 40 niveles y los ejercicios del Gimnasio mental. ' +
         'Por cada juego vale tu <b>mejor marca</b> durante la Copa (hasta ' + c.max_points + ' puntos por juego): repetir un juego mejora tu marca, no suma de más. ' +
-        'Gana el que tiene más puntos; si hay empate, el que llegó primero.</p></div>';
+        'Gana el que tiene más puntos; si hay empate, el que llegó primero. <b>Participan solo los jugadores PRO.</b></p></div>';
       h += '<h3 class="disp" style="margin:8px 4px">Ranking de la Copa</h3><div id="cupRank"><p class="note">Cargando…</p></div>';
     }
     if (s.admin) h += '<button class="btn" data-act="admin" style="width:100%;margin-top:8px">Panel de la Copa (administración)</button>';
@@ -157,7 +157,9 @@
   }
   function meCard(s) {
     var c = s.cup, me = s.me;
-    if (!DB.user) return '<div class="card"><p style="color:#fff">Para participar necesitás tu cuenta (es gratis).</p><button class="btn lime big" data-act="login" style="width:100%">Quiero participar</button></div>';
+    if (!DB.user) return '<div class="card"><p style="color:#fff">La Copa es para jugadores <b>PRO</b>. Primero creá tu cuenta (es gratis).</p><button class="btn lime big" data-act="login" style="width:100%">Quiero participar</button></div>';
+    if (!me && !DB.isVip()) return '<div class="card" style="border-color:#FFD23A;box-shadow:0 0 18px rgba(255,210,58,.4)"><h3 class="disp" style="color:#FFD23A;font-size:22px">🔒 Solo para jugadores PRO</h3>' +
+      '<p style="color:#fff">Mirá el ranking todo lo que quieras. Para jugar la Copa y pelear el premio tenés que ser PRO.</p><button class="btn lime big pulse" data-act="pro" style="width:100%">Quiero participar</button></div>';
     if (!me) return '<div class="card"><button class="btn lime big pulse" data-act="join" style="width:100%">Quiero participar</button>' +
       (+c.price_ars > 0 ? '<p class="note" style="margin-top:8px">Cuesta ' + money(c.price_ars) + '. Te mostramos cómo pagar.</p>' : '<p class="note" style="margin-top:8px">Es gratis: entrás al toque.</p>') + '</div>';
     if (me.status === 'pending') return '<div class="card" style="border-color:#FFB020"><h3 class="disp" style="color:#FFB020">Inscripción pendiente</h3>' +
@@ -301,7 +303,8 @@
     var b = e.target.closest('[data-act]'); if (!b) return;
     var a = b.dataset.act, id = b.dataset.id, c = id && (C._list || []).filter(function (x) { return x.id === id; })[0];
     if (a === 'login') { PP.Social.open('acc'); U.go('social'); U.toast('Creá tu cuenta o entrá para participar'); }
-    else if (a === 'join') join();
+    else if (a === 'join') { if (!DB.isVip()) PP.Social.offerPro(); else join(); }
+    else if (a === 'pro') PP.Social.offerPro();
     else if (a === 'play') U.go('map');
     else if (a === 'train') U.go('train');
     else if (a === 'admin' || a === 'toadmin') { view = 'admin'; C.render(); }

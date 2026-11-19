@@ -473,3 +473,11 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.player_profile(uuid) from public, anon;
 grant execute on function public.player_profile(uuid) to authenticated;
+
+-- =====================================================================
+-- Torneos solo para PRO: cualquiera los ve, pero anotarse y crear torneos es para jugadores PRO.
+-- =====================================================================
+drop policy if exists tp_ins on tournament_players;
+create policy tp_ins on tournament_players for insert with check (auth.uid() = user_id and score = 0 and public.tournament_window(tournament_id, 'join') and public.is_vip());
+drop policy if exists t_ins on tournaments;
+create policy t_ins on tournaments for insert with check (auth.uid() = created_by and start_at > now() and public.is_vip());

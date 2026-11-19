@@ -79,7 +79,7 @@ Los jugadores, jefes y rivales son pixel art animado por cuadros. Cada uno tiene
 Pantalla con cuatro pestañas: **Ranking** (estrellas, IQ de pádel, pronósticos acertados), **Torneos**, **Sponsors** y **Cuenta**.
 
 - **Cuenta:** registro con mail, contraseña, nombre, categoría y lado.
-- **Torneos:** cualquier usuario crea uno (peloteo por puntos o Leé la jugada, individual o parejas, día, hora y duración).
+- **Torneos (solo PRO):** verlos y pronosticar es para todos; anotarse y crear torneos es para PRO (reglas `tp_ins` y `t_ins`). Cualquier usuario PRO crea uno (peloteo por puntos o Leé la jugada, individual o parejas, día, hora y duración).
   Al crearlo sale un cartel para capturar, con código y enlace (`#torneo-CODIGO`). Mientras está en juego cada inscripto
   juega las veces que quiera y cuenta su mejor turno. Gana el mayor puntaje al cierre.
 - **Pronósticos:** gratis y sin plata. Cada usuario elige un ganador hasta 5 minutos antes del inicio.
@@ -200,6 +200,8 @@ Botón **Con amigos** en el inicio (muestra cuántas invitaciones o turnos pendi
 ## Copa de la Cancha
 
 Competencia con premio real (por ejemplo, "1 hora de cancha"), independiente del ranking general, la tienda y los torneos.
+**Solo para PRO:** la ve cualquiera (barrita, ranking), pero inscribirse es para jugadores PRO (lo valida `cup_join`). Al que no es PRO
+le aparece "Solo para jugadores PRO" y la ventana con los beneficios y el pago.
 Botón propio en el inicio. El nombre se cambia en un solo lugar: `PP.CUP.name` en `js/data.js`.
 
 - **Jugador:** ve la Copa activa (cancha, premio, precio y cuenta regresiva), toca "Quiero participar" (necesita cuenta) y

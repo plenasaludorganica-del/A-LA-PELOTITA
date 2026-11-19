@@ -19,6 +19,8 @@
   var KIND = { peloteo: 'Peloteo por puntos', mental: 'Leé la jugada' };
   var PHASE = { open: ['Inscripción abierta', '#7CFF4D'], closed: ['Pronósticos cerrados', '#FFB020'], live: ['En juego', '#FF3D8B'], done: ['Terminado', '#8d84b8'] };
   function needLogin(fn) { if (DB.user) return fn(); tab = 'acc'; So.render(); U.toast('Creá tu cuenta o entrá para seguir'); }
+  // Competencias (Copa y torneos): las ve cualquiera, pero participar es para PRO
+  function needPro(fn) { if (!DB.online || DB.isVip()) return fn(); U.toast('Los torneos son solo para jugadores PRO'); So.offerPro(); }
   function err(e) { U.toast(e && e.message ? e.message : 'Algo salió mal. Probá de nuevo.'); }
 
   So.init = function () {
@@ -147,7 +149,7 @@
         var ph = PHASE[DB.phase(t)];
         h += '<button class="card tcard" data-tour="' + esc(t.id) + '"><span class="chipst" style="--c:' + ph[1] + '">' + ph[0] + '</span><h3 class="disp">' + esc(t.name) + '</h3><p>' + KIND[t.kind] + ' · ' + (t.mode === 'parejas' ? 'Parejas' : 'Individual') + '</p><p>' + when(t.start_at) + ' · organiza ' + esc(t.host || '') + '</p></button>';
       });
-      $('soBody').innerHTML = '<div id="invList"></div>' + h + '<p class="note">Los pronósticos son gratis y por diversión: no se juega plata ni hay premios en dinero. Cierran 5 minutos antes de que empiece el torneo.</p>' + demoNote();
+      $('soBody').innerHTML = '<div id="invList"></div>' + h + '<p class="note">Anotarse y crear torneos es para jugadores PRO; los pronósticos son para todos, gratis y por diversión (no se juega plata). Cierran 5 minutos antes de que empiece el torneo.</p>' + demoNote();
       paintInvites();
     }, function (e) { $('soBody').innerHTML = '<p class="note">' + esc(e.message) + '</p>'; });
   }
@@ -282,6 +284,7 @@
         li('✅ Subís hasta <b>' + DB.VIDEOS_PER_MONTH + ' videos por mes</b> copiando las 50 jugadas') +
         li('✅ Ves los videos de todos los jugadores') +
         li('✅ Votás con me gusta y aparecés en el <b>ranking de cada jugada</b>') +
+        li('🏆 Jugás la <b>Copa de la Cancha</b> y los <b>torneos</b>, con premios de verdad') +
         li('✅ Entrás a las <b>competencias nuevas</b> que se van sumando') +
         li('✅ Ayudás a que A la Pelotita siga creciendo') + '</ul>' +
         '<p style="color:#fff;font-size:22px;margin:8px 0"><b>$ ' + n.toLocaleString('es-AR') + '</b> por 30 días</p>' +
@@ -695,20 +698,20 @@
     else if (a === 'google') { b.disabled = true; DB.googleStart().catch(function (e) { b.disabled = false; err(e); }); }
     else if (a === 'forgot') forgot();
     else if (a === 'chpass') newPassword(false);
-    else if (a === 'newtour') needLogin(formTour);
+    else if (a === 'newtour') needLogin(function () { needPro(formTour); });
     else if (a === 'newspon') needLogin(formSpon);
     else if (a === 'back') { cur = null; So.render(); }
     else if (a === 'poster') poster(cur);
     else if (a === 'invite') inviteModal(cur);
     else if (a === 'noinv') { b.disabled = true; DB.dismissInvite(b.dataset.id).then(function () { var c = b.closest('.card'); if (c) c.remove(); }, function (er) { b.disabled = false; err(er); }); }
     else if (a === 'play') So.play(cur);
-    else if (a === 'join') needLogin(function () {
+    else if (a === 'join') needLogin(function () { needPro(function () {
       var go = function (partner) { DB.join(cur.id, partner).then(function () { U.toast('¡Estás adentro!'); openTour(cur.id); }, err); };
       if (cur.mode !== 'parejas') return go('');
       U.modal('<h2>¿Con quién jugás?</h2><input class="fld" id="jP" maxlength="30" placeholder="Nombre de tu pareja"><div class="row"><button class="btn ghost" id="jNo">Cancelar</button><button class="btn lime" id="jOk">Inscribirnos</button></div>', function () {
         U.on($('jNo'), U.closeModal); U.on($('jOk'), function () { var p = $('jP').value.trim(); U.closeModal(); go(p); });
       });
-    });
+    }); });
     else if (a === 'code') U.modal('<h2>Entrar con código</h2><input class="fld" id="cC" maxlength="6" placeholder="Código de 6 letras" style="text-transform:uppercase;text-align:center;font-size:24px"><div class="row"><button class="btn ghost" id="cNo">Cancelar</button><button class="btn lime" id="cOk">Buscar</button></div>', function () {
       U.on($('cNo'), U.closeModal); U.on($('cOk'), function () { var c = $('cC').value.trim().toUpperCase(); U.closeModal(); if (c) openTour(c); });
     });

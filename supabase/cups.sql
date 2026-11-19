@@ -150,12 +150,13 @@ begin
       'code', case when c.winner_user = auth.uid() then c.winner_code end) end);
 end $$;
 
--- Inscribirse. Gratis = aprobada al instante; con precio = pendiente hasta que la administración confirme el pago.
+-- Inscribirse (solo PRO). Gratis = aprobada al instante; con precio = pendiente hasta que la administración confirme el pago.
 create or replace function cup_join(p_cup uuid) returns text
 language plpgsql security definer set search_path = public as $$
 declare c cups; nm text; st text; cur text;
 begin
   if auth.uid() is null then raise exception 'Necesitás una cuenta para participar.'; end if;
+  if not public.is_vip() then raise exception 'La Copa es solo para jugadores PRO.'; end if;   -- verla, la ve cualquiera
   select * into c from cups where id = p_cup;
   if not found then raise exception 'No encontramos esa Copa.'; end if;
   if now() >= cup_end(c) then raise exception 'La Copa ya terminó.'; end if;
