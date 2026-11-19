@@ -105,8 +105,85 @@
   Local.follow = Local.invite = Local.dismissInvite = function () { return fail('Seguir e invitar jugadores necesita el servidor de la comunidad.'); };
   Local.sendFeedback = function () { return fail(NOSRV); }; Local.admin = function () { return fail(NOSRV); };
   Local.proPrice = function () { return ok(0); }; Local.proCheckout = function () { return fail(NOSRV); };
-  [].forEach(function () {
-  });
+  /* ---------- Copa de la Cancha en modo demo: mismas reglas que supabase/cups.sql, guardado en este dispositivo ---------- */
+  // Administración en demo: los mails de PP.CONFIG.cupDemoAdmins (por defecto admin@demo.com).
+  var CUP_GAP = 15;
+  function cupAdminLocal() { var l = CFG.cupDemoAdmins || ['admin@demo.com']; return !!(DB.user && l.map(function (m) { return String(m).toLowerCase(); }).indexOf(String(DB.user.email || '').toLowerCase()) >= 0); }
+  function cupEnd(c) { return Math.min(new Date(c.end_at).getTime(), c.closed_at ? new Date(c.closed_at).getTime() : Infinity); }
+  function cupData() { var d = load(); d.cups = d.cups || []; d.cupE = d.cupE || {}; d.cupS = d.cupS || {}; return d; }
+  function cupEntries(d, id) { return d.cupE[id] = d.cupE[id] || {}; }
+  function cupGet(d, id) { return d.cups.filter(function (c) { return c.id === id; })[0]; }
+  function cupOrder(a, b) { return b.total - a.total || (new Date(a.last_improved_at || 8e15) - new Date(b.last_improved_at || 8e15)) || (new Date(a.created_at) - new Date(b.created_at)); }
+  function cupApproved(d, id) { var E = cupEntries(d, id); return Object.keys(E).map(function (k) { return E[k]; }).filter(function (e) { return e.status === 'approved'; }).sort(cupOrder); }
+  function cupFinalize(d, c) {
+    if (c.winner_code || Date.now() < cupEnd(c)) return;
+    var w = cupApproved(d, c.id).filter(function (e) { return e.total > 0; })[0]; if (!w) return;
+    var a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', s = ''; for (var i = 0; i < 6; i++) s += a[Math.floor(Math.random() * 32)];
+    c.winner_user = w.user_id; c.winner_code = s; store(d);
+  }
+  function cupNeedAdmin() { if (!cupAdminLocal()) throw new Error('Solo la administración puede hacer esto.'); }
+  Local.cupCurrent = function () {
+    var d = cupData(), now = Date.now(), adm = cupAdminLocal();
+    var c = d.cups.filter(function (x) { return cupEnd(x) > now; }).sort(function (a, b) { return new Date(a.start_at) - new Date(b.start_at); })[0]
+      || d.cups.slice().sort(function (a, b) { return cupEnd(b) - cupEnd(a); })[0];
+    if (!c) return ok({ admin: adm, cup: null });
+    cupFinalize(d, c);
+    var fin = cupEnd(c), st = now < new Date(c.start_at).getTime() ? 'soon' : now < fin ? 'live' : 'done', E = cupEntries(d, c.id);
+    var e = DB.user ? E[DB.user.id] : null, w = c.winner_user ? E[c.winner_user] : null, rk = null;
+    if (e && e.status === 'approved') rk = cupApproved(d, c.id).indexOf(e) + 1;
+    return ok({ admin: adm, status: st, now: new Date().toISOString(),
+      cup: { id: c.id, name: c.name, venue: c.venue, prize: c.prize, start_at: c.start_at, end_at: new Date(fin).toISOString(), price_ars: c.price_ars, pay_info: c.pay_info,
+        max_points: c.max_points, winner_name: w ? w.name : null, winner_total: w ? w.total : null, redeemed: !!c.redeemed_at },
+      me: e ? { status: e.status, total: e.total, rank: rk, winner: c.winner_user === e.user_id, code: c.winner_user === e.user_id ? c.winner_code : null } : null });
+  };
+  Local.cupJoin = function (id) {
+    if (!DB.user) return fail('Necesitás una cuenta para participar.');
+    var d = cupData(), c = cupGet(d, id); if (!c) return fail('No encontramos esa Copa.');
+    if (Date.now() >= cupEnd(c)) return fail('La Copa ya terminó.');
+    var E = cupEntries(d, id), e = E[DB.user.id], st = +c.price_ars === 0 ? 'approved' : 'pending';
+    if (!e) E[DB.user.id] = { user_id: DB.user.id, name: DB.user.name, email: DB.user.email, status: st, total: 0, created_at: new Date().toISOString() };
+    else if (e.status === 'rejected') e.status = st; else st = e.status;
+    store(d); return ok(st);
+  };
+  Local.cupSubmit = function (id, game, score) {
+    if (!DB.user) return fail('Necesitás una cuenta.');
+    var d = cupData(), c = cupGet(d, id), now = Date.now(); if (!c) return fail('No encontramos esa Copa.');
+    if (now < new Date(c.start_at).getTime() || now >= cupEnd(c)) return ok({ ok: false, reason: 'not_live' });
+    if (!PP.gameById(game)) return fail('Ese juego no cuenta para la Copa.');
+    if (typeof score !== 'number' || score < 0 || score > c.max_points || score !== Math.round(score)) return fail('Puntaje fuera de rango.');
+    var e = cupEntries(d, id)[DB.user.id]; if (!e || e.status !== 'approved') return ok({ ok: false, reason: 'not_approved' });
+    if (e.last_submit_at && now - e.last_submit_at < CUP_GAP * 1000) return ok({ ok: false, reason: 'too_fast', wait: Math.ceil(CUP_GAP - (now - e.last_submit_at) / 1000) });
+    e.last_submit_at = now;
+    var S = (d.cupS[id] = d.cupS[id] || {}), mine = (S[DB.user.id] = S[DB.user.id] || {}), old = mine[game];
+    if (old != null && score <= old) { store(d); return ok({ ok: true, improved: false, best: old, total: e.total }); }
+    mine[game] = score; e.total = Object.keys(mine).reduce(function (t, k) { return t + mine[k]; }, 0); e.last_improved_at = new Date().toISOString();
+    store(d); return ok({ ok: true, improved: true, best: score, total: e.total });
+  };
+  Local.cupRanking = function (id) {
+    var d = cupData(); return ok(cupApproved(d, id).slice(0, 100).map(function (e) { return { user_id: e.user_id, name: e.name, total: e.total, last_improved_at: e.last_improved_at }; }));
+  };
+  Local.cupMyScores = function (id) { var d = cupData(); return ok(DB.user && d.cupS[id] && d.cupS[id][DB.user.id] || {}); };
+  Local.cupAdmin = function (fn, a) {
+    try { cupNeedAdmin(); } catch (e) { return Promise.reject(e); }
+    var d = cupData(); a = a || {};
+    if (fn === 'list') return ok(d.cups.map(function (c) {
+      cupFinalize(d, c); var E = cupEntries(d, c.id), all = Object.keys(E).map(function (k) { return E[k]; }), w = c.winner_user ? E[c.winner_user] : null;
+      return Object.assign({}, c, { winner_name: w ? w.name : null, pending: all.filter(function (e) { return e.status === 'pending'; }).length, approved: all.filter(function (e) { return e.status === 'approved'; }).length });
+    }).sort(function (x, y) { return new Date(y.start_at) - new Date(x.start_at); }));
+    if (fn === 'save') {
+      if (new Date(a.p_end) <= new Date(a.p_start)) return fail('El cierre tiene que ser después del inicio.');
+      var c = a.p_id ? cupGet(d, a.p_id) : null;
+      if (a.p_id && !c) return fail('No encontramos esa Copa.');
+      if (!c) { c = { id: uid(), created_at: new Date().toISOString() }; d.cups.push(c); }
+      Object.assign(c, { name: a.p_name, venue: a.p_venue || '', prize: a.p_prize || '', start_at: a.p_start, end_at: a.p_end, price_ars: +a.p_price || 0, pay_info: a.p_pay || '', max_points: +a.p_max || 100 });
+      store(d); return ok(c.id);
+    }
+    if (fn === 'entries') { var E = cupEntries(d, a.p_cup); return ok(Object.keys(E).map(function (k) { return E[k]; }).sort(function (x, y) { var o = { pending: 0, approved: 1, rejected: 2 }; return o[x.status] - o[y.status] || y.total - x.total; })); }
+    if (fn === 'decide') { var en = cupEntries(d, a.p_cup)[a.p_user]; if (en) en.status = a.p_status; store(d); return ok(); }
+    if (fn === 'close') { var cc = cupGet(d, a.p_cup); if (cc && !cc.closed_at && Date.now() < new Date(cc.end_at).getTime()) cc.closed_at = new Date().toISOString(); if (cc) cupFinalize(d, cc); store(d); return ok(); }
+    if (fn === 'redeem') { var cr = cupGet(d, a.p_cup); if (cr) cr.redeemed_at = a.p_done === false ? null : new Date().toISOString(); store(d); return ok(); }
+    return fail('Acción desconocida.');
+  };
   function find(d, id) { return (d.tours || []).filter(function (x) { return x.id === id; })[0]; }
   function pub(u) { return { id: u.id, email: u.email, name: u.name, cat: u.cat, side: u.side, stars: u.stars || 0, level: u.level || 1, iq: u.iq || 70, picks: u.picks || 0 }; }
 
@@ -131,6 +208,7 @@
     if (/known to be weak|easy to guess|pwned/i.test(m)) return 'Esa contraseña es muy común y fácil de adivinar. Elegí otra.';
     if (/password/i.test(m) && /6|short|weak/i.test(m)) return 'La contraseña tiene que tener al menos 6 caracteres.';
     if (/not confirmed/i.test(m)) return 'Falta confirmar el mail. Revisá tu casilla.';
+    if (/cup_/.test(m) && /could not find|does not exist|schema cache/i.test(m)) return 'La Copa todavía no está activada en el servidor.';
     if (/row-level security|violates/i.test(m)) return 'Esa acción ya no está permitida (puede haber cerrado el plazo).';
     return m;
   }
@@ -261,6 +339,13 @@
         .catch(function () { throw new Error('Para invitar tenés que organizar o estar inscripto en el torneo, y que todavía no haya empezado.'); });
     },
     myInvites: function () { if (!DB.user) return ok([]); return rest('POST', '/rest/v1/rpc/my_invites', {}); },
+    // Copa de la Cancha: todo pasa por funciones del servidor (supabase/cups.sql); el puntaje lo valida la base
+    cupCurrent: function () { return rest('POST', '/rest/v1/rpc/cup_current', {}); },
+    cupJoin: function (id) { return rest('POST', '/rest/v1/rpc/cup_join', { p_cup: id }); },
+    cupSubmit: function (id, game, score) { return rest('POST', '/rest/v1/rpc/cup_submit', { p_cup: id, p_game: game, p_score: score }); },
+    cupRanking: function (id) { return rest('POST', '/rest/v1/rpc/cup_ranking', { p_cup: id }); },
+    cupMyScores: function (id) { if (!DB.user) return ok({}); return rest('POST', '/rest/v1/rpc/cup_my_scores', { p_cup: id }); },
+    cupAdmin: function (fn, args) { return rest('POST', '/rest/v1/rpc/cup_admin_' + fn, args || {}); },
     dismissInvite: function (tid) { return rest('DELETE', '/rest/v1/tournament_invites?tournament_id=eq.' + encodeURIComponent(tid) + '&user_id=eq.' + DB.user.id); },
     sponsors: function () { return rest('GET', '/rest/v1/sponsors?select=*&order=created_at.desc'); },
     sponsorApply: function (f) { return rest('POST', '/rest/v1/sponsors', { name: f.name, type: f.type, descr: f.descr, contact: f.contact, created_by: DB.user.id }); },
@@ -288,7 +373,7 @@
   };
 
   var impl = DB.online ? Supa : Local;
-  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite'].forEach(function (k) {
+  ['sendFeedback', 'admin', 'searchPlayers', 'adminUsers', 'proPrice', 'proCheckout', 'videos', 'videoCounts', 'myVideos', 'uploadVideo', 'videoUrl', 'like', 'pendingVideos', 'reviewVideo', 'deleteVideo', 'setVip', 'monthCount', 'refreshMe', 'init', 'signIn', 'signOut', 'pushStats', 'ranking', 'sponsors', 'sponsorApply', 'tournaments', 'tournament', 'createTournament', 'join', 'bet', 'submitScore', 'myRank', 'following', 'followCounts', 'follow', 'invite', 'myInvites', 'dismissInvite', 'cupCurrent', 'cupJoin', 'cupSubmit', 'cupRanking', 'cupMyScores', 'cupAdmin'].forEach(function (k) {
     DB[k] = function () { try { return impl[k].apply(impl, arguments); } catch (e) { return Promise.reject(e); } };
   });
   DB.signUp = function (f) {

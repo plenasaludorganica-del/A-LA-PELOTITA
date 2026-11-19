@@ -351,4 +351,16 @@
     [5, "Jugada inventada", "Inventá un golpe que no exista y ponele nombre."]
   ];
   PP.GEM_SINKS = { refillLives: 30, continueMatch: 10, coinPack: { gems: 20, coins: 1500 } };
+
+  // ================= Copa de la Cancha =================
+  // El nombre se cambia acá y solo acá (botón del inicio, títulos y mensajes).
+  PP.CUP = { name: 'Copa de la Cancha', defaultMaxPoints: 100, minGapS: 15 };
+
+  // Registro central de juegos que suman a la Copa. Cada juego: id, nombre y puntaje máximo "crudo"
+  // (lo que mide el juego: estrellas, porcentaje...). La Copa lo lleva a escala 0..tope de puntos.
+  // Para sumar un juego nuevo: agregá un objeto acá y la misma id en supabase/cups.sql (tabla cup_games),
+  // y cuando termine una partida llamá a PP.Cup.report(id, puntajeCrudo).
+  PP.GAMES = PP.LEVELS.map(function (lv) { return { id: 'lv' + lv.n, name: 'Nivel ' + lv.n, max: 3 }; })   // 40 niveles: 0 a 3 estrellas
+    .concat(PP.DRILLS.map(function (d) { return { id: d.id, name: d.name, max: 100 }; }));                // Gimnasio mental: 0 a 100
+  PP.gameById = function (id) { for (var i = 0; i < PP.GAMES.length; i++) if (PP.GAMES[i].id === id) return PP.GAMES[i]; return null; };
 })();

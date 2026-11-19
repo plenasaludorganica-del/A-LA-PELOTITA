@@ -71,7 +71,7 @@
   }
 
   /* ================= UI general ================= */
-  var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social'], curScreen = 'home';
+  var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup'], curScreen = 'home';
   function go(name) {
     curScreen = name;
     screens.forEach(function (s) { $(s).hidden = s !== name; });
@@ -83,6 +83,7 @@
     if (name === 'missions') renderMissions();
     if (name === 'train') renderTrain();
     if (name === 'social') PP.Social.render();
+    if (name === 'cup') PP.Cup.render();
     refreshTop();
   }
   function refreshTop() {
@@ -761,6 +762,7 @@
       if (idx >= save.level && idx < PP.LEVELS.length - 1) save.level = idx + 1;
       save.coins += coins; save.gems += gems; var rankUp = addXp(xp); save.chest = Math.min(3, save.chest + 1);
       mission('wins', 1); mission('stars', gained); persist(); PP.Social.sync();
+      PP.Cup.report('lv' + lv.n, stars);   // Copa de la Cancha: 0 a 3 estrellas
       me.setMood('happy'); opp.setMood('sad'); S.confetti(220); S.excite = 1; A.play('win');
       for (var i = 0; i < 6; i++) setTimeout(S.firework, i * 260);
       setTimeout(function () { showResult(true, { stars: stars, coins: coins, xp: xp, gems: gems, rankUp: rankUp }); }, 1500);
@@ -1147,6 +1149,7 @@
     trClean(); $('hud').hidden = true;
     if (PP.tourCtx) { var tc = PP.tourCtx; PP.tourCtx = null; S.mode = 'menu'; PP.Social.tourDone(tc, PP.lastDrillScore || 0); return; }
     pct = clamp(Math.round(pct), 0, 100);
+    PP.Cup.report(id, pct);   // Copa de la Cancha: 0 a 100
     var before = iq(), prev = save.train.best[id] || 0, first = save.train.last !== today(), coins = Math.round(pct * 0.6) + (first ? 100 : 0);
     save.train.best[id] = Math.max(prev, pct); save.train.last = today(); save.coins += coins; var rankUp = addXp(20);
     var rd = id === 'read' ? PP.lastRead : id === 'lights' ? PP.lastLights : null, rdKey = id + 'Best', rdPrev = save.train[rdKey] || { stage: 0, score: 0 }, rdNew = false;
@@ -1334,6 +1337,7 @@
   on($('superBtn'), useSuper); on($('pauseBtn'), pause);
   on($('playBtn'), function () { preLevel(Math.min(save.level, PP.LEVELS.length - 1)); });
   on($('bSocial'), function () { go('social'); });
+  on($('bCup'), function () { PP.Cup.open(); });
   on($('bPro'), function () { PP.Social.open('pro'); go('social'); });
   on($('bHelp'), function () { showHelp(); });
   on($('bOpina'), function () { showFeedback(); });
@@ -1357,7 +1361,7 @@
     opp = S.makeSpriteChar(PP.LEVELS[Math.min(save.level, 39)].sprite, { accent: '#ffffff', scale: 1 }); opp.place(1.5, -6);
     PP.ui = { modal: modal, closeModal: closeModal, toast: toast, on: on, ic: ic, go: go, flash: flash, persist: persist, iq: iq, totalStars: totalStars,
       startLevel: startLevel, startDrill: startDrill, save: function () { return save; } };
-    ensureMissions(); go('home'); PP.Social.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
+    ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
     if (!save.intro && location.search.indexOf('nodaily') < 0) showHelp(startShow); else if (location.search.indexOf('nodaily') < 0) showDaily();
     requestAnimationFrame(frame);
   }

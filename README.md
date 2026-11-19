@@ -166,6 +166,38 @@ Pendiente, en orden sugerido:
 - **Próximo:** @usuario único, recuperar contraseña, progreso en la cuenta, planillas de pagos y opiniones, cobro internacional.
 - **Plan:** seguir en el plan gratis de Supabase hasta tener ingresos; después pasar a Pro (USD 25 por mes).
 
+## Copa de la Cancha
+
+Competencia con premio real (por ejemplo, "1 hora de cancha"), independiente del ranking general, la tienda y los torneos.
+Botón propio en el inicio. El nombre se cambia en un solo lugar: `PP.CUP.name` en `js/data.js`.
+
+- **Jugador:** ve la Copa activa (cancha, premio, precio y cuenta regresiva), toca "Quiero participar" (necesita cuenta) y
+  ve el precio y cómo pagar. Gratis = entra al instante; con precio = queda **pendiente** hasta que la administración la apruebe.
+  Solo los aprobados suman al ranking de la Copa (top 100 y el puesto propio).
+- **Puntaje:** cuentan todos los juegos del registro central `PP.GAMES` (`js/data.js`): los 40 niveles (0 a 3 estrellas) y los
+  4 ejercicios del Gimnasio mental (0 a 100). Por cada juego vale la mejor marca durante la Copa, llevada a 0..tope
+  (por defecto 100). Total = suma de las mejores marcas. Desempate: gana quien llegó primero a ese total.
+  Cada juego avisa con `PP.Cup.report(id, puntajeCrudo)` al terminar; los envíos que fallan o llegan muy seguidos quedan en cola.
+- **Sumar un juego nuevo:** agregar un objeto `{ id, name, max }` a `PP.GAMES`, la misma `id` en la tabla `cup_games`
+  (`supabase/cups.sql`, una línea) y llamar a `PP.Cup.report(id, puntaje)` cuando termina la partida.
+- **Ganador:** al cierre (o al cerrarla antes desde el panel) el servidor elige al ganador y le da un **código de canje de 6 caracteres**.
+  El ganador coordina día y hora con la cancha fuera de la app y muestra el código. En el panel se marca como canjeado.
+- **Panel de administración** (dentro del botón, solo para los mails de la tabla `admins`): crear y editar Copas (nombre, cancha,
+  premio, inicio, cierre, precio en pesos, cómo pagar y puntos máximos por juego), ver inscriptos, aprobar (pagó) o rechazar
+  (no pagó), cerrar antes de tiempo y marcar el premio como canjeado.
+- **Pago:** hoy es manual. El único punto para enchufar Mercado Pago es `PP.CupPayment.checkout` en `js/cup.js`.
+- **Seguridad:** todo en `supabase/cups.sql`. Las tablas (`admins`, `cup_games`, `cups`, `cup_entries`, `cup_scores`) tienen RLS
+  y no se leen ni se escriben directo: todo pasa por funciones `security definer`. El puntaje entra solo por `cup_submit`, que valida
+  jugador aprobado, Copa en curso, juego válido, 0 <= puntaje <= tope, que mejore la marca anterior y 15 segundos entre envíos.
+  Igual que en el resto del juego, el puntaje lo calcula el celular: las reglas acotan cuánto se puede inflar, no lo hacen imposible.
+- **Para activarla:** pegar `supabase/cups.sql` en Supabase → SQL Editor → Run, y cargar tu mail en la tabla `admins`
+  (`insert into admins (email) values ('tu-mail') on conflict do nothing;`, en minúsculas).
+- **Modo demo:** funciona sin servidor (todo en el dispositivo, mismas reglas). La administración en demo es la cuenta
+  `admin@demo.com` (se cambia con `cupDemoAdmins` en `js/config.js`).
+
+**Cartel de novedades:** al abrir el juego, una vez por día, aparece "¡Estamos creando algo increíble para vos!" con un botón
+para compartir (WhatsApp o el menú de compartir del celular). Está en `js/cup.js` (función `news`).
+
 ## Estructura
 
 | Archivo | Qué tiene |
@@ -178,6 +210,8 @@ Pendiente, en orden sugerido:
 | `js/social.js` | Pantalla Comunidad: ranking, torneos, pronósticos, sponsors y cuenta |
 | `js/config.js` | URL y clave pública del servidor (vacío = modo demo) |
 | `supabase/schema.sql` | Tablas y reglas de seguridad del servidor |
+| `supabase/cups.sql` | Copa de la Cancha: tablas, reglas y funciones (se pega aparte en el SQL Editor) |
+| `js/cup.js` | Copa de la Cancha: pantalla, panel de administración, envío de puntajes y cartel de novedades |
 | `js/audio.js` | Sonidos y música sintetizados (sin archivos de audio). Cuatro temas, uno por mundo, que rotan solos |
 | `assets/` | Arte pixel art de jugadores, jefes y fondos de cada mundo |
 | `tools/build-artifact.py` | Arma la versión que se publica como Artifact de Claude |
