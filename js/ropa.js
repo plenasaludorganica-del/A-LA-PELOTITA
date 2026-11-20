@@ -58,22 +58,33 @@
     for (var k = 0; k < 4; k++) { var p = pal(di * 3 + k + 1); add({ id: 'short_' + d + p[0], cat: 'shorts', slot: 'bottom', tier: DISENO[d][1], name: 'Short ' + (d === 'liso' ? NOMBRE[p[0]].toLowerCase() : DISENO[d][0] + ' ' + NOMBRE[p[0]].toLowerCase()), v: { k: 'short', c1: C[p[0]], c2: C[p[1]], c3: C[p[1]], d: d } }); }
   });
   ['liso', 'camuflado', 'lateral'].forEach(function (d, di) { for (var k = 0; k < 3; k++) { var p = pal(di * 4 + k + 9); add({ id: 'berm_' + d + p[0], cat: 'shorts', slot: 'bottom', tier: DISENO[d][1], name: 'Bermuda ' + (d === 'liso' ? NOMBRE[p[0]].toLowerCase() : DISENO[d][0] + ' ' + NOMBRE[p[0]].toLowerCase()), v: { k: 'bermuda', c1: C[p[0]], c2: C[p[1]], c3: C[p[1]], d: d } }); } });
-  // Conjuntos (remera + short o top + pollera), inspirados en las fotos, sin marcas
-  [['Ola turquesa', 'remera', 'degrade_zigzag', 'turquesa', 'blanco', 'short', 'degrade', 'epica'],
-   ['Sombra', 'remera', 'degrade_puntos', 'negro', 'blanco', 'short', 'degrade', 'epica'],
-   ['Ángel', 'crop', 'paneles', 'negro', 'blanco', 'pollera', 'grieta', 'legendaria'],
-   ['Calle', 'remera', 'paneles', 'blanco', 'negro', 'short', 'lateral', 'epica'],
-   ['Noche', 'remera', 'raglan', 'negro', 'blanco', 'short', 'paneles', 'epica'],
-   ['Flamenco', 'crop', 'degrade', 'rosa', 'blanco', 'pollera', 'degrade', 'especial'],
-   ['Mar', 'remera', 'degrade', 'celeste', 'blanco', 'short', 'degrade', 'especial'],
-   ['Lima ácida', 'remera', 'rayo', 'negro', 'lima', 'short', 'lateral', 'epica'],
-   ['Lavanda', 'musculosa', 'degrade', 'violeta', 'blanco', 'pollera', 'paneles', 'epica'],
-   ['Fuego', 'remera', 'degrade_zigzag', 'naranja', 'amarillo', 'short', 'degrade', 'legendaria'],
-   ['Rosa grieta', 'crop', 'grieta', 'rosa', 'blanco', 'pollera', 'grieta', 'legendaria'],
-   ['Clásico', 'polo', 'liso', 'blanco', 'marino', 'short', 'liso', 'comun']
+  // Conjuntos (remera + short o top + pollera), copiados de las fotos de referencia, sin marcas.
+  // Formato: nombre, [tipo, diseño, color1, color2, color3] de arriba, [tipo, diseño, color1, color2, color3] de abajo, rareza
+  [['Ola turquesa', ['remera', 'ola', 'turquesa', 'blanco'], ['short', 'ola', 'turquesa', 'blanco'], 'epica'],
+   ['Ola rosa', ['remera', 'ola', 'rosa', 'blanco'], ['short', 'ola', 'rosa', 'blanco'], 'epica'],
+   ['Ola celeste', ['remera', 'ola', 'celeste', 'blanco'], ['short', 'ola', 'celeste', 'blanco'], 'epica'],
+   ['Sombra', ['remera', 'sombra', 'negro', 'blanco'], ['short', 'sombra', 'negro', 'blanco'], 'epica'],
+   ['Sombra marino', ['remera', 'sombra', 'marino', 'blanco'], ['short', 'sombra', 'marino', 'blanco'], 'epica'],
+   ['Ángel', ['crop', 'angel', 'negro', 'blanco'], ['pollera', 'angel', 'negro', 'blanco'], 'legendaria'],
+   ['Ángel rosa', ['crop', 'angel', 'rosa', 'blanco'], ['pollera', 'angel', 'rosa', 'blanco'], 'legendaria'],
+   ['Ángel blanco', ['crop', 'angel', 'blanco', 'negro'], ['pollera', 'angel', 'blanco', 'negro'], 'legendaria'],
+   ['Calle', ['remera', 'calle', 'blanco', 'negro'], ['short', 'calle', 'negro', 'blanco'], 'epica'],
+   ['Calle bordó', ['remera', 'calle', 'arena', 'bordo'], ['short', 'calle', 'bordo', 'arena'], 'epica'],
+   ['Noche', ['remera', 'noche', 'negro', 'blanco', 'gris'], ['short', 'noche', 'gris', 'blanco', 'negro'], 'epica'],
+   ['Noche azul', ['remera', 'noche', 'marino', 'blanco', 'celeste'], ['short', 'noche', 'celeste', 'blanco', 'marino'], 'epica'],
+   ['Flamenco', ['crop', 'degrade', 'rosa', 'blanco'], ['pollera', 'degrade', 'rosa', 'blanco'], 'especial'],
+   ['Mar', ['remera', 'degrade', 'celeste', 'blanco'], ['short', 'degrade', 'celeste', 'blanco'], 'especial'],
+   ['Lima ácida', ['remera', 'rayo', 'negro', 'lima'], ['short', 'lateral', 'negro', 'lima'], 'epica'],
+   ['Lavanda', ['musculosa', 'degrade', 'violeta', 'blanco'], ['pollera', 'paneles', 'violeta', 'blanco'], 'epica'],
+   ['Fuego', ['remera', 'degrade_zigzag', 'naranja', 'amarillo'], ['short', 'degrade', 'naranja', 'amarillo'], 'legendaria'],
+   ['Clásico', ['polo', 'liso', 'blanco', 'marino'], ['short', 'liso', 'marino', 'blanco'], 'comun']
   ].forEach(function (s) {
-    add({ id: 'set_' + s[0].toLowerCase().replace(/[^a-z]/g, ''), cat: 'conjuntos', slot: 'set', tier: s[7], name: 'Conjunto ' + s[0],
-      v: { top: { k: s[1], c1: C[s[3]], c2: C[s[4]], c3: C[s[4]], d: s[2], logo: 1 }, bottom: { k: s[5], c1: C[s[3]], c2: C[s[4]], c3: C[s[4]], d: s[6] } } });
+    var part = function (a) { return { k: a[0], d: a[1], c1: C[a[2]], c2: C[a[3]], c3: C[a[4] || a[3]], logo: a[0] === 'remera' || a[0] === 'polo' ? 1 : 0 }; };
+    add({ id: 'set_' + s[0].toLowerCase().replace(/[^a-z]/g, ''), cat: 'conjuntos', slot: 'set', tier: s[3], name: 'Conjunto ' + s[0], v: { top: part(s[1]), bottom: part(s[2]) } });
+    // cada parte también se vende suelta
+    var t = part(s[1]), b = part(s[2]), nm = { remera: 'Remera', crop: 'Top corto', musculosa: 'Musculosa', polo: 'Chomba', short: 'Short', pollera: 'Pollera' };
+    add({ id: 'top_' + s[0].toLowerCase().replace(/[^a-z]/g, ''), cat: t.k === 'crop' || t.k === 'musculosa' ? 'chicas' : 'remeras', slot: 'top', tier: s[3], name: nm[t.k] + ' ' + s[0], v: t });
+    add({ id: 'bot_' + s[0].toLowerCase().replace(/[^a-z]/g, ''), cat: b.k === 'pollera' ? 'chicas' : 'shorts', slot: 'bottom', tier: s[3], name: nm[b.k] + ' ' + s[0], v: b });
   });
   // Zapatillas
   [['blanco', 'lima'], ['blanco', 'turquesa'], ['negro', 'amarillo'], ['blanco', 'rosa'], ['negro', 'blanco'], ['celeste', 'blanco'], ['rojo', 'blanco'], ['violeta', 'lima'],

@@ -43,14 +43,81 @@
     var dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, ox = -dy / l * w * 0.18 * (light || 1), oy = dx / l * w * 0.18 * (light || 1);
     cap(c, [a[0] + ox, a[1] + oy], [b[0] + ox, b[1] + oy], w * 0.62, col);
   }
+  function capB(c, a, b, w, col) { c.strokeStyle = col; c.lineWidth = w; c.lineCap = 'butt'; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
   function lerp(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
   function poly(c, pts, fill) { c.fillStyle = fill; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (var i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); c.fill(); }
   function circle(c, x, y, r, fill) { c.fillStyle = fill; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); }
   function ellipse(c, x, y, rx, ry, rot, fill) { c.fillStyle = fill; c.beginPath(); c.ellipse(x, y, rx, ry, rot || 0, 0, Math.PI * 2); c.fill(); }
 
   /* ---------- Patrones de las prendas ---------- */
+  // Diseños copiados de las fotos de referencia (sin marcas): mismas formas en la tienda y en el cuerpo
+  function curve(c, ax, ay, cx, cy, bx, by, col, wd) { c.strokeStyle = col; c.lineWidth = wd; c.beginPath(); c.moveTo(ax, ay); c.quadraticCurveTo(cx, cy, bx, by); c.stroke(); }
+  function crackle(c, x0, y0, x1, y1, col) {   // dibujo de "grieta" (líneas quebradas finas)
+    c.strokeStyle = col; c.lineWidth = 0.45; var w = x1 - x0, h = y1 - y0;
+    for (var k = 0; k < 9; k++) { var sx = x0 + ((k * 37) % 100) / 100 * w, sy = y0 + ((k * 61) % 100) / 100 * h; c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + 2.2, sy + 1.6); c.lineTo(sx + 1, sy + 3.4); c.lineTo(sx + 3, sy + 5); c.moveTo(sx + 2.2, sy + 1.6); c.lineTo(sx + 4, sy + 0.8); c.stroke(); }
+  }
+  var REF = {
+    // Foto 1: degradé de color a blanco, textura de espigas arriba y dos curvas finas a los costados
+    ola: function (c, it, x0, y0, x1, y1, w, h, c1, c2, c3, o) {
+      var g = c.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, c1); g.addColorStop(o.part === 'top' ? 0.3 : 0.15, c1); g.addColorStop(o.part === 'top' ? 0.75 : 0.8, c2); g.addColorStop(1, c2); c.fillStyle = g; c.fillRect(x0, y0, w, h);
+      c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 0.45;
+      for (var yy = y0 + 1; yy < y0 + h * 0.55; yy += 2.2) for (var xx = x0 + 1; xx < x1; xx += 2.4) { c.beginPath(); c.moveTo(xx, yy); c.lineTo(xx + 0.9, yy + 1); c.lineTo(xx + 1.8, yy); c.stroke(); }
+      if (o.part === 'top') { curve(c, x0 + w * 0.2, y0 + h * 0.3, x0 + w * 0.06, y0 + h * 0.65, x0 + w * 0.22, y1, c1, 0.9); curve(c, x0 + w * 0.27, y0 + h * 0.36, x0 + w * 0.15, y0 + h * 0.7, x0 + w * 0.3, y1, c1, 0.5);
+        curve(c, x1 - w * 0.2, y0 + h * 0.3, x1 - w * 0.06, y0 + h * 0.65, x1 - w * 0.22, y1, c1, 0.9); curve(c, x1 - w * 0.27, y0 + h * 0.36, x1 - w * 0.15, y0 + h * 0.7, x1 - w * 0.3, y1, c1, 0.5); }
+    },
+    // Foto 2: degradé de negro a blanco con textura de puntitos y curvas grises a los costados
+    sombra: function (c, it, x0, y0, x1, y1, w, h, c1, c2, c3, o) {
+      var g = c.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, c1); g.addColorStop(0.3, c1); g.addColorStop(0.8, c2); g.addColorStop(1, c2); c.fillStyle = g; c.fillRect(x0, y0, w, h);
+      c.fillStyle = 'rgba(255,255,255,.35)'; for (var yy = y0 + 1; yy < y0 + h * 0.6; yy += 1.6) for (var xx = x0 + ((yy - y0) % 3.2 > 1.5 ? 0.8 : 0); xx < x1; xx += 1.6) c.fillRect(xx, yy, 0.5, 0.5);
+      if (o.part === 'top') { var gr = '#9AA0A6'; curve(c, x0 + w * 0.18, y0 + h * 0.3, x0 + w * 0.05, y0 + h * 0.62, x0 + w * 0.2, y1, gr, 1.4); curve(c, x1 - w * 0.18, y0 + h * 0.3, x1 - w * 0.05, y0 + h * 0.62, x1 - w * 0.2, y1, gr, 1.4); }
+    },
+    // Foto 3: top corto negro con cuello alto, hombros blancos, ribete blanco curvo y paneles laterales con grieta; pollera haciendo juego
+    angel: function (c, it, x0, y0, x1, y1, w, h, c1, c2, c3, o) {
+      c.fillStyle = c1; c.fillRect(x0, y0, w, h);
+      if (o.part === 'top') {
+        c.fillStyle = c2; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + w * 0.32, y0); c.lineTo(x0, y0 + h * 0.35); c.fill(); c.beginPath(); c.moveTo(x1, y0); c.lineTo(x1 - w * 0.32, y0); c.lineTo(x1, y0 + h * 0.35); c.fill();
+        c.save(); c.beginPath(); c.moveTo(x0, y0 + h * 0.3); c.quadraticCurveTo(x0 + w * 0.36, y0 + h * 0.6, x0 + w * 0.12, y1); c.lineTo(x0, y1); c.closePath(); c.clip(); crackle(c, x0, y0 + h * 0.3, x0 + w * 0.35, y1, c2); c.restore();
+        c.save(); c.beginPath(); c.moveTo(x1, y0 + h * 0.3); c.quadraticCurveTo(x1 - w * 0.36, y0 + h * 0.6, x1 - w * 0.12, y1); c.lineTo(x1, y1); c.closePath(); c.clip(); crackle(c, x1 - w * 0.35, y0 + h * 0.3, x1, y1, c2); c.restore();
+        curve(c, x0 + w * 0.32, y0, x0 + w * 0.42, y0 + h * 0.55, x0 + w * 0.14, y1, c2, 0.7); curve(c, x1 - w * 0.32, y0, x1 - w * 0.42, y0 + h * 0.55, x1 - w * 0.14, y1, c2, 0.7);
+      } else {
+        var mx = (x0 + x1) / 2;
+        c.save(); c.beginPath(); c.moveTo(x0 + w * 0.12, y0 + h * 0.18); c.lineTo(x0 + w * 0.3, y0 + h * 0.18); c.lineTo(x0 + w * 0.18, y1); c.lineTo(x0, y1); c.closePath(); c.clip(); c.fillStyle = c2; c.fillRect(x0, y0, w, h); crackle(c, x0, y0, x0 + w * 0.3, y1, c1); c.restore();
+        c.save(); c.beginPath(); c.moveTo(x1 - w * 0.12, y0 + h * 0.18); c.lineTo(x1 - w * 0.3, y0 + h * 0.18); c.lineTo(x1 - w * 0.18, y1); c.lineTo(x1, y1); c.closePath(); c.clip(); c.fillStyle = c2; c.fillRect(x0, y0, w, h); crackle(c, x1 - w * 0.3, y0, x1, y1, c1); c.restore();
+        c.strokeStyle = c2; c.lineWidth = 0.6; c.beginPath(); c.moveTo(x0 + w * 0.34, y0 + h * 0.18); c.lineTo(x0 + w * 0.24, y1); c.moveTo(x1 - w * 0.34, y0 + h * 0.18); c.lineTo(x1 - w * 0.24, y1); c.stroke();
+        c.fillStyle = c1; c.fillRect(x0, y0, w, h * 0.18); c.fillStyle = c2; c.fillRect(mx - 1, y0 + h * 0.06, 2, 1);
+      }
+    },
+    // Foto 4: remera blanca con paneles laterales negros curvos y ribete blanco; short negro con franja blanca al costado y ruedo con dos rayas
+    calle: function (c, it, x0, y0, x1, y1, w, h, c1, c2, c3, o) {
+      c.fillStyle = c1; c.fillRect(x0, y0, w, h);
+      if (o.part === 'top') {
+        c.fillStyle = c2;
+        c.beginPath(); c.moveTo(x0 - 1, y0); c.lineTo(x0 + w * 0.3, y0); c.quadraticCurveTo(x0 + w * 0.1, y0 + h * 0.5, x0 + w * 0.36, y1); c.lineTo(x0 - 1, y1); c.closePath(); c.fill();
+        c.beginPath(); c.moveTo(x1 + 1, y0); c.lineTo(x1 - w * 0.3, y0); c.quadraticCurveTo(x1 - w * 0.1, y0 + h * 0.5, x1 - w * 0.36, y1); c.lineTo(x1 + 1, y1); c.closePath(); c.fill();
+        curve(c, x0 + w * 0.35, y0, x0 + w * 0.14, y0 + h * 0.5, x0 + w * 0.4, y1, c2, 0.8); curve(c, x1 - w * 0.35, y0, x1 - w * 0.14, y0 + h * 0.5, x1 - w * 0.4, y1, c2, 0.8);
+        c.fillStyle = c2; c.fillRect(x0 + w * 0.3, y1 - 2.5, w * 0.4, 1.4);
+      } else {
+        var out = o.leg === 0 ? x0 + 0.5 : x1 - 2.2; c.fillStyle = c2; c.fillRect(out, y0, 1.7, h);
+        c.fillRect(x0, y1 - 3.2, w, 0.9); c.fillRect(x0, y1 - 1.6, w, 0.9);
+      }
+    },
+    // Foto 5: remera negra con franja blanca en los hombros, paneles grises a los costados y ribete blanco; short gris con laterales negros y detalle blanco
+    noche: function (c, it, x0, y0, x1, y1, w, h, c1, c2, c3, o) {
+      c.fillStyle = c1; c.fillRect(x0, y0, w, h);
+      if (o.part === 'top') {
+        c.fillStyle = c3; c.beginPath(); c.moveTo(x0, y0 + h * 0.32); c.lineTo(x0 + w * 0.24, y0 + h * 0.4); c.lineTo(x0 + w * 0.2, y1); c.lineTo(x0, y1); c.fill(); c.beginPath(); c.moveTo(x1, y0 + h * 0.32); c.lineTo(x1 - w * 0.24, y0 + h * 0.4); c.lineTo(x1 - w * 0.2, y1); c.lineTo(x1, y1); c.fill();
+        c.strokeStyle = c2; c.lineWidth = 1.6; c.beginPath(); c.moveTo(x0 + w * 0.36, y0); c.lineTo(x0, y0 + h * 0.3); c.moveTo(x1 - w * 0.36, y0); c.lineTo(x1, y0 + h * 0.3); c.stroke();
+        c.lineWidth = 0.5; c.beginPath(); c.moveTo(x0 + w * 0.26, y0 + h * 0.18); c.lineTo(x0 + w * 0.23, y1); c.moveTo(x1 - w * 0.26, y0 + h * 0.18); c.lineTo(x1 - w * 0.23, y1); c.stroke();
+      } else {
+        var outx = o.leg === 0 ? x0 : x1 - w * 0.32; c.fillStyle = c3; c.fillRect(outx, y0, w * 0.32, h);
+        c.fillStyle = c2; c.beginPath(); if (o.leg === 0) { c.moveTo(x0, y1 - h * 0.3); c.lineTo(x0 + w * 0.32, y1 - h * 0.45); c.lineTo(x0 + w * 0.32, y1 - h * 0.32); c.lineTo(x0, y1 - h * 0.16); } else { c.moveTo(x1, y1 - h * 0.3); c.lineTo(x1 - w * 0.32, y1 - h * 0.45); c.lineTo(x1 - w * 0.32, y1 - h * 0.32); c.lineTo(x1, y1 - h * 0.16); } c.fill();
+        c.strokeStyle = c2; c.lineWidth = 0.5; c.beginPath(); c.moveTo(o.leg === 0 ? x0 + w * 0.33 : x1 - w * 0.33, y0); c.lineTo(o.leg === 0 ? x0 + w * 0.33 : x1 - w * 0.33, y1); c.stroke();
+      }
+    }
+  };
   // Pinta el diseño dentro del área ya recortada (clip) de la prenda. box = [x0, y0, x1, y1]
-  function pattern(c, it, box, front) {
+  function pattern(c, it, box, front, o) {
+    o = o || {};
     var x0 = box[0], y0 = box[1], x1 = box[2], y1 = box[3], w = x1 - x0, h = y1 - y0, c1 = it.c1, c2 = it.c2 || '#ffffff', c3 = it.c3 || OUT, d = it.d || 'liso';
     c.fillStyle = c1; c.fillRect(x0, y0, w, h);
     if (d === 'degrade' || d === 'degrade_puntos' || d === 'degrade_zigzag') {
@@ -98,6 +165,7 @@
       var g2 = c.createLinearGradient(x0, y0, x1, y1), b = d === 'oro' ? ['#FFF3B0', '#FFC93C', '#B87A0B'] : ['#FFFFFF', '#C9D1DB', '#7D8794'];
       g2.addColorStop(0, b[0]); g2.addColorStop(0.5, b[1]); g2.addColorStop(1, b[2]); c.fillStyle = g2; c.fillRect(x0, y0, w, h);
     }
+    else if (REF[d]) REF[d](c, it, x0, y0, x1, y1, w, h, c1, c2, c3, o);
     // logo propio (sin marcas reales): un círculo con una curva, como una pelotita
     if (it.logo && front) { var lx = x0 + w * 0.68, ly = y0 + h * 0.22; circle(c, lx, ly, 1.6, it.logoC || c2); }
   }
@@ -106,7 +174,7 @@
   function torsoPts(p, look, crop) {
     var fem = look.body === 'f', sw = fem ? 0.85 : 1, L = p.sh[0], R = p.sh[1], hl = p.hp[0], hr = p.hp[1];
     var cx = (L[0] + R[0]) / 2, sl = [cx + (L[0] - cx) * sw * 1.25, L[1] - 1], sr = [cx + (R[0] - cx) * sw * 1.25, R[1] - 1];
-    var waist = lerp([(sl[0] + sr[0]) / 2, (sl[1] + sr[1]) / 2], [(hl[0] + hr[0]) / 2, (hl[1] + hr[1]) / 2], crop ? 0.72 : 1);
+    var waist = lerp([(sl[0] + sr[0]) / 2, (sl[1] + sr[1]) / 2], [(hl[0] + hr[0]) / 2, (hl[1] + hr[1]) / 2], crop ? 0.84 : 1);
     var hw = (fem ? 10.5 : 11) * (crop ? 0.95 : 1), wy = waist[1] + (crop ? 0 : 2);
     return [sl, sr, [waist[0] + hw, wy], [waist[0] - hw, wy]];
   }
@@ -221,39 +289,47 @@
     var hl = p.hp[0], hr = p.hp[1], hipY = Math.min(hl[1], hr[1]) - 3;
     if (bot.k === 'pollera') {
       var sp = [[hl[0] - 5, hipY], [hr[0] + 5, hipY], [hr[0] + 13, hipY + 21], [hl[0] - 13, hipY + 21]];
-      c.save(); clipPoly(c, sp); pattern(c, bot, bbox(sp), front);
+      c.save(); clipPoly(c, sp); pattern(c, bot, bbox(sp), front, { part: 'skirt' });
       c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 0.8; for (var k = -3; k <= 3; k++) { c.beginPath(); c.moveTo((hl[0] + hr[0]) / 2 + k * 2.4, hipY + 3); c.lineTo((hl[0] + hr[0]) / 2 + k * 5.4, hipY + 21); c.stroke(); }
       c.restore();
-      c.fillStyle = bot.c3 || shade(bot.c1, -0.3); c.fillRect(hl[0] - 5, hipY, hr[0] - hl[0] + 10, 3);
+      c.fillStyle = bot.d === 'angel' ? bot.c1 : (bot.c3 || shade(bot.c1, -0.3)); c.fillRect(hl[0] - 5, hipY - (bot.d === 'angel' ? 3 : 0), hr[0] - hl[0] + 10, bot.d === 'angel' ? 6 : 3);   // pollera Ángel: cintura alta
     } else {
       var len = bot.k === 'calza' ? 0.85 : bot.k === 'bermuda' ? 0.62 : 0.42;
       for (var j = 0; j < 2; j++) {
         var kneeP = lerp(p.hp[j], p.kn[j], len);
         c.save(); var lp = [[p.hp[j][0] - 6.6, hipY], [p.hp[j][0] + 6.6, hipY], [kneeP[0] + 6.2, kneeP[1]], [kneeP[0] - 6.2, kneeP[1]]];
-        clipPoly(c, lp); pattern(c, bot, bbox(lp), front); c.restore();
+        clipPoly(c, lp); pattern(c, bot, bbox(lp), front, { part: 'bottom', leg: front ? 1 - j : j }); c.restore();
       }
       var wb = [[hl[0] - 7.5, hipY], [hr[0] + 7.5, hipY], [hr[0] + 7, hipY + 7], [hl[0] - 7, hipY + 7]];
-      c.save(); clipPoly(c, wb); pattern(c, bot, bbox(wb), front); c.restore();
+      c.save(); clipPoly(c, wb); pattern(c, bot, bbox(wb), front, { part: 'waist' }); c.restore();
       c.fillStyle = shade(bot.c1, -0.25); c.fillRect(hl[0] - 7.5, hipY, hr[0] - hl[0] + 15, 2);
       if (front && bot.k !== 'calza') { c.fillStyle = '#ffffff'; c.fillRect((hl[0] + hr[0]) / 2 - 0.5, hipY + 2, 1, 3); }
     }
     // brazo de atrás (el izquierdo en la vista de espalda)
     var drawArm = function (s) {
       limb(c, p.sh[s], p.el[s], 7.8, skin); limb(c, p.el[s], p.ha[s], 7, skin);
-      if (!sleeveless) { var sl = top.k === 'manga' ? 0.95 : 0.45; limb(c, p.sh[s], lerp(p.sh[s], p.el[s], sl), 9.4, top.d === 'raglan' ? (top.c2 || top.c1) : top.c1); }
+      if (!sleeveless) {   // manga: recta (no redonda), con el ruedo y los detalles de cada diseño
+        var sl = top.k === 'manga' ? 0.95 : top.k === 'crop' ? 0.42 : 0.5, d = top.d, end = lerp(p.sh[s], p.el[s], sl);
+        var sc = d === 'raglan' ? (top.c2 || top.c1) : d === 'calle' ? top.c2 : top.c1;
+        circle(c, p.sh[s][0], p.sh[s][1], 4.6, sc); capB(c, p.sh[s], end, 9.2, sc); capB(c, lerp(p.sh[s], p.el[s], sl * 0.55), end, 9.2, shade(sc, -0.12));
+        if (d === 'calle') capB(c, lerp(p.sh[s], p.el[s], sl - 0.12), lerp(p.sh[s], p.el[s], sl - 0.07), 9.2, top.c1);   // ribete blanco en la manga
+        if (d === 'noche') cap(c, [p.sh[s][0] + (s ? -1 : 1), p.sh[s][1] - 3], lerp(p.sh[s], p.el[s], sl), 1.5, top.c2);   // franja del hombro sigue por la manga
+        if (d === 'angel' || d === 'ola' || d === 'sombra') capB(c, lerp(p.sh[s], p.el[s], sl - 0.05), end, 9.2, shade(sc, -0.2));
+      }
       if (look.wrist) { cap(c, lerp(p.el[s], p.ha[s], 0.72), lerp(p.el[s], p.ha[s], 0.86), 7.4, look.wrist.c1); }
       circle(c, p.ha[s][0], p.ha[s][1], 3.6, skin);
     };
     // torso
     var tp = torsoPts(p, look, crop);
     if (crop) { var mid = torsoPts(p, look, false); poly(c, mid, skin); }
-    c.save(); clipPoly(c, tp); pattern(c, top, bbox(tp), front);
+    c.save(); clipPoly(c, tp); pattern(c, top, bbox(tp), front, { part: 'top' });
     // sombra lateral
     c.fillStyle = 'rgba(0,0,0,.14)'; c.fillRect(tp[1][0] - 4, tp[1][1], 6, 40);
     c.restore();
     if (look.body === 'f' && front) { c.fillStyle = 'rgba(0,0,0,.08)'; c.fillRect((tp[0][0] + tp[1][0]) / 2 - 6, tp[0][1] + 9, 12, 2); }
     // cuello de la remera
     if (front) { c.fillStyle = shade(top.c1, -0.25); c.beginPath(); c.arc(p.neck[0], p.neck[1] + 1, 4, 0, Math.PI); c.fill(); }
+    if (top.d === 'angel') { c.fillStyle = top.c1; c.fillRect(p.neck[0] - 4, p.neck[1] - 4, 8, 5); c.fillStyle = top.c2; c.fillRect(p.neck[0] - 2.5, p.neck[1] - 2.5, 5, 0.6); }
     if (top.k === 'polo' || top.k === 'cuello') { c.fillStyle = top.c2 || '#ffffff'; c.fillRect(p.neck[0] - 5, p.neck[1] - 1, 10, 3); }
     drawArm(0); drawArm(1);
     // mochila de espalda
@@ -273,9 +349,10 @@
     }
     c.putImageData(id, 0, 0);
   }
+  var S = 2;   // se dibuja al doble de detalle (224×288): ribetes y texturas finas como en las fotos
   function drawPose(look, pose, front) {
-    var cv = document.createElement('canvas'); cv.width = W; cv.height = H; var c = cv.getContext('2d');
-    drawBody(c, normalize(look), POSES[pose], front); crisp(c); return cv;
+    var cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S; var c = cv.getContext('2d');
+    c.scale(S, S); drawBody(c, normalize(look), POSES[pose], front); crisp2(c, W * S, H * S); return cv;
   }
   function normalize(look) {
     look = look || {};
@@ -287,14 +364,14 @@
     c.imageSmoothingEnabled = false; c.clearRect(0, 0, canvas.width, canvas.height);
     var crop = opts.crop || [0, 0, W, H], s = Math.min(canvas.width / crop[2], canvas.height / crop[3]);
     var dw = crop[2] * s, dh = crop[3] * s;
-    c.drawImage(src, crop[0], crop[1], crop[2], crop[3], (canvas.width - dw) / 2, (canvas.height - dh) / 2, dw, dh);
+    c.drawImage(src, crop[0] * S, crop[1] * S, crop[2] * S, crop[3] * S, (canvas.width - dw) / 2, (canvas.height - dh) / 2, dw, dh);
   };
   // Atlas 896×576 para la cancha (vista de espalda por defecto)
   var cache = {};
   AV.atlas = function (look, front) {
     var key = JSON.stringify([look, !!front]); if (cache[key]) return cache[key];
     var cv = document.createElement('canvas'); cv.width = 896; cv.height = 576; var c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
-    for (var i = 0; i < 8; i++) { var src = drawPose(look, i, !!front), col = i % 4, row = Math.floor(i / 4); c.drawImage(src, 0, 0, W, H, col * 224, row * 288, 224, 288); }
+    for (var i = 0; i < 8; i++) { var src = drawPose(look, i, !!front), col = i % 4, row = Math.floor(i / 4); c.drawImage(src, 0, 0, W * S, H * S, col * 224, row * 288, 224, 288); }
     var url = cv.toDataURL('image/png'); cache = {}; cache[key] = url; return url;
   };
   // Paleta sola, grande (miniaturas de la tienda)
