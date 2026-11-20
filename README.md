@@ -188,6 +188,26 @@ de prueba (`PP.Store.purchase` aprueba todo sin cobrar): hay que arreglarlo ante
    (~7,6% al instante: ~$8 de cada $100).
 7. Sacar el "anuncio" y el "Pase Pelotita" de prueba, o hacerlos reales.
 
+## Tiras visuales (solo PRO, no suma puntos)
+
+Gimnasio mental → **Tiras visuales · PRO**. Entrenamiento visual y cognitivo con tiras largas en la pantalla, inspirado en las
+herramientas de entrenamiento visual deportivo (tiras con números en hexágonos, palabras de colores, flechas y símbolos) y en
+ejercicios conocidos de terapia visual y vestibular. Es **independiente de todo**: no suma puntos, IQ, Copa ni ranking.
+Solo guarda en el dispositivo qué tarjetas hiciste (`pelotita.vis`). Archivo: `js/vision.js`.
+
+- **57 tarjetas en 13 grupos:** precisión de la mirada, saltos de mirada (sacádicos), seguimiento, mirada firme con la cabeza en
+  movimiento (VOR x1 y x2), enfoque cerca y lejos (tabla de Hart, cuerda de Brock, convergencia), visión periférica (tabla de Schulte),
+  control de impulsos (Stroop, Go/No-Go, flechas al revés), memoria visual (con ojos cerrados), doble tarea con pelotita, con un ojo
+  tapado (parche), equilibrio, con compañero y rutinas armadas (activación de 5 minutos y plan de 3 semanas). Cada una dice
+  para qué sirve, cómo se hace, cómo hacerla más difícil y el beneficio en la cancha. Para sumar una: agregar un objeto a `C`.
+- **Tiras al azar** (nunca se repiten): números en hexágonos de 4 colores, palabras de colores, flechas en 8 direcciones,
+  símbolos, letras de Sloan (las de los oculistas), letras que se achican, mixta y tabla del 1 al 25. Una o dos tiras.
+- **Fondo liso** (sin distracción) o **fondo en movimiento** (manchas y franjas). Punto central para la periférica.
+- **Herramientas:** metrónomo (40 a 160), llamadas por voz (la app dice un objetivo cada 3,5 s), "Mirá y tapate" (la tira se ve
+  2 a 5 s y se tapa), cronómetro y "Nueva tira". La pantalla no se apaga mientras se entrena.
+- **PRO:** cualquiera ve las tarjetas; abrir las tiras pide PRO (si no tiene cuenta, la crea; si no es PRO, se abre "Hacete PRO").
+- No se usa el nombre de ninguna marca comercial. Incluye avisos de cuidado (mareo, dolor de cabeza, visión doble, consultar al oculista).
+
 ## Panel de cada jugador
 
 Tocando a cualquier jugador (ranking, Siguiendo, torneos, Copa, desafíos o el autor de un video) se abre su panel: categoría,
@@ -321,6 +341,7 @@ de Google. Antes hay que configurarlo (una sola vez):
 | `supabase/live.sql` | Partido en vivo: tablas y funciones |
 | `js/duel.js` | Jugar con amigos: desafíos 1 contra 1 y 2 contra 2 por turnos |
 | `supabase/duels.sql` | Desafíos: tablas, reglas y funciones |
+| `js/vision.js` | Tiras visuales: 57 ejercicios, tiras al azar, metrónomo, voz y fondos (solo PRO) |
 | `js/cup.js` | Copa de la Cancha: pantalla, panel de administración, envío de puntajes y cartel de novedades |
 | `js/audio.js` | Sonidos y música sintetizados (sin archivos de audio). Cuatro temas, uno por mundo, que rotan solos |
 | `assets/` | Arte pixel art de jugadores, jefes y fondos de cada mundo |

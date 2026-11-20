@@ -160,6 +160,40 @@ h1, h2, h3, .disp { font-family: var(--display); font-weight: 400; letter-spacin
 .soon .pro { background: linear-gradient(90deg, rgba(255, 210, 58, .2), rgba(255, 61, 139, .2)); border-radius: 14px; padding: 10px; color: #fff; font-weight: 800; font-size: 14px; margin-top: 6px; }
 .soon .pro b { color: #FFD23A; }
 #bShop { position: relative; } #bShop::after { content: '¡Llega ropa!'; position: absolute; top: -10px; right: -8px; background: var(--pink); color: #fff; font-family: var(--body); font-weight: 900; font-size: 10px; border-radius: 8px; padding: 2px 6px; transform: rotate(6deg); white-space: nowrap; }
+/* Tiras visuales */
+.vcats { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin: 4px 0; scrollbar-width: none; } .vcats .tab { flex: none; white-space: nowrap; font-size: 13px; padding: 6px 12px; }
+.vcard { padding: 0; overflow: hidden; border-left: 5px solid var(--c); }
+.vhead { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; color: inherit; text-align: left; padding: 12px 12px 4px; cursor: pointer; font: inherit; }
+.vhead .vn { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--c); color: #1b1033; display: grid; place-items: center; font-family: var(--display); font-size: 16px; }
+.vhead .vt { flex: 1; min-width: 0; } .vhead .vt b { display: block; color: #fff; font-size: 16px; } .vhead .vt small { display: block; color: var(--ink-soft); font-size: 13px; line-height: 1.3; }
+.vhead .vlv { flex: none; color: var(--c); font-size: 11px; letter-spacing: 1px; } .vhead .vlv em { color: rgba(255, 255, 255, .2); font-style: normal; }
+.vok { color: #7CFF4D; font-style: normal; }
+.vtags { display: flex; flex-wrap: wrap; gap: 5px; padding: 4px 12px 12px 56px; } .vtags span { font-size: 11px; font-weight: 800; color: #fff; background: rgba(255, 255, 255, .1); border-radius: 999px; padding: 2px 9px; }
+.vbody { padding: 0 14px 14px; } .vbody h4 { color: var(--c); margin: 10px 0 4px; font-size: 14px; } .vbody ol { margin: 0; padding-left: 20px; color: #fff; } .vbody li { margin: 4px 0; } .vbody p { margin: 0 0 4px; }
+#visView { position: fixed; inset: 0; z-index: 30; background: #3a3a3f; display: flex; flex-direction: column; overflow: hidden; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+#visView.bg-mov { background: #2b2440; } #visBg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.vstage { position: relative; flex: 1; display: flex; align-items: center; justify-content: space-between; padding: calc(env(safe-area-inset-top, 0px) + 10px) max(10px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 10px) max(10px, env(safe-area-inset-left, 0px)); box-sizing: border-box; min-height: 0; }
+.vstrip { position: relative; height: 100%; max-height: 100%; width: min(24vw, 13vh, 150px); background: #fff; border-radius: 10px; box-shadow: 0 6px 18px rgba(0, 0, 0, .45); display: flex; flex-direction: column; padding: 18px 6px 8px; box-sizing: border-box; }
+.vstrip.c { margin: 0 auto; }
+.vtag { position: absolute; top: 3px; left: 0; right: 0; text-align: center; font-size: 8px; font-weight: 900; color: #999; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+.vc { flex: 1; display: grid; place-items: center; min-height: 0; border-top: 1px solid #eee; }
+.vc b { font-family: var(--display); font-weight: 400; line-height: 1; }
+.vc .hex { width: min(80%, 5.4vh); aspect-ratio: 1.1; display: grid; place-items: center; clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); font-size: min(4.2vh, 7vw); }
+.vc .word { font-size: min(2.2vh, 3.6vw); letter-spacing: 0; }
+.vc .arr, .vc .sym { font-size: min(4.4vh, 8vw); display: inline-block; } .vc .let { font-size: min(4.4vh, 8vw); color: #111; font-family: Arial, Helvetica, sans-serif; font-weight: 700; }
+.vgrid { margin: auto; width: min(94vw, 70vh); aspect-ratio: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: #fff; padding: 4px; border-radius: 10px; box-sizing: border-box; }
+.vgrid div { display: grid; place-items: center; border: 2px solid #ddd; border-radius: 6px; } .vgrid b { font-family: Arial, Helvetica, sans-serif; font-size: min(7vw, 5vh); color: #111; }
+.vdot { position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px; border-radius: 50%; background: #FF1744; box-shadow: 0 0 0 4px #fff; }
+.vcover { position: absolute; inset: 0; z-index: 2; background: #1b1033; color: #fff; display: grid; place-items: center; text-align: center; font-family: var(--display); font-size: 26px; padding: 20px; }
+.vcover small { font-family: var(--body); font-size: 14px; color: var(--ink-soft); }
+.vbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 10px 10px calc(env(safe-area-inset-bottom, 0px) + 10px); background: rgba(15, 8, 35, .92); }
+.vb { font: 800 13px var(--body); color: #fff; background: rgba(255, 255, 255, .12); border: 2px solid rgba(255, 255, 255, .2); border-radius: 999px; padding: 7px 12px; cursor: pointer; max-width: 46vw; }
+.vb.on { background: var(--cyan); color: #1b1033; } .vb.lime { background: var(--lime); color: #1b1033; } select.vb option { color: #1b1033; }
+.vmini { position: absolute; z-index: 3; display: flex; gap: 6px; top: calc(env(safe-area-inset-top, 0px) + 8px); }
+.vmini > div { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.vmini.center { left: 50%; transform: translateX(-50%); flex-direction: column; } .vmini.corner { left: 0; right: 0; justify-content: space-between; padding: 0 10px; pointer-events: none; } .vmini.corner .vb { pointer-events: auto; }
+.vmini .vb { background: rgba(15, 8, 35, .8); padding: 6px 10px; font-size: 12px; } .vmini .vb.lime { background: var(--lime); }
+.vhint { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 6px); left: 50%; transform: translateX(-50%); z-index: 3; font-size: 11px; color: #fff; background: rgba(0, 0, 0, .45); padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
 .note { font-size: 13px; color: var(--ink-soft); text-align: center; margin: 4px 0 14px; }
 
 /* Modales */
@@ -417,6 +451,11 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
       <p class="note">Estos ejercicios enseñan táctica y lectura de juego. No reemplazan el entrenamiento en cancha.</p></div>
   </section>
 
+  <section id="vis" class="layer screen sheet" hidden>
+    <header><button class="btn small ghost" data-go="train" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button><h2>Tiras visuales</h2></header>
+    <div class="scroll" id="visBody"></div>
+  </section>
+
   <section id="social" class="layer screen sheet" hidden>
     <header><button class="btn small ghost" data-go="home" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button><h2>Comunidad</h2></header>
     <div class="tabs" id="soTabs"></div>
@@ -457,8 +496,9 @@ select.fld { appearance: auto; } select.fld option { color: #111; }
 <script src="js/track.js?v=eef41ebf0d"></script>
 <script src="js/audio.js?v=a6951ea3dd"></script>
 <script src="js/scene.js?v=2f950be3a6"></script>
-<script src="js/live.js?v=c47ce7ae42"></script>
-<script src="js/game.js?v=56815f4d5b"></script>
+<script src="js/live.js?v=48810af098"></script>
+<script src="js/vision.js?v=38c98ce252"></script>
+<script src="js/game.js?v=31880cd49b"></script>
 <!--/PAGE-->
 </body>
 </html>

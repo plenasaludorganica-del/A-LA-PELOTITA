@@ -71,7 +71,7 @@
   }
 
   /* ================= UI general ================= */
-  var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup', 'duel', 'live'], curScreen = 'home';
+  var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup', 'duel', 'live', 'vis'], curScreen = 'home';
   function go(name) {
     curScreen = name; document.body.classList.remove('playing'); if (PP.Track && PP.Track.nav) PP.Track.nav();
     screens.forEach(function (s) { $(s).hidden = s !== name; });
@@ -86,6 +86,7 @@
     if (name === 'cup') PP.Cup.render();
     if (name === 'duel') PP.Duel.render();
     if (name === 'live') PP.Live.render();
+    if (name === 'vis') PP.Vision.render();
     refreshTop();
   }
   function refreshTop() {
@@ -924,8 +925,9 @@
     drills().forEach(function (d) {
       h += '<div class="card item" style="--c:' + d.color + '"><div class="gfx disp" style="font-size:24px;color:#1b1033">' + (save.train.best[d.id] || 0) + '</div><div class="tx"><h3>' + d.name + '</h3><p>' + d.desc + '</p></div><button class="btn small lime" data-dr="' + d.id + '">Entrenar</button></div>';
     });
+    h += '<div class="card item" style="--c:#22E1FF"><div class="gfx disp" style="font-size:26px;color:#1b1033">👁</div><div class="tx"><h3>Tiras visuales · PRO</h3><p>' + PP.Vision.CARDS.length + ' ejercicios para entrenar la vista: saltos de mirada, periférica, Stroop, memoria y doble tarea con pelotita. No suma puntos.</p></div><button class="btn small lime" id="visBtn">Abrir</button></div>';
     $('drillList').innerHTML = h + '<div class="card item" style="--c:#FFD23A"><div class="gfx disp" style="font-size:30px;color:#1b1033">?</div><div class="tx"><h3>La mente también se entrena</h3><p>Por qué decidir rápido gana puntos, con datos de estudios de pádel y tenis.</p></div><button class="btn small" id="mindBtn">Leer</button></div>';
-    on($('mindBtn'), showMind);
+    on($('mindBtn'), showMind); on($('visBtn'), function () { go('vis'); });
   }
   $('drillList').addEventListener('click', function (e) { var b = e.target.closest('[data-dr]'); if (!b) return; A.unlock(); A.play('click'); startDrill(b.dataset.dr); });
   function trClean() {
@@ -1445,7 +1447,7 @@
       where: function () { return PP.Live && PP.Live.active ? 'envivo' : G ? 'partido' : TR ? 'gimnasio' : curScreen; },
       pop: pop, wantLandscape: wantLandscape,
       move: function () { return { x: mvIn.x + (keys.r ? 1 : 0) - (keys.l ? 1 : 0), z: mvIn.z + (keys.d ? 1 : 0) - (keys.u ? 1 : 0) }; } };
-    ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); PP.Duel.init(); PP.Track.init(); PP.Live.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
+    ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); PP.Duel.init(); PP.Track.init(); PP.Live.init(); PP.Vision.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
     // Al abrir se ve siempre el inicio con los botones (no la cancha). La primera vez sale solo el cartel de bienvenida (js/cup.js, news).
     if (!save.intro) { save.intro = true; persist(); } else if (location.search.indexOf('nodaily') < 0) showDaily();
     requestAnimationFrame(frame);
