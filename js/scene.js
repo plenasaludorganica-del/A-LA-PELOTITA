@@ -372,7 +372,7 @@
     var k = 1 + p.y * 0.25; ballShadow.scale.setScalar(k); ballShadow.material.opacity = Math.max(0.08, 0.38 - p.y * 0.05);
     hist.unshift(p.x, p.y, p.z); if (hist.length > 60) hist.length = 60;
   };
-  S.setBallStyle = function (color, power) { S.ball.color.set(color); S.ball.power = power; ballGlow.material.color.set(color); ball.material.color.set(power > 1 ? color : '#E4FF4A'); };
+  S.setBallStyle = function (color, power) { S.ball.color.set(color); S.ball.power = power; ballGlow.material.color.set(color); ball.material.color.set(power > 1 ? color : (S.ballBase || '#E4FF4A')); };   // ballBase: color de pelotita elegido en la tienda
   function updateTrail() {
     var pw = S.ball.power;
     for (var i = 0; i < trail.length; i++) {

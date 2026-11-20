@@ -166,7 +166,7 @@
   function startMatch() {
     L.active = true; R.ended = false;
     if (U.wantLandscape) U.wantLandscape();
-    ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup', 'duel', 'live', 'vis'].forEach(function (x) { var el = $(x); if (el) el.hidden = true; });
+    ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup', 'duel', 'live', 'vis', 'ropa'].forEach(function (x) { var el = $(x); if (el) el.hidden = true; });
     $('top').hidden = true; $('hud').hidden = false; $('hud').classList.add('tr');
     var api = PP.api; if (api.me()) api.me().g.visible = false; if (api.opp && api.opp()) api.opp().g.visible = false;
     S.mode = 'play'; S.setBall({ x: 0, y: 0, z: 0 }, false); S.ring(null);
@@ -185,6 +185,7 @@
       if (!c) {
         var me = s === R.slot, ch = me ? (chars.filter(function (x) { return x.id === U.save().char; })[0] || chars[0]) : chars[(s + 1) % chars.length];
         var sprite = ch && ch.sprite ? ch.sprite : 'assets/sprites/r' + (s % 4 + 1) + '.png';
+        if (me && PP.Ropa && PP.Ropa.useInGame()) sprite = PP.Ropa.atlas();
         c = R.chars[s] = S.makeSpriteChar(sprite, { accent: teamOf(s) === R.myTeam ? (me ? (ch && ch.accent) || '#22E1FF' : '#7CFF4D') : '#FF3D8B', scale: 1 });
         var h0 = homeOf(s); c.place(vx(h0.x), vz(h0.z)); c.speed = 7.5;
         c.tag = document.createElement('div'); c.tag.className = 'ltag' + (me ? ' me' : ''); c.tag.textContent = me ? 'Vos' : p.name; document.body.appendChild(c.tag);

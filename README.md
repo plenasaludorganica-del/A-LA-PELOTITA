@@ -188,6 +188,29 @@ de prueba (`PP.Store.purchase` aprueba todo sin cobrar): hay que arreglarlo ante
    (~7,6% al instante: ~$8 de cada $100).
 7. Sacar el "anuncio" y el "Pase Pelotita" de prueba, o hacerlos reales.
 
+## Tienda de ropa y Vestidor (EN PREPARACIÓN: está en la rama `ccr-ff06bfe6-9pwvjs`, no publicada)
+
+Botón **Tienda** del inicio → "Tienda y vestidor". Cada jugador arma **su propio muñeco** y lo viste con ropa y accesorios
+comprados con **Pelotitas**. Es solo apariencia: no cambia la fuerza, los puntos ni nada del juego.
+
+- **Muñeco por capas** (`js/avatar.js`): lo dibuja el juego en pixel art (112×144, agrandado ×2 con contorno), con 8 poses
+  como los personajes de siempre. De espalda en la cancha (atlas 896×576 para `S.makeSpriteChar`) y de frente en el vestidor y el inicio.
+  Capas: cuerpo (varón o mujer), piel (6), ojos (6), cejas, barba o bigote, 12 peinados ("pelucas") y 12 colores de pelo,
+  remera/chomba/manga larga/top corto/musculosa, short/bermuda/calza/pollera, medias (3 alturas), zapatillas, gorra/visera/vincha,
+  muñequeras, mochila o paletero, paleta y color de la pelotita.
+- **Diseños** (sacados de las fotos de referencia, sin marcas): lisa, rayas, franjas, bicolor, franja al medio, cuadrillé, degradé,
+  degradé con puntos, degradé zigzag, paneles curvos con ribete, raglán, camuflada, Rayo, Grieta, oro y plata.
+- **Catálogo** (`js/ropa.js`): ~340 artículos en conjuntos, remeras, tops y polleras, shorts, zapatillas, medias, gorras y vinchas,
+  bolsos y muñequeras, paletas, pelotitas de juego y Colección PRO. Marcas propias del juego: Pelotita (común, 80),
+  Bandeja (especial, 180), Víbora (épica, 350) y Por 3 (legendaria, 700). **Nunca marcas reales ni parecidas.**
+- **Se desbloquea jugando:** especial desde 7ma, épica desde 5ta, legendaria desde 3ra (`R.TIERS`).
+- **PRO:** cambia todo su físico (sin PRO: 3 peinados y 4 colores de pelo), Colección PRO exclusiva y 20 % menos en todo.
+- **Mi casillero:** todo lo comprado. "Jugar con mi jugador" usa el muñeco en partidos, gimnasio, inicio y partido en vivo.
+- **Portadas** de cada categoría hechas con Higgsfield (`assets/tienda/`), sin marcas.
+- **Pendiente antes de abrirla:** las Pelotitas y lo comprado se guardan hoy en el dispositivo (`pelotita.ropa`, arranca con 150 de regalo):
+  hay que pasarlos al servidor y conectar los paquetes de Pelotitas ($200 = 200, $500 = 550, $900 = 1.100) a Mercado Pago, como el PRO.
+  Mostrar el muñeco de cada uno a los demás (partido en vivo, ranking) también necesita guardar el "look" en el servidor.
+
 ## Tiras visuales (solo PRO, no suma puntos)
 
 Gimnasio mental → **Tiras visuales · PRO**. Entrenamiento visual y cognitivo con tiras largas en la pantalla, inspirado en las
@@ -341,6 +364,8 @@ de Google. Antes hay que configurarlo (una sola vez):
 | `supabase/live.sql` | Partido en vivo: tablas y funciones |
 | `js/duel.js` | Jugar con amigos: desafíos 1 contra 1 y 2 contra 2 por turnos |
 | `supabase/duels.sql` | Desafíos: tablas, reglas y funciones |
+| `js/avatar.js` | Muñeco por capas: dibuja al jugador (piel, pelo, ojos, ropa, paleta) y arma su atlas de 8 poses |
+| `js/ropa.js` | Tienda de ropa, vestidor y casillero (catálogo, precios, desbloqueos, PRO) |
 | `js/vision.js` | Tiras visuales: 57 ejercicios, tiras al azar, metrónomo, voz y fondos (solo PRO) |
 | `js/cup.js` | Copa de la Cancha: pantalla, panel de administración, envío de puntajes y cartel de novedades |
 | `js/audio.js` | Sonidos y música sintetizados (sin archivos de audio). Cuatro temas, uno por mundo, que rotan solos |

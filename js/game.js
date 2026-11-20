@@ -19,6 +19,8 @@
   save.train = save.train || { best: {}, last: '' };
   function persist() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} }
   function today() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  // Si armó su jugador en el Vestidor, juega con ese muñeco (misma fuerza y especial del personaje elegido)
+  function mySprite(c) { try { if (PP.Ropa && PP.Ropa.useInGame()) return PP.Ropa.atlas(); } catch (e) {} return c.sprite; }
   function curChar() { return PP.CHARS.filter(function (c) { return c.id === save.char; })[0] || PP.CHARS[0]; }
   function stat(k) { var c = curChar(); return c.stats[k] + (save.up[c.id + '.' + k] || 0); }
   function totalStars() { var n = 0; for (var k in save.stars) n += save.stars[k]; return n; }
@@ -71,7 +73,7 @@
   }
 
   /* ================= UI general ================= */
-  var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup', 'duel', 'live', 'vis'], curScreen = 'home';
+  var screens = ['home', 'map', 'chars', 'shop', 'missions', 'train', 'social', 'cup', 'duel', 'live', 'vis', 'ropa'], curScreen = 'home';
   function go(name) {
     curScreen = name; document.body.classList.remove('playing'); if (PP.Track && PP.Track.nav) PP.Track.nav();
     screens.forEach(function (s) { $(s).hidden = s !== name; });
@@ -87,6 +89,7 @@
     if (name === 'duel') PP.Duel.render();
     if (name === 'live') PP.Live.render();
     if (name === 'vis') PP.Vision.render();
+    if (name === 'ropa') PP.Ropa.render();
     refreshTop();
   }
   function refreshTop() {
@@ -117,7 +120,7 @@
 
   function renderHome() {
     var c = curChar(), lv = PP.LEVELS[Math.min(save.level, PP.LEVELS.length - 1)];
-    $('hero').src = c.img; $('hero').alt = c.name; $('vIq').textContent = iq();
+    $('hero').src = (PP.Ropa && PP.Ropa.useInGame() && PP.Ropa.portrait()) || c.img; $('hero').alt = c.name; $('vIq').textContent = iq();
     $('playBtn').innerHTML = 'Jugar · Nivel ' + lv.n;
   }
 
@@ -400,7 +403,7 @@
     if (curWorld !== lv.world) { S.setWorld(lv.world); curWorld = lv.world; }
     A.setSong(lv.world);
     if (me) me.remove(); if (opp) opp.remove();
-    me = S.makeSpriteChar(c.sprite, { accent: c.accent, scale: 1 });
+    me = S.makeSpriteChar(mySprite(c), { accent: c.accent, scale: 1 });
     opp = S.makeSpriteChar(lv.sprite, { accent: lv.type === 'boss' ? '#FF3D8B' : '#ffffff', scale: lv.type === 'boss' ? 1.22 : 1 });
     me.speed = 6.2 + stat('def') * 0.32; opp.speed = 3;
     me.place(0, HOME_ME); opp.place(0, HOME_OP);
@@ -948,7 +951,7 @@
     trClean(); G = null; PP.Track.start(PP.tourCtx ? (isDuel(PP.tourCtx) ? 'desafio' : 'torneo') : id);
     if (me) me.remove(); if (opp) opp.remove();
     var c = curChar(), d = PP.DRILLS.filter(function (x) { return x.id === id; })[0];
-    me = S.makeSpriteChar(c.sprite, { accent: c.accent }); opp = S.makeSpriteChar('assets/sprites/r2.png', { accent: '#ffffff' });
+    me = S.makeSpriteChar(mySprite(c), { accent: c.accent }); opp = S.makeSpriteChar('assets/sprites/r2.png', { accent: '#ffffff' });
     me.place(0, HOME_ME); opp.place(0, HOME_OP); me.speed = 7; opp.speed = 7;
     TR = { id: id, round: 0, rounds: id === 'read' ? 6 : 8, score: 0, max: 0, phase: 'wait', wait: 1.3, ball: newBall(), left: 30, spawn: 0.8, char: c };
     if (id === 'read') {
@@ -1425,7 +1428,7 @@
   on($('bHelp'), function () { showHelp(); });
   on($('bOpina'), function () { showFeedback(); });
   on($('bTrain'), function () { go('train'); });
-  on($('bChars'), function () { detailChar = null; go('chars'); }); on($('bMissions'), function () { go('missions'); }); on($('bShop'), function () { go('shop'); });
+  on($('bChars'), function () { detailChar = null; go('chars'); }); on($('bMissions'), function () { go('missions'); }); on($('bShop'), function () { go('ropa'); });
   on($('cLives'), function () { if (save.lives < MAX_LIVES && !save.pass) showNoLives(); else toast('Tenés todas las vidas'); });
   on($('cCoins'), function () { go('shop'); }); on($('cGems'), function () { go('shop'); });
   on($('soundBtn'), function () { save.sound = !save.sound; A.setOn(save.sound); persist(); refreshTop(); });
@@ -1440,14 +1443,14 @@
     A.on = save.sound;
     curWorld = PP.LEVELS[Math.min(save.level, PP.LEVELS.length - 1)].world; S.setWorld(curWorld);
     var c = curChar();
-    me = S.makeSpriteChar(c.sprite, { accent: c.accent, scale: 1 }); me.place(-1.5, 6);
+    me = S.makeSpriteChar(mySprite(c), { accent: c.accent, scale: 1 }); me.place(-1.5, 6);
     opp = S.makeSpriteChar(PP.LEVELS[Math.min(save.level, 39)].sprite, { accent: '#ffffff', scale: 1 }); opp.place(1.5, -6);
     PP.ui = { modal: modal, closeModal: closeModal, toast: toast, on: on, ic: ic, go: go, flash: flash, persist: persist, iq: iq, totalStars: totalStars,
       startLevel: startLevel, startDrill: startDrill, save: function () { return save; },
       where: function () { return PP.Live && PP.Live.active ? 'envivo' : G ? 'partido' : TR ? 'gimnasio' : curScreen; },
       pop: pop, wantLandscape: wantLandscape,
       move: function () { return { x: mvIn.x + (keys.r ? 1 : 0) - (keys.l ? 1 : 0), z: mvIn.z + (keys.d ? 1 : 0) - (keys.u ? 1 : 0) }; } };
-    ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); PP.Duel.init(); PP.Track.init(); PP.Live.init(); PP.Vision.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
+    ensureMissions(); go('home'); PP.Social.init(); PP.Cup.init(); PP.Duel.init(); PP.Track.init(); PP.Live.init(); PP.Vision.init(); PP.Ropa.init(); setInterval(function () { if (!G) refreshTop(); }, 1000);
     // Al abrir se ve siempre el inicio con los botones (no la cancha). La primera vez sale solo el cartel de bienvenida (js/cup.js, news).
     if (!save.intro) { save.intro = true; persist(); } else if (location.search.indexOf('nodaily') < 0) showDaily();
     requestAnimationFrame(frame);
